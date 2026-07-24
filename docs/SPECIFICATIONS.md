@@ -148,9 +148,10 @@ Le type d’un test ou d’un jeu de tests est choisi dans une liste administrab
 - `acceptance` : validation d’un comportement métier ;
 - `regression` : vérification de comportements existants ;
 - `e2e` : parcours complet de bout en bout ;
-- `performance` : vérification de durées, seuils et budgets sur un parcours fonctionnel.
+- `performance` : vérification de durées, seuils et budgets sur un parcours fonctionnel ;
+- `load` : simulation paramétrée d’une charge sur une ou plusieurs opérations autorisées.
 
-Le type `performance` ne désigne pas un test de charge ou de montée en charge. Les tests de charge restent hors périmètre du MVP. Un test `performance` doit déclarer les actions mesurées, les seuils attendus et les conditions de mesure.
+Le type `performance` ne désigne pas un test de charge ou de montée en charge. Le type `load` permet de paramétrer ces tests, mais leur exécution avec un moteur de charge dédié reste hors du périmètre d’exécution du MVP. Le MVP doit néanmoins pouvoir définir, valider la cohérence et exporter un profil de charge. Un test `performance` doit déclarer les actions mesurées, les seuils attendus et les conditions de mesure.
 
 Le type du jeu de tests sert de valeur par défaut pour ses tests descendants. Un test peut déclarer un type différent lorsqu’il est compatible avec le jeu ; ce type explicite prévaut alors. Une incompatibilité est signalée à la saisie et bloque l’export jusqu’à correction.
 
@@ -208,6 +209,17 @@ Tous les champs affichés doivent être documentés dans l’interface avec un l
 | Tags | non | choix dans une liste contrôlée | tag administré | suggestions |
 | Déclaration d’exécution CI | oui | choix `on_commit`, `nightly`, etc. | valeur autorisée | proposition selon le type |
 | Seuils de performance | obligatoire pour `performance` | durée ou budget | unité et seuil valides | proposition contextualisée |
+| Profil de charge | obligatoire pour `load` | liste administrable | profil disponible | suggestion selon l’objectif |
+| Opérations ou parcours ciblés | obligatoire pour `load` | choix guidé des opérations autorisées | opération disponible dans l’environnement | proposition selon le scénario |
+| Modèle de charge | obligatoire pour `load` | constante, progressive, paliers, pointe, endurance ou mixte | modèle administré | suggestion selon l’objectif |
+| Utilisateurs virtuels | obligatoire pour `load` | nombre entier | borné par l’environnement | proposition contrôlée |
+| Débit cible | obligatoire pour `load` | requêtes ou parcours par seconde | unité et valeur positives | proposition contextualisée |
+| Montée en charge | non pour `load` | durée et paliers | durée et paliers valides | proposition contextualisée |
+| Stabilisation / warmup | non pour `load` | durée | durée positive et plafonnée | proposition contextualisée |
+| Durée de charge | obligatoire pour `load` | durée | durée positive et plafonnée | proposition contextualisée |
+| Données de charge | non pour `load` | jeu de données et profil d’environnement | références autorisées | proposition de profil |
+| Seuils de charge | obligatoire pour `load` | taux d’erreur, débit, moyenne et percentiles | unités et limites valides | proposition contextualisée |
+| Métriques collectées | obligatoire pour `load` | liste administrable | métrique compatible avec l’adaptateur | suggestion contrôlée |
 | Usage exceptionnel du LLM d’exécution | non | case à cocher et justification | justification obligatoire si activé | aide à la justification |
 
 Pour chaque champ, l’interface doit afficher le libellé, l’aide, l’exemple, le caractère obligatoire, la règle de validation et l’origine de la valeur. Ces informations sont elles-mêmes configurables par les administrateurs et sont testées avec le formulaire.
@@ -236,6 +248,7 @@ config/test-intents.yaml         # phrases d’intention fonctionnelle
 config/tags.yaml                 # tags sélectionnables
 config/environments.yaml         # environnements, URLs et origines autorisées
 config/data-profiles.yaml        # profils de données et fixtures
+config/load-profiles.yaml        # profils de charge paramétrés
 ```
 
 Un modèle de test peut par exemple déclarer :
@@ -256,6 +269,43 @@ llm_questions:
 ```
 
 Le contenu technique des fichiers peut évoluer sans changer les libellés ni le parcours de saisie métier.
+
+Un profil de charge peut par exemple déclarer :
+
+```yaml
+id: checkout-steady
+label: Charge constante du parcours de commande
+adapter: http-load
+protocol_version: '1'
+allowed_environments:
+  - staging
+allowed_operations:
+  - login
+  - create_order
+metrics:
+  - throughput
+  - error_rate
+  - mean_ms
+  - p95_ms
+default_thresholds:
+  error_rate_max: 0.02
+  p95_ms_max: 1000
+limits:
+  max_virtual_users: 50
+  max_requests_per_second: 20
+  max_duration_seconds: 900
+workload:
+  pattern: constant
+  virtual_users: 10
+  requests_per_second: 5
+  duration_seconds: 300
+  warmup_seconds: 30
+thresholds:
+  error_rate_max: 0.01
+  p95_ms_max: 800
+```
+
+Les valeurs de `workload` ne peuvent pas dépasser les limites administratives du profil ou de l’environnement.
 
 Le système doit vérifier la configuration au démarrage et signaler les identifiants en doublon, références inconnues ou champs incohérents.
 
@@ -993,6 +1043,7 @@ runner/
 ├── cli/               # Commandes et configuration non interactive
 ├── selection/         # Résolution suite, dossier, test et tags
 ├── execution/         # Orchestration pytest/Playwright
+├── load/              # Adaptateurs de charge dédiés, activables post-MVP
 ├── adaptive/          # Appel exceptionnel du LLM d’exécution
 ├── reporting/         # JUnit, JSON, traces et artefacts
 └── history/           # Historique minimal : réussite, durée, date
@@ -1040,6 +1091,7 @@ sentinel-bundle/
 ├── pages/
 ├── fixtures/
 ├── data/
+├── load-profiles/     # Profils de charge versionnés, sans moteur embarqué dans le MVP
 ├── requirements.lock
 ├── pytest.ini
 └── README.md
@@ -1061,6 +1113,8 @@ Le manifeste indique :
 - l’état d’approbation et l’empreinte validée individuellement.
 
 Le runner doit refuser un format incompatible, un bundle incomplet ou une empreinte différente de celle approuvée avec un message explicite. Une CI ne peut exécuter un artefact modifié sous l’identité d’une version approuvée.
+
+Un bundle contenant `load-profiles/` peut être validé et exporté par le MVP. Il ne peut être exécuté qu’après sélection d’un adaptateur de charge installé, vérifié et autorisé pour l’environnement ciblé.
 
 ### 10.8 Déploiement de la conception
 
@@ -1225,7 +1279,7 @@ Le MVP est livré en deux tranches obligatoires. La première prouve la valeur f
 1. une application web mono-instance ;
 2. un projet et plusieurs jeux de tests, suites, sous-suites ou dossiers ;
 3. la création, le déplacement et l’ordonnancement de tests dans l’arborescence ;
-4. les types `smoke`, `sanity`, `acceptance`, `regression`, `e2e` et `performance` ;
+4. les types `smoke`, `sanity`, `acceptance`, `regression`, `e2e`, `performance` et `load` ;
 5. le cycle de vie brouillon, en conception, candidat, validé individuellement, approuvé, actif, retiré et archivé ;
 6. un profil LLM de conception configurable par endpoint, modèle et secret ;
 7. un profil LLM d’exécution séparé, facultatif et désactivé par défaut ;
@@ -1256,8 +1310,9 @@ Le MVP est livré en deux tranches obligatoires. La première prouve la valeur f
 7. des exemples Docker, Podman, GitHub Actions et GitLab CI ;
 8. l’historisation minimale des réussites, durées et dates ;
 9. l’évaluation des seuils de tests `performance` dans les rapports ;
-10. la prise en compte de la déclaration d’exécution du test ;
-11. une démonstration CI sans secret sur une cible contrôlée.
+10. la définition, la validation, le versionnement et l’export d’un test `load` paramétré, sans exécution par un moteur de charge dans le MVP ;
+11. la prise en compte de la déclaration d’exécution du test ;
+12. une démonstration CI sans secret sur une cible contrôlée.
 
 ### 11.3 Usage du LLM dans le MVP
 
@@ -1291,7 +1346,7 @@ Le MVP n’inclut pas :
 - la résolution de CAPTCHA ;
 - le contournement d’une authentification ou d’un MFA ;
 - les applications mobiles ou desktop natives ;
-- les tests de charge ;
+- l’exécution réelle par un moteur de charge dédié ;
 - plusieurs frameworks de génération ;
 - l’exécution distribuée ;
 - Kubernetes comme prérequis ;
@@ -1304,6 +1359,27 @@ Le MVP n’inclut pas :
 ## 12. Critères d’acceptation du MVP
 
 Le MVP est acceptable lorsque les critères suivants sont vérifiés par des tests automatisés et une démonstration réelle :
+
+Chaque critère possède un identifiant stable. Le tableau suivant établit le mapping individuel entre la liste lisible et l’identifiant de suivi :
+
+| Numéro | Identifiant | Numéro | Identifiant | Numéro | Identifiant |
+|---:|---|---:|---|---:|---|
+| 1 | `ACC-001` | 17 | `ACC-017` | 33 | `ACC-033` |
+| 2 | `ACC-002` | 18 | `ACC-018` | 34 | `ACC-034` |
+| 3 | `ACC-003` | 19 | `ACC-019` | 35 | `ACC-035` |
+| 4 | `ACC-004` | 20 | `ACC-020` | 36 | `ACC-036` |
+| 5 | `ACC-005` | 21 | `ACC-021` | 37 | `ACC-037` |
+| 6 | `ACC-006` | 22 | `ACC-022` | 38 | `ACC-038` |
+| 7 | `ACC-007` | 23 | `ACC-023` | 39 | `ACC-039` |
+| 8 | `ACC-008` | 24 | `ACC-024` | 40 | `ACC-040` |
+| 9 | `ACC-009` | 25 | `ACC-025` | 41 | `ACC-041` |
+| 10 | `ACC-010` | 26 | `ACC-026` | 42 | `ACC-042` |
+| 11 | `ACC-011` | 27 | `ACC-027` | 43 | `ACC-043` |
+| 12 | `ACC-012` | 28 | `ACC-028` | 44 | `ACC-044` |
+| 13 | `ACC-013` | 29 | `ACC-029` | 45 | `ACC-045` |
+| 14 | `ACC-014` | 30 | `ACC-030` | 46 | `ACC-046` |
+| 15 | `ACC-015` | 31 | `ACC-031` |  |  |
+| 16 | `ACC-016` | 32 | `ACC-032` |  |  |
 
 1. L’interface seule démarre avec une image OCI, un volume et une configuration documentée ; le MVP complet démarre avec le fichier Compose et son runner isolé.
 2. Un utilisateur crée une arborescence contenant au moins une suite, une sous-suite et deux tests.
@@ -1345,6 +1421,12 @@ Le MVP est acceptable lorsque les critères suivants sont vérifiés par des tes
 38. La déclaration d’exécution d’un test permet de le sélectionner pour `on_commit`, `on_merge_request`, `nightly`, `release` ou `manual`.
 39. Les transitions de cycle de vie invalides sont refusées et les transitions valides sont inscrites dans le journal d’audit séparé.
 40. Un test retiré ou archivé n’est jamais sélectionné par une CI.
+41. Une définition confirmée est transformée en modèle intermédiaire validé avant toute génération.
+42. Une action non supportée, une assertion absente ou un localisateur interdit bloque la production de l’artefact approuvable.
+43. Une régénération détecte les zones personnalisées, préserve les zones compatibles et expose les conflits sans écrasement silencieux.
+44. Un test `load` permet de saisir sans YAML son profil, ses opérations, ses utilisateurs virtuels, son débit, sa durée, sa montée en charge et ses seuils.
+45. Les paramètres de charge dépassant les limites administratives ou de l’environnement sont refusés.
+46. Le MVP valide, versionne et exporte un profil de charge, mais refuse de le présenter comme exécuté sans adaptateur de charge vérifié.
 
 ## 13. Stratégie de validation et de développement
 
@@ -1365,7 +1447,7 @@ Les tests doivent couvrir au minimum :
 - les états et versions du cycle de conception ;
 - les transitions valides et invalides de tous les états, y compris retrait et archivage ;
 - la hiérarchie et les déplacements ;
-- les six types de tests, leur héritage et les incompatibilités ;
+- les sept types de tests, leur héritage et les incompatibilités ;
 - la synthèse factuelle des descriptions ;
 - les champs obligatoires, aides, exemples, validations et assistance de la saisie guidée ;
 - les attributs simples `requirements` et `business_rules` ;
@@ -1383,13 +1465,266 @@ Les tests doivent couvrir au minimum :
 - les réponses LLM invalides ;
 - les politiques de destination ;
 - la génération déterministe d’un artefact candidat à partir d’un brouillon structuré ;
+- le modèle intermédiaire, la correspondance actions/code, les localisateurs et les assertions (`GEN-001` à `GEN-006`) ;
+- les fixtures, Page Objects, personnalisations, conflits de régénération et empreintes (`GEN-007` à `GEN-013`) ;
+- les contrôles et limites de l’assistance LLM à la génération (`GEN-014`) ;
+- la définition et la validation de profils de charge paramétrés (`LOAD-001` à `LOAD-006`) ;
+- l’export, les limites de sécurité, les résultats et l’assistance LLM des tests de charge (`LOAD-007` à `LOAD-011`) ;
 - l’invalidation de la validation après toute modification du modèle ou du code ;
 - le contrat du bundle ;
 - les codes de sortie et rapports du runner ;
 - l’exécution E2E sur une cible de démonstration contrôlée ;
 - les modèles GitHub Actions et GitLab CI.
 
-## 14. Questions ouvertes après le cadrage du MVP
+## 14. Spécifications détaillées de génération et de charge
+
+Cette section complète les exigences `EF-*` et `ENF-*`. Les identifiants `GEN-*` et `LOAD-*` sont obligatoires pour le suivi de conception, d’implémentation et de validation. Toute tâche de développement doit référencer au moins un identifiant de spécification et un critère d’acceptation associé.
+
+### 14.0 Registre des identifiants
+
+| Famille | Identifiants | Objet | Statut de référence |
+|---|---|---|---|
+| Exigences fonctionnelles | `EF-001` à `EF-017` | fonctions de conception, génération, validation et exécution | cadrées |
+| Exigences non fonctionnelles | `ENF-001` à `ENF-012` | sécurité, isolation, portabilité, observabilité et CI | cadrées |
+| Génération | `GEN-001` à `GEN-014` | modèle intermédiaire, traduction, code, personnalisation et empreintes | cadrées ; implémentation à suivre |
+| Charge | `LOAD-001` à `LOAD-011` | profils, paramètres, seuils, export et futur adaptateur de charge | définition/export MVP ; exécution post-MVP |
+| Acceptation | `ACC-001` à `ACC-046` | vérifications observables du MVP | à transformer en tests |
+
+Une exigence ne peut être marquée comme implémentée que lorsqu’un test ou une démonstration vérifie son comportement. Les statuts de développement (`à faire`, `en cours`, `implémentée`, `vérifiée`) doivent être suivis dans l’outil de gestion du projet, sans modifier l’identifiant stable de la spécification.
+
+### 14.1 Génération du code de test
+
+#### GEN-001 — Entrée de génération
+
+Le générateur reçoit uniquement une version structurée confirmée du test, le modèle de test appliqué, les configurations administratives validées et les versions de générateur déclarées. Il ne reçoit pas directement l’historique brut de conversation.
+
+#### GEN-002 — Modèle intermédiaire normalisé
+
+Avant d’émettre du code, le système transforme la définition métier en un modèle intermédiaire normalisé contenant :
+
+- le contexte et l’environnement ;
+- les préconditions et dépendances résolues ;
+- les fixtures et données référencées ;
+- les actions ordonnées ;
+- les assertions observables ;
+- les postconditions ;
+- les limites de durée et de ressources ;
+- les preuves attendues ;
+- la politique d’usage du LLM d’exécution.
+
+Le modèle intermédiaire est validé par schéma. Une définition incomplète ou ambiguë reste en conception et ne produit pas d’artefact approuvable.
+
+#### GEN-003 — Pipeline déterministe
+
+La génération suit le pipeline :
+
+```text
+définition confirmée
+→ modèle intermédiaire validé
+→ résolution des composants et fixtures
+→ génération des fichiers
+→ formatage et contrôles statiques
+→ manifeste et empreintes
+→ artefact candidat
+```
+
+À définition, configuration, version de générateur et données identiques, la génération doit produire le même comportement fonctionnel. Les différences non fonctionnelles doivent être signalées dans le diff de génération.
+
+#### GEN-004 — Correspondance des actions
+
+Le MVP définit un vocabulaire d’actions indépendant de Playwright. Le générateur le traduit notamment en :
+
+| Action métier | Représentation générée attendue |
+|---|---|
+| ouvrir une page | `page.goto(...)` avec contrôle de destination |
+| cliquer sur un élément | localisateur stable puis `.click()` |
+| saisir une valeur | localisateur de champ puis `.fill()` |
+| sélectionner une option | localisateur puis `.select_option()` |
+| attendre un état | attente d’une condition observable, jamais une temporisation arbitraire par défaut |
+| vérifier une visibilité | assertion `expect(...).to_be_visible()` |
+| vérifier un texte | assertion sur le contenu observable |
+| vérifier une URL | assertion sur l’URL autorisée |
+| capturer une preuve | capture rattachée à l’étape et à l’exécution |
+
+Une action non supportée doit être signalée comme telle et empêcher l’approbation du code, plutôt que d’être remplacée par une approximation silencieuse.
+
+#### GEN-005 — Choix et stabilité des localisateurs
+
+Le générateur choisit les localisateurs dans l’ordre suivant : rôle et nom accessible, libellé, texte observable, attribut de test configuré, puis sélecteur CSS stable. Il doit conserver le localisateur retenu dans la représentation structurée et indiquer son niveau de fragilité.
+
+Les localisateurs basés sur une position, un identifiant généré, une coordonnée ou une référence temporaire d’exploration sont interdits dans un artefact approuvable, sauf dérogation explicitement justifiée et visible.
+
+#### GEN-006 — Génération des assertions
+
+Chaque résultat attendu confirmé doit devenir au moins une assertion observable, sauf s’il est explicitement marqué comme information non vérifiable. Le générateur doit refuser un test qui ne contient aucune assertion fonctionnelle ou de performance.
+
+Les assertions doivent être indépendantes des messages du LLM. Elles portent sur l’interface, l’URL autorisée, une réponse observable, une donnée affichée, un état ou une mesure déclarée.
+
+#### GEN-007 — Fixtures, données et secrets
+
+Le générateur sépare :
+
+- les fixtures reproductibles non secrètes ;
+- les données paramétrables ;
+- les références de secrets ;
+- les valeurs fournies uniquement par l’environnement d’exécution.
+
+Aucune valeur secrète ne doit être écrite dans le code, le bundle, le manifeste, le prompt, les captures ou les journaux. Une fixture manquante bloque la génération ou l’exécution selon le moment où elle est détectée.
+
+#### GEN-008 — Composants et Page Objects
+
+Un parcours commun peut être factorisé en fixture, fonction ou Page Object uniquement lorsqu’au moins deux tests le réutilisent ou lorsqu’une frontière d’écran claire le justifie. Chaque composant possède un identifiant et une version. Le générateur doit privilégier une structure simple et lisible plutôt qu’une abstraction anticipée.
+
+La modification d’un composant identifie les artefacts candidats et versions approuvées qui doivent être revalidés.
+
+#### GEN-009 — Structure du code généré
+
+Le bundle Playwright Python doit séparer au minimum :
+
+```text
+tests/       # scénarios et assertions
+pages/       # Page Objects réellement réutilisés
+fixtures/    # préparation et nettoyage
+config/      # paramètres sans secrets
+artifacts/   # sortie d’exécution, jamais source de génération
+```
+
+Chaque fichier généré doit indiquer l’identifiant du test et la version de génération, sans inclure le prompt complet ni de secret.
+
+#### GEN-010 — Personnalisation et zones protégées
+
+Le code personnalisé doit être identifiable par des marqueurs ou fichiers explicitement déclarés dans le manifeste. Une régénération doit :
+
+1. détecter les zones personnalisées ;
+2. calculer les différences ;
+3. préserver automatiquement uniquement les zones dont le contrat n’a pas changé ;
+4. produire un conflit visible dans les autres cas ;
+5. créer un nouvel artefact candidat.
+
+Aucune personnalisation ne doit être écrasée silencieusement.
+
+#### GEN-011 — Validation de l’artefact
+
+Le générateur produit un manifeste contenant les identifiants, versions, fichiers, dépendances, type de test, tags, déclaration CI, version du générateur et empreintes. Le runner refuse l’artefact si un fichier est absent, modifié, inconnu ou incompatible avec le manifeste.
+
+#### GEN-012 — Contrôles avant approbation
+
+Avant de présenter l’artefact comme candidat, le système exécute :
+
+- validation du schéma intermédiaire ;
+- validation des destinations ;
+- vérification des secrets référencés sans lecture de leur valeur ;
+- contrôle des localisateurs ;
+- contrôle des assertions ;
+- contrôle des dépendances et fixtures ;
+- contrôle des seuils et paramètres ;
+- analyse de secrets dans les fichiers générés ;
+- formatage et contrôle syntaxique Python.
+
+Un contrôle échoué empêche le lancement individuel et explique l’action corrective attendue.
+
+#### GEN-013 — Versionnement de la génération
+
+L’empreinte d’un artefact inclut le modèle intermédiaire, le code, les composants, les fixtures non secrètes, la configuration effective, la version du générateur et le format du bundle. Toute modification de l’un de ces éléments invalide la validation précédente.
+
+#### GEN-014 — Assistance LLM de génération
+
+Le LLM de conception peut proposer des actions, localisateurs, assertions, fixtures, composants et code initial. Il doit produire des structures soumises au schéma et à la validation humaine. Il ne peut pas approuver un artefact, confirmer un contrôle système ou modifier une version approuvée.
+
+Le LLM d’exécution n’intervient jamais dans la génération normale. Il ne peut être utilisé que pendant une étape adaptative explicitement autorisée par `EF-013`.
+
+### 14.2 Paramétrage des tests de charge
+
+#### LOAD-001 — Type de test de charge
+
+`load` est un type de test distinct de `performance`. Il décrit une charge appliquée à une ou plusieurs opérations autorisées. Le type doit être sélectionnable dans l’interface et disponible dans `config/test-types.yaml`.
+
+#### LOAD-002 — Profil de charge
+
+Un test `load` référence un profil de charge administrable dans `config/load-profiles.yaml`. Un profil possède au minimum :
+
+- un identifiant et un libellé métier ;
+- un moteur ou adaptateur de charge ;
+- une version de protocole ;
+- des opérations autorisées ;
+- des limites maximales d’utilisateurs, de débit et de durée ;
+- les métriques collectées ;
+- les seuils par défaut ;
+- les environnements autorisés.
+
+#### LOAD-003 — Paramètres obligatoires
+
+Un test de charge doit pouvoir paramétrer sans YAML :
+
+- le profil de charge ;
+- les opérations ou parcours ciblés ;
+- le nombre d’utilisateurs virtuels ;
+- le débit cible ou la fréquence d’arrivée ;
+- la durée de charge ;
+- la montée en charge par paliers ;
+- le temps de stabilisation ;
+- les jeux de données et profils d’environnement ;
+- les seuils de réussite.
+
+Les champs affichent leurs unités, limites et exemples. Les valeurs sont contrôlées avant export.
+
+#### LOAD-004 — Modèles de charge
+
+L’administrateur peut configurer les profils suivants ou des profils équivalents :
+
+- charge constante ;
+- montée progressive ;
+- paliers successifs ;
+- pointe courte ;
+- endurance ;
+- scénario mixte pondéré.
+
+Le modèle sélectionné fournit au LLM de conception les questions nécessaires, mais les paramètres définitifs sont confirmés par l’utilisateur.
+
+#### LOAD-005 — Scénario de charge
+
+Un scénario de charge est une séquence d’opérations autorisées avec une pondération ou une fréquence. Il réutilise les intentions, préconditions, fixtures et profils d’environnement du modèle fonctionnel lorsque cela est possible.
+
+Une opération non autorisée, une destination inconnue ou une dépendance non résolue bloque l’export du profil.
+
+#### LOAD-006 — Seuils et critères de réussite
+
+Un test de charge doit pouvoir définir des seuils sur :
+
+- débit atteint ;
+- durée minimale d’exécution ;
+- taux d’erreur maximal ;
+- temps de réponse moyen ;
+- percentile maximal, notamment P95 ou P99 ;
+- nombre minimal d’opérations réussies.
+
+Les seuils font partie de la version du test. Un dépassement produit un échec explicite et ne peut pas être transformé en simple avertissement par le LLM.
+
+#### LOAD-007 — Artefact et moteur d’exécution
+
+La conception exporte un profil de charge versionné et un scénario indépendant de l’interface web. Le runner sélectionne un adaptateur compatible avec le profil. Le moteur exact peut être configuré par l’administrateur ; il ne doit pas être imposé aux fonctionnels métier.
+
+Le code Playwright de test fonctionnel ne doit pas être utilisé implicitement pour générer une charge concurrente. Un adaptateur de charge dédié est obligatoire pour l’exécution réelle.
+
+#### LOAD-008 — Sécurité et limites
+
+Un test de charge doit être limité à un environnement explicitement autorisé. Le runner applique des plafonds sur utilisateurs virtuels, débit, durée, volume de données et origines. Les tests de charge sur une production ou une cible non autorisée sont refusés.
+
+Le profil de charge ne contient pas de secret. Les secrets nécessaires sont référencés et injectés uniquement par l’environnement d’exécution.
+
+#### LOAD-009 — Résultats
+
+Le rapport détaillé d’un test de charge contient les métriques et seuils comparés. L’historique synthétique conserve uniquement la date, la réussite et la durée, comme pour les autres tests. Les métriques détaillées sont conservées dans les artefacts de l’exécution selon la politique de conservation.
+
+#### LOAD-010 — Périmètre MVP
+
+Le MVP permet de définir, valider la cohérence, versionner et exporter un test de charge paramétré. L’exécution par un moteur de charge dédié est une capacité activable après le MVP et ne doit pas être présentée comme disponible tant que l’adaptateur correspondant n’est pas installé et vérifié.
+
+#### LOAD-011 — Assistance LLM
+
+Le LLM de conception peut aider à choisir un profil, proposer une charge initiale, identifier les opérations, poser les questions manquantes et suggérer des seuils. Toute valeur proposée doit être confirmée par l’utilisateur. Le LLM ne peut ni lancer une charge ni augmenter les paramètres au-delà des limites administrées.
+
+## 15. Questions ouvertes après le cadrage du MVP
 
 Les points suivants restent à décider pendant les premières tranches TDD :
 
@@ -1402,7 +1737,7 @@ Les points suivants restent à décider pendant les premières tranches TDD :
 7. Quels endpoints LLM seront testés officiellement au MVP ?
 8. Quelle implémentation de politique réseau appliquera l’autorisation explicite des origines dans les environnements Docker, Podman et CI ?
 
-## 15. Traçabilité des besoins initiaux
+## 16. Traçabilité des besoins initiaux
 
 Cette spécification repose sur les besoins explicitement exprimés :
 
