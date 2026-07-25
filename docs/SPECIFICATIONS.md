@@ -235,6 +235,7 @@ Les administrateurs de l’outillage peuvent adapter le vocabulaire et les guide
 - les phrases décrivant les intentions fonctionnelles ;
 - les valeurs de tags autorisées ;
 - les environnements et profils de données disponibles ;
+- les cibles GitLab d’entreprise autorisées pour la publication manuelle ;
 - les aides, exemples et champs obligatoires par contexte.
 
 Chaque entrée de configuration possède un identifiant stable, un libellé visible, une description destinée au métier et, lorsque nécessaire, une représentation technique non visible dans le formulaire.
@@ -249,6 +250,7 @@ config/tags.yaml                 # tags sélectionnables
 config/environments.yaml         # environnements, URLs et origines autorisées
 config/data-profiles.yaml        # profils de données et fixtures
 config/load-profiles.yaml        # profils de charge paramétrés
+config/git-targets.yaml          # instances et dépôts GitLab autorisés
 ```
 
 Un modèle de test peut par exemple déclarer :
@@ -306,6 +308,29 @@ thresholds:
 ```
 
 Les valeurs de `workload` ne peuvent pas dépasser les limites administratives du profil ou de l’environnement.
+
+Une cible GitLab d’entreprise peut par exemple déclarer :
+
+```yaml
+id: enterprise-quality
+label: GitLab entreprise - Qualité
+base_url: https://gitlab.example.internal
+project: quality/web-functional-tests
+default_branch: main
+publication:
+  mode: merge_request
+  branch_prefix: sentinel/
+  destination_path: sentinel-bundle/
+auth:
+  secret_ref: gitlab-enterprise-publisher
+tls:
+  ca_bundle_ref: enterprise-ca
+timeouts:
+  connect_seconds: 10
+  request_seconds: 30
+```
+
+Les valeurs `secret_ref` et `ca_bundle_ref` sont des références résolues par l’application et ne contiennent ni jeton ni certificat privé dans le fichier de configuration.
 
 Le système doit vérifier la configuration au démarrage et signaler les identifiants en doublon, références inconnues ou champs incohérents.
 
@@ -472,6 +497,8 @@ Chaque capture doit pouvoir recevoir :
 - une date et une provenance.
 
 Le système doit conserver le lien entre une capture, l’étape dérivée et la version du test.
+
+Les captures d’écran restent facultatives. Leur absence ne doit pas empêcher la définition, la génération, la validation, l’approbation ou l’export d’un test lorsque les informations textuelles et structurées sont suffisantes.
 
 ### EF-007 — Représentation structurée du test
 
@@ -697,7 +724,7 @@ Chaque test possède une déclaration simple indiquant quand il peut être séle
 
 ### EF-016 — Export et intégration Git
 
-Le système doit guider l’utilisateur lors de l’export en lui faisant choisir un jeu de tests, un environnement, une sélection de tags et un format de sortie. Les commandes techniques sont affichées sous forme de commandes prêtes à copier, mais ne sont pas exigées pour définir le test.
+L’export est une action manuelle et explicite. Le système doit guider l’utilisateur en lui faisant choisir un jeu de tests, un environnement, une sélection de tags et un format de sortie. Les commandes techniques sont affichées sous forme de commandes prêtes à copier, mais ne sont pas exigées pour définir le test.
 
 Le système doit permettre de produire un paquet versionnable contenant :
 
@@ -707,9 +734,73 @@ Le système doit permettre de produire un paquet versionnable contenant :
 - les données d’exemple non secrètes ;
 - un manifeste de versions ;
 - les commandes d’installation et d’exécution ;
-- des modèles GitHub Actions et GitLab CI.
+- des modèles GitHub Actions et GitLab CI ;
+- une documentation fonctionnelle lisible ;
+- une documentation de déploiement pour GitHub Actions ;
+- une documentation de déploiement pour GitLab CI.
 
 L’écriture directe dans un dépôt Git exige une autorisation dédiée et limitée au dépôt concerné. L’export local et l’exécution CLI doivent rester disponibles sans accès Git distant.
+
+### EF-016.1 — Documentation fonctionnelle exportée
+
+Chaque export doit générer une documentation fonctionnelle en Markdown à partir des versions approuvées effectivement incluses dans le jeu de tests. Elle doit être compréhensible par un responsable produit, un fonctionnel métier ou un responsable QA sans lecture du code ni de la conversation de conception.
+
+Cette documentation contient au minimum :
+
+- le nom, l’objectif, le périmètre et la version du jeu de tests ;
+- l’arborescence des suites, sous-suites et tests exportés ;
+- pour chaque test, son objectif, son type, sa description approuvée, ses préconditions, ses données non secrètes, ses étapes et ses résultats attendus ;
+- les `requirements`, `business_rules`, tags et déclarations d’exécution associés ;
+- l’environnement logique ciblé et les dépendances attendues, sans URL sensible ni valeur secrète ;
+- l’état d’approbation, la version et l’empreinte de chaque test ;
+- les références aux captures ou preuves utiles lorsqu’elles existent, sans rendre les captures obligatoires.
+
+Le LLM de conception peut produire la rédaction initiale, mais le contenu exporté doit être reconstruit à partir de la représentation structurée approuvée et contrôlé par schéma. Il ne doit contenir ni hypothèse non confirmée, ni historique de conversation, ni secret, ni résultat d’exécution présenté comme une exigence fonctionnelle. L’utilisateur doit pouvoir prévisualiser la documentation avant de confirmer l’export.
+
+### EF-016.2 — Documentation de déploiement CI/CD exportée
+
+Chaque export doit générer deux guides Markdown distincts, l’un pour GitLab CI et l’autre pour GitHub Actions. Chaque guide doit correspondre exactement au bundle, au runner et aux modèles de pipeline exportés.
+
+Chaque guide contient au minimum :
+
+- les versions minimales et prérequis du runner ;
+- la commande d’installation ou l’image OCI à utiliser, épinglable par version ou digest ;
+- l’emplacement du bundle et la commande d’exécution ;
+- les variables d’environnement requises, avec distinction entre valeurs ordinaires et secrets ;
+- la configuration des variables ou secrets protégés propre à la plateforme ;
+- les déclarations d’exécution prises en charge et leur correspondance avec les événements de pipeline ;
+- la publication des rapports JUnit, journaux, captures et traces ;
+- les permissions, protections de branches ou d’environnements et restrictions réseau minimales ;
+- une procédure de validation du pipeline et les principaux diagnostics d’échec ;
+- la procédure de mise à jour ou de retour à une version antérieure du bundle.
+
+Les guides ne doivent contenir aucune valeur secrète. Une incohérence entre un guide, le manifeste et le modèle de pipeline doit bloquer l’export.
+
+### EF-016.3 — Publication manuelle vers un GitLab d’entreprise
+
+Un administrateur doit pouvoir configurer une ou plusieurs cibles GitLab auto-hébergées ou d’entreprise. Une cible possède au minimum :
+
+- un identifiant stable et un libellé ;
+- l’URL de base HTTPS de l’instance GitLab ;
+- un projet autorisé, identifié par son chemin ou son identifiant GitLab ;
+- une branche par défaut, un préfixe de branche de publication et un chemin de destination dans le dépôt ;
+- un mode de publication autorisé : commit sur une branche dédiée ou création/mise à jour d’une merge request ;
+- une référence vers un secret d’authentification ;
+- les autorités de certification, délais et paramètres de proxy nécessaires, sans désactiver silencieusement la vérification TLS.
+
+La connectivité et les droits de lecture doivent pouvoir être vérifiés séparément sans effectuer d’écriture. Le secret doit être limité au projet et aux opérations nécessaires à la publication.
+
+Depuis l’écran d’export, un utilisateur autorisé doit pouvoir sélectionner une cible configurée puis déclencher manuellement la publication du bundle. Avant confirmation, le système affiche l’instance, le projet, la branche, le chemin, la liste des fichiers et le diff prévu. La publication doit :
+
+- utiliser exactement le bundle prévisualisé et son empreinte ;
+- créer un commit traçable indiquant l’utilisateur, le jeu de tests et sa version ;
+- ne jamais effectuer de `force push` ni écraser silencieusement une modification distante ;
+- refuser un projet, une branche ou un chemin hors des valeurs autorisées ;
+- proposer une nouvelle branche ou signaler un conflit lorsque la branche distante a divergé ;
+- retourner l’identifiant du commit et, le cas échéant, l’URL de la merge request ;
+- enregistrer l’opération et son résultat dans le journal d’audit sans enregistrer le secret.
+
+L’indisponibilité de GitLab ou un échec de publication ne doit pas invalider le bundle exporté localement. L’exécution du bundle reste indépendante de l’API GitLab.
 
 ### EF-017 — Catalogue de phrases d’intention fonctionnelle
 
@@ -813,6 +904,8 @@ Les mots de passe, jetons et clés doivent être stockés dans un mécanisme de 
 
 En CI, les secrets proviennent des mécanismes protégés de GitHub, GitLab ou de l’orchestrateur choisi. Aucun secret ne doit être requis dans un fichier suivi par Git.
 
+Les jetons utilisés pour publier vers un GitLab d’entreprise sont référencés depuis le mécanisme de secrets de l’application. Ils doivent être limités au projet configuré et aux droits strictement nécessaires à la lecture du dépôt, à la création d’un commit et, si ce mode est autorisé, à la gestion d’une merge request. Leur rotation ou révocation ne doit pas nécessiter de modifier un bundle exporté.
+
 ### ENF-005 — Isolation d’exécution
 
 Le navigateur et le code de test généré ou personnalisé sont considérés comme non fiables. Dans le MVP, ils doivent s’exécuter dans un conteneur runner distinct de l’application de conception avec les garanties minimales suivantes :
@@ -871,6 +964,8 @@ L’intégration ne doit pas dépendre d’une API propriétaire de GitHub ou Gi
 
 Les adaptateurs GitHub Actions et GitLab CI sont des modèles de commodité construits sur ce contrat portable.
 
+L’adaptateur de publication manuelle peut utiliser l’API d’une instance GitLab configurée. Cette dépendance concerne uniquement le transfert du bundle vers le dépôt ; elle ne doit jamais être nécessaire à l’exécution locale ou en CI d’un bundle déjà exporté.
+
 ### ENF-012 — Vérifications système des préconditions
 
 Avant toute exécution, le runner doit effectuer et journaliser un contrôle déterministe de la cible, de l’environnement, des données, des secrets référencés, du navigateur, des ressources et du réseau autorisé. Un contrôle impossible ou échoué doit empêcher l’exécution et produire un résultat explicite.
@@ -886,6 +981,10 @@ Regroupe des jeux de tests, une cible, des profils autorisés et une politique d
 ### Jeu de tests
 
 Regroupe un objectif, un type, une cible, une déclaration d’exécution, des tags et une arborescence de tests. Il peut être exporté et exécuté indépendamment.
+
+### Cible GitLab d’entreprise
+
+Décrit une instance GitLab autorisée, un projet, une stratégie de branche, un chemin de destination, un mode de publication et une référence de secret. Elle ne contient jamais le jeton d’accès lui-même.
 
 ### Nœud hiérarchique
 
@@ -1032,9 +1131,9 @@ sentinelfonctionnelle/
 │   ├── llm/           # Adaptateurs LLM de conception et d’exécution
 │   ├── persistence/   # SQLite puis autres implémentations
 │   ├── artifacts/     # Volume local puis stockage objet
-│   ├── configuration/ # Modèles, phrases, tags et environnements
+│   ├── configuration/ # Modèles, phrases, tags, environnements et cibles Git
 │   ├── browser/       # Playwright pour la validation interactive
-│   └── git/           # Export et intégrations Git optionnelles
+│   └── git/           # Export local et publication manuelle vers GitLab
 ├── web/               # API FastAPI, vues et ressources statiques
 ├── generation/        # Génération déterministe d’un candidat depuis le brouillon structuré
 └── security/          # Politiques de destination, secrets et autorisations
@@ -1092,6 +1191,13 @@ sentinel-bundle/
 ├── fixtures/
 ├── data/
 ├── load-profiles/     # Profils de charge versionnés, sans moteur embarqué dans le MVP
+├── docs/
+│   ├── functional.md
+│   ├── deploy-gitlab-ci.md
+│   └── deploy-github-actions.md
+├── ci/
+│   ├── gitlab-ci.yml
+│   └── github-actions.yml
 ├── requirements.lock
 ├── pytest.ini
 └── README.md
@@ -1109,6 +1215,7 @@ Le manifeste indique :
 - les tags et chemins hiérarchiques ;
 - la déclaration d’exécution de chaque test ;
 - les politiques d’artefacts et d’usage du LLM d’exécution ;
+- les fichiers de documentation et modèles CI associés ;
 - une empreinte de chaque fichier et une empreinte globale du bundle ;
 - l’état d’approbation et l’empreinte validée individuellement.
 
@@ -1250,6 +1357,23 @@ Le modèle utilise `on_merge_request` pour un pipeline de merge request. Les job
 
 Les variables sensibles utilisent les variables CI/CD masquées et protégées de GitLab et ne sont disponibles que sur les branches ou environnements protégés. Les pipelines de merge requests externes ou non approuvées n’accèdent à aucune variable protégée ni cible sensible. L’exécuteur GitLab doit lui-même être non privilégié, sans montage de socket de runtime, et appliquer les limites de ressources et la politique réseau définies par `ENF-005`.
 
+### 10.10.1 Publication vers un GitLab d’entreprise
+
+La publication manuelle utilise un port applicatif indépendant du générateur et un adaptateur GitLab remplaçable. La configuration versionnable contient uniquement les cibles et règles non secrètes ; le jeton est résolu au moment de l’action depuis le mécanisme de secrets.
+
+Le flux est le suivant :
+
+1. l’utilisateur prépare et prévisualise un export local complet ;
+2. il sélectionne une cible GitLab administrée ;
+3. l’application vérifie la cible, les droits, la branche distante et le chemin autorisé ;
+4. elle calcule le diff entre le bundle prévisualisé et le contenu distant ;
+5. l’utilisateur confirme explicitement la publication ;
+6. l’adaptateur crée ou met à jour une branche sans réécriture forcée de l’historique ;
+7. il crée ou met à jour une merge request uniquement si le profil l’autorise ;
+8. l’application conserve l’empreinte publiée, l’identifiant du commit, l’éventuelle merge request et le résultat dans le journal d’audit.
+
+L’adaptateur doit accepter les URL d’instances auto-hébergées, les autorités de certification d’entreprise configurées et les proxys administrés. Il doit refuser les redirections vers une autre origine, les certificats invalides non approuvés et toute cible sortant du projet configuré.
+
 ### 10.11 Évolutivité après le MVP
 
 Sans modifier les contrats du domaine et du bundle, une version ultérieure pourra :
@@ -1312,7 +1436,10 @@ Le MVP est livré en deux tranches obligatoires. La première prouve la valeur f
 9. l’évaluation des seuils de tests `performance` dans les rapports ;
 10. la définition, la validation, le versionnement et l’export d’un test `load` paramétré, sans exécution par un moteur de charge dans le MVP ;
 11. la prise en compte de la déclaration d’exécution du test ;
-12. une démonstration CI sans secret sur une cible contrôlée.
+12. une démonstration CI sans secret sur une cible contrôlée ;
+13. la génération et la prévisualisation d’une documentation fonctionnelle lisible pour le jeu de tests exporté ;
+14. la génération de guides de déploiement cohérents avec les modèles GitLab CI et GitHub Actions exportés ;
+15. la configuration d’une cible GitLab d’entreprise et la publication manuelle d’un bundle sur une branche dédiée, avec création optionnelle d’une merge request.
 
 ### 11.3 Usage du LLM dans le MVP
 
@@ -1323,6 +1450,7 @@ Le LLM de conception est utilisé pour :
 - synthétiser la description ;
 - suggérer des localisateurs ;
 - générer le code initial ;
+- rédiger la proposition initiale de documentation fonctionnelle à partir des données approuvées ;
 - proposer des questions à partir d’un modèle de test ;
 - traduire les préconditions textuelles en dépendances candidates ;
 - proposer des jeux de données, types, tags, `requirements` et `business_rules` ;
@@ -1378,8 +1506,10 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 | 12 | `ACC-012` | 28 | `ACC-028` | 44 | `ACC-044` |
 | 13 | `ACC-013` | 29 | `ACC-029` | 45 | `ACC-045` |
 | 14 | `ACC-014` | 30 | `ACC-030` | 46 | `ACC-046` |
-| 15 | `ACC-015` | 31 | `ACC-031` |  |  |
-| 16 | `ACC-016` | 32 | `ACC-032` |  |  |
+| 15 | `ACC-015` | 31 | `ACC-031` | 47 | `ACC-047` |
+| 16 | `ACC-016` | 32 | `ACC-032` | 48 | `ACC-048` |
+|  |  |  |  | 49 | `ACC-049` |
+|  |  |  |  | 50 | `ACC-050` |
 
 1. L’interface seule démarre avec une image OCI, un volume et une configuration documentée ; le MVP complet démarre avec le fichier Compose et son runner isolé.
 2. Un utilisateur crée une arborescence contenant au moins une suite, une sous-suite et deux tests.
@@ -1427,6 +1557,10 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 44. Un test `load` permet de saisir sans YAML son profil, ses opérations, ses utilisateurs virtuels, son débit, sa durée, sa montée en charge et ses seuils.
 45. Les paramètres de charge dépassant les limites administratives ou de l’environnement sont refusés.
 46. Le MVP valide, versionne et exporte un profil de charge, mais refuse de le présenter comme exécuté sans adaptateur de charge vérifié.
+47. Un export manuel contient une documentation fonctionnelle Markdown correspondant aux seules versions approuvées du jeu de tests, lisible sans consulter le code ou la conversation et dépourvue de secret.
+48. Le bundle contient deux guides de déploiement distincts, GitLab CI et GitHub Actions, dont les commandes, variables, secrets référencés, rapports et versions correspondent au manifeste et aux modèles de pipeline exportés.
+49. Un administrateur configure une instance GitLab d’entreprise, vérifie sa connectivité sans écriture et limite la cible à un projet, une stratégie de branche, un chemin et une référence de secret.
+50. Un utilisateur autorisé prévisualise puis confirme manuellement la publication du bundle exact vers GitLab ; un commit traçable ou une merge request est créé sans `force push`, tandis qu’une divergence distante ou une cible hors périmètre bloque l’écriture et produit un résultat explicite.
 
 ## 13. Stratégie de validation et de développement
 
@@ -1454,6 +1588,7 @@ Les tests doivent couvrir au minimum :
 - les modèles de tests et leurs questions de clarification ;
 - le catalogue de phrases d’intention et sa configuration ;
 - la validation des fichiers de configuration administrables ;
+- les cibles GitLab d’entreprise, leurs restrictions de projet, branche, chemin, TLS et référence de secret ;
 - les préconditions textuelles, leur confirmation et la résolution codée des dépendances ;
 - le blocage des contrôles système échoués ;
 - les jeux de données, profils d’environnement et leurs références ;
@@ -1472,6 +1607,9 @@ Les tests doivent couvrir au minimum :
 - l’export, les limites de sécurité, les résultats et l’assistance LLM des tests de charge (`LOAD-007` à `LOAD-011`) ;
 - l’invalidation de la validation après toute modification du modèle ou du code ;
 - le contrat du bundle ;
+- la génération de la documentation fonctionnelle et son absence d’éléments non approuvés ou secrets ;
+- la cohérence des guides de déploiement GitLab CI et GitHub Actions avec le manifeste et les modèles exportés ;
+- la prévisualisation, la confirmation, l’audit et les conflits de publication manuelle vers GitLab ;
 - les codes de sortie et rapports du runner ;
 - l’exécution E2E sur une cible de démonstration contrôlée ;
 - les modèles GitHub Actions et GitLab CI.
@@ -1488,7 +1626,7 @@ Cette section complète les exigences `EF-*` et `ENF-*`. Les identifiants `GEN-*
 | Exigences non fonctionnelles | `ENF-001` à `ENF-012` | sécurité, isolation, portabilité, observabilité et CI | cadrées |
 | Génération | `GEN-001` à `GEN-014` | modèle intermédiaire, traduction, code, personnalisation et empreintes | cadrées ; implémentation à suivre |
 | Charge | `LOAD-001` à `LOAD-011` | profils, paramètres, seuils, export et futur adaptateur de charge | définition/export MVP ; exécution post-MVP |
-| Acceptation | `ACC-001` à `ACC-046` | vérifications observables du MVP | à transformer en tests |
+| Acceptation | `ACC-001` à `ACC-050` | vérifications observables du MVP | à transformer en tests |
 
 Une exigence ne peut être marquée comme implémentée que lorsqu’un test ou une démonstration vérifie son comportement. Les statuts de développement (`à faire`, `en cours`, `implémentée`, `vérifiée`) doivent être suivis dans l’outil de gestion du projet, sans modifier l’identifiant stable de la spécification.
 
@@ -1748,6 +1886,8 @@ Cette spécification repose sur les besoins explicitement exprimés :
 - lancer les tests individuellement pendant leur conception ;
 - mettre à jour automatiquement une description synthétique et factuelle ;
 - générer du code réutilisable, maintenable et personnalisable ;
+- générer une documentation fonctionnelle lisible et des guides de déploiement GitLab CI et GitHub Actions avec chaque export ;
+- publier manuellement un jeu de tests vers une cible GitLab d’entreprise administrée ;
 - exécuter ce code indépendamment de la conception ;
 - réserver le LLM d’exécution à des cas exceptionnels ;
 - configurer séparément les LLM de conception et d’exécution ;
