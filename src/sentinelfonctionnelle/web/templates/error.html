@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Opération refusée · SentinelFonctionnelle{% endblock %}
+{% block content %}
+  <section class="panel error-panel">
+    <p class="eyebrow">Opération refusée</p>
+    <h1>La modification n’a pas été appliquée.</h1>
+    <p>{{ message }}</p>
+    <button type="button" onclick="history.back()">Revenir au formulaire</button>
+  </section>
+{% endblock %}

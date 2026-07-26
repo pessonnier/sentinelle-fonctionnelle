@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}SentinelFonctionnelle{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="/">
+        <span class="brand-mark" aria-hidden="true">S</span>
+        <span>
+          <strong>SentinelFonctionnelle</strong>
+          <small>plans et cas de test</small>
+        </span>
+      </a>
+      <span class="mode-badge">Mode local</span>
+    </header>
+    <main class="page">
+      {% block content %}{% endblock %}
+    </main>
+    <footer>
+      Données persistées localement dans SQLite ·
+      <a href="/health">santé</a> · <a href="/api/docs">API</a>
+    </footer>
+  </body>
+</html>

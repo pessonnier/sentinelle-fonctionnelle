@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% block title %}{{ project.name }} · SentinelFonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span><span aria-current="page">{{ project.name }}</span>
+  </nav>
+
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Projet</p>
+      <h1>{{ project.name }}</h1>
+      <p class="lead">{{ project.description or "Aucune description." }}</p>
+    </div>
+    <dl class="project-meta">
+      <div><dt>Cible</dt><dd>{{ project.web_target }}</dd></div>
+      <div><dt>Sécurité</dt><dd>{{ project.security_policy }}</dd></div>
+    </dl>
+  </header>
+
+  <div class="workspace-layout">
+    <section class="workspace-main" aria-labelledby="plans-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Niveau 2</p>
+          <h2 id="plans-title">Plans de test</h2>
+        </div>
+        <span class="count-badge">{{ plans|length }}</span>
+      </div>
+
+      {% if plans %}
+        <div class="plan-list">
+          {% for item in plans %}
+            <a class="plan-row" href="/projects/{{ project.id }}/test-plans/{{ item.plan.id }}">
+              <span class="plan-index">{{ loop.index }}</span>
+              <span class="plan-summary">
+                <strong>{{ item.plan.name }}</strong>
+                <small>{{ item.plan.objective }}</small>
+              </span>
+              <span class="plan-stats">
+                {{ item.suite_count }} suite{{ "s" if item.suite_count != 1 else "" }}
+                · {{ item.case_count }} cas
+              </span>
+              <span class="row-arrow" aria-hidden="true">→</span>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>Aucun plan de test</strong>
+          <span>Définissez le périmètre et les critères du premier plan.</span>
+        </div>
+      {% endif %}
+    </section>
+
+    <aside class="form-panel">
+      <p class="eyebrow">Nouveau plan</p>
+      <h2>Cadre de test</h2>
+      <form action="/projects/{{ project.id }}/test-plans" method="post">
+        <label>
+          Nom du plan
+          <input name="name" required maxlength="120" placeholder="Validation de la commande">
+          <small>Nom visible dans l’arborescence et les exports.</small>
+        </label>
+        <label>
+          Objectif
+          <textarea name="objective" rows="2" required placeholder="Valider le parcours de commande"></textarea>
+        </label>
+        <label>
+          Périmètre
+          <textarea name="scope" rows="3" required placeholder="Inclus : panier et paiement&#10;Exclus : remboursement"></textarea>
+        </label>
+        <label>
+          Approche
+          <textarea name="approach" rows="2" required placeholder="Tests d’acceptation orientés risques"></textarea>
+        </label>
+        <label>
+          Cible ou environnement
+          <input name="target" required value="{{ project.web_target }}">
+        </label>
+        <div class="two-columns">
+          <label>
+            Type par défaut
+            <select name="test_type">
+              <option value="acceptance">Acceptation</option>
+              <option value="smoke">Smoke</option>
+              <option value="sanity">Sanity</option>
+              <option value="regression">Régression</option>
+              <option value="e2e">E2E</option>
+              <option value="performance">Performance</option>
+              <option value="load">Charge</option>
+            </select>
+          </label>
+          <label>
+            Tags
+            <input name="tags" placeholder="commande, critique">
+          </label>
+        </div>
+        <details class="form-details">
+          <summary>Critères, risques et organisation</summary>
+          <div class="form-stack">
+            <label>Risques<textarea name="risks" rows="2" placeholder="Paiement débité sans commande"></textarea></label>
+            <label>Critères d’entrée<textarea name="entry_criteria" rows="2" placeholder="Environnement de recette disponible"></textarea></label>
+            <label>Critères de sortie<textarea name="exit_criteria" rows="2" placeholder="Tous les cas critiques réussissent"></textarea></label>
+            <label>Ressources<input name="resources" placeholder="QA, Product Owner"></label>
+            <label>Contraintes<input name="constraints" placeholder="Données anonymisées"></label>
+            <label>Ordonnancement<input name="schedule" placeholder="Avant chaque livraison"></label>
+          </div>
+        </details>
+        <button type="submit">Créer le plan et organiser les cas</button>
+      </form>
+    </aside>
+  </div>
+{% endblock %}

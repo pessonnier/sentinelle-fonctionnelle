@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}{{ case.name }} · SentinelFonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span>
+    <a href="/projects/{{ project.id }}">{{ project.name }}</a><span>/</span>
+    <a href="/projects/{{ project.id }}/test-plans/{{ plan.id }}">{{ plan.name }}</a><span>/</span>
+    {% for container in container_path %}
+      <a href="/projects/{{ project.id }}/test-plans/{{ plan.id }}#node-{{ container.id }}">{{ container.name }}</a><span>/</span>
+    {% endfor %}
+    <span aria-current="page">{{ case.name }}</span>
+  </nav>
+
+  <header class="page-heading case-heading">
+    <div>
+      <p class="eyebrow">Cas de test · {{ parent.kind.label if parent else "Parent manquant" }}</p>
+      <h1>{{ case.name }}</h1>
+      <p class="lead">{{ path|join(" / ") }}</p>
+    </div>
+    <div class="case-status">
+      <span class="status-label">{{ "Défini" if case.specification else "À définir" }}</span>
+      {% if case.specification %}<strong>Version {{ case.specification.version }}</strong>{% endif %}
+    </div>
+  </header>
+
+  <nav class="section-tabs" aria-label="Sections du cas de test">
+    <a href="#context">Contexte</a>
+    <a href="#steps">Étapes de test</a>
+    <a href="#data">Données de test</a>
+    <a href="#expected-results">Résultats attendus</a>
+  </nav>
+
+  {% set specification = case.specification %}
+  <form class="case-form" action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/specification" method="post">
+    <section id="context" class="editor-section">
+      <header>
+        <span class="section-number">1</span>
+        <div><h2>Contexte</h2><p>Objectif, acteur et conditions du cas.</p></div>
+      </header>
+      <div class="form-grid">
+        <label class="wide">
+          Objectif du cas
+          <textarea name="objective" rows="2" required>{{ specification.objective if specification else "" }}</textarea>
+        </label>
+        <label>
+          Acteur
+          <input name="actor_name" required value="{{ specification.actor if specification else '' }}" placeholder="Client authentifié">
+        </label>
+        <label>
+          Environnement
+          <input name="environment" value="{{ specification.environment if specification else plan.target }}">
+        </label>
+        <label>
+          Type de test
+          <input value="{{ case.test_type }}" readonly aria-readonly="true">
+        </label>
+        <label class="wide">Préconditions<textarea name="preconditions" rows="3">{{ specification.preconditions|join("\n") if specification else case.preconditions|join("\n") }}</textarea></label>
+        <label>Exigences<textarea name="requirements" rows="3">{{ specification.requirements|join("\n") if specification else "" }}</textarea></label>
+        <label>Règles métier<textarea name="business_rules" rows="3">{{ specification.business_rules|join("\n") if specification else "" }}</textarea></label>
+        <label class="wide">Postconditions<textarea name="postconditions" rows="2">{{ specification.postconditions|join("\n") if specification else case.postconditions|join("\n") }}</textarea></label>
+      </div>
+    </section>
+
+    <section id="steps" class="editor-section">
+      <header>
+        <span class="section-number">2</span>
+        <div><h2>Étapes de test</h2><p>Une action observable par ligne.</p></div>
+      </header>
+      <div class="form-grid">
+        <label>
+          Mode de saisie
+          <select name="style">
+            {% for style in specification_styles %}
+              <option value="{{ style.value }}" {% if specification and specification.style == style %}selected{% endif %}>{{ style.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Déclaration CI
+          <input name="execution_declaration" value="{{ specification.execution_declaration|join('\n') if specification else (case.execution_declaration|join('\n') or 'manual') }}">
+        </label>
+        <label class="wide">
+          Actions pas-à-pas
+          <textarea name="step_actions" rows="6" placeholder="Ouvrir la page de connexion&#10;Saisir les identifiants&#10;Valider le formulaire">{% if specification and specification.style.value == "steps" %}{% for clause in specification.clauses %}{{ clause.text }}{% if not loop.last %}
+{% endif %}{% endfor %}{% endif %}</textarea>
+          <small>Utilisé avec le mode Pas-à-pas. L’ordre des lignes est conservé.</small>
+        </label>
+        <label class="wide">
+          Scénario structuré pour les autres modes
+          <textarea name="source_text" rows="6" placeholder="Étant donné…&#10;Quand…&#10;Alors…">{{ specification.source_text if specification and specification.style.value != "steps" else "" }}</textarea>
+          <small>Given/When/Then, tableau d’exemples ou checklist.</small>
+        </label>
+      </div>
+    </section>
+
+    <section id="data" class="editor-section">
+      <header>
+        <span class="section-number">3</span>
+        <div><h2>Données de test</h2><p>Références non secrètes nécessaires au cas.</p></div>
+      </header>
+      <label>
+        Jeux de données référencés
+        <textarea name="data_sets" rows="4" placeholder="client-standard&#10;panier-un-produit">{{ specification.data_sets|join("\n") if specification else "" }}</textarea>
+      </label>
+      {% if case.data_binding %}
+        <div class="binding-summary">
+          <strong>{{ case.data_binding.data_set.filename }}</strong>
+          <span>
+            {{ case.data_binding.data_set.rows|length }} cas ·
+            {{ case.data_binding.mode.label }} ·
+            {% set batch_count = case.data_binding.plan.batches|length %}{{ batch_count }} {{ "lot" if batch_count == 1 else "lots" }} ·
+            Version {{ case.data_binding.version }}
+          </span>
+        </div>
+        <div class="data-preview" tabindex="0" aria-label="Aperçu des données de test">
+          <table>
+            <thead>
+              <tr>
+                <th>Cas</th>
+                {% for header in case.data_binding.data_set.headers %}<th>{{ header }}</th>{% endfor %}
+              </tr>
+            </thead>
+            <tbody>
+              {% for execution_case in case.data_binding.plan.cases[:5] %}
+                <tr>
+                  <th>{{ execution_case.source_index }}</th>
+                  {% for _, value in execution_case.values %}<td>{{ value }}</td>{% endfor %}
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="section-note">Aucun fichier tabulaire associé. Cette section peut rester vide.</p>
+      {% endif %}
+    </section>
+
+    <section id="expected-results" class="editor-section">
+      <header>
+        <span class="section-number">4</span>
+        <div><h2>Résultats attendus</h2><p>Chaque étape pas-à-pas doit avoir un résultat observable.</p></div>
+      </header>
+      <label>
+        Résultats, dans le même ordre que les étapes
+        <textarea name="expected_results" rows="6" placeholder="Le formulaire est visible&#10;Les champs contiennent les valeurs&#10;Le tableau de bord apparaît">{% for result in expected_results %}{{ result }}{% if not loop.last %}
+{% endif %}{% endfor %}</textarea>
+      </label>
+      {% if expected_results %}
+        <ol class="result-list">
+          {% for result in expected_results %}<li>{{ result }}</li>{% endfor %}
+        </ol>
+      {% endif %}
+    </section>
+
+    <div class="form-actions">
+      <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}">Retour au plan</a>
+      <button type="submit">Enregistrer le cas de test</button>
+    </div>
+  </form>
+
+  <section class="editor-section data-upload">
+    <header>
+      <span class="section-number">+</span>
+      <div><h2>Fichier de données</h2><p>CSV UTF-8 ou XLSX, analysé sans exécuter de formule.</p></div>
+    </header>
+    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/data-binding" method="post" enctype="multipart/form-data">
+      <div class="form-grid">
+        <label class="wide">Fichier<input name="data_file" type="file" accept=".csv,.xlsx" required></label>
+        <label>
+          Itération
+          <select name="mode">
+            {% for mode in data_iteration_modes %}<option value="{{ mode.value }}">{{ mode.label }}</option>{% endfor %}
+          </select>
+        </label>
+        <label>Concurrence maximale<input name="max_parallelism" type="number" min="1" max="20" value="1"></label>
+        <label>Graine aléatoire<input name="random_seed" type="number" value="0"></label>
+        <label>Nombre de cas<input name="sample_count" type="number" min="1" placeholder="toutes les lignes"></label>
+      </div>
+      <button type="submit">Analyser et associer</button>
+    </form>
+  </section>
+{% endblock %}
