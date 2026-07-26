@@ -2,7 +2,7 @@
 name: functional-test-design
 description: "Use when an LLM must guide a business user to specify a functional test set without YAML, clarify the test, and produce a validated structured definition."
 version: 1.0.0
-author: SentinelFonctionnelle
+author: SentinelleFonctionnelle
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

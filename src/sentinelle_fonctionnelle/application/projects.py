@@ -13,7 +13,7 @@ from os import PathLike
 from typing import Protocol
 from uuid import UUID
 
-from sentinelfonctionnelle.domain import (
+from sentinelle_fonctionnelle.domain import (
     DataIterationMode,
     ExecutionResultSummary,
     FunctionalTestSpecification,
@@ -105,7 +105,7 @@ class ProjectApplication:
     def in_memory(cls, mode: ApplicationMode) -> ProjectApplication:
         """Composition de développement conforme au même port que les bases."""
 
-        from sentinelfonctionnelle.adapters.persistence.in_memory import (
+        from sentinelle_fonctionnelle.adapters.persistence.in_memory import (
             InMemoryProjectRepository,
         )
 
@@ -115,7 +115,7 @@ class ProjectApplication:
     def sqlite(cls, database: str | PathLike[str]) -> ProjectApplication:
         """Compose le mode local avec une base SQLite migrée."""
 
-        from sentinelfonctionnelle.adapters.persistence.sqlite import (
+        from sentinelle_fonctionnelle.adapters.persistence.sqlite import (
             SQLiteProjectRepository,
         )
 

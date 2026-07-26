@@ -8,7 +8,7 @@ import os
 from collections.abc import Sequence
 from pathlib import Path
 
-from sentinelfonctionnelle.application import (
+from sentinelle_fonctionnelle.application import (
     ApplicationMode,
     build_deployment_demo,
     build_hierarchy_demo,
@@ -17,7 +17,7 @@ from sentinelfonctionnelle.application import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="sentinelfonctionnelle")
+    parser = argparse.ArgumentParser(prog="sentinelle-fonctionnelle")
     subcommands = parser.add_subparsers(dest="command", required=True)
     subcommands.add_parser(
         "demo-hierarchy",
@@ -53,21 +53,33 @@ def build_parser() -> argparse.ArgumentParser:
     serve.add_argument(
         "--mode",
         choices=[mode.value for mode in ApplicationMode],
-        help="mode de déploiement (défaut : SENTINEL_MODE ou local)",
+        help=(
+            "mode de déploiement "
+            "(défaut : SENTINELLE_FONCTIONNELLE_MODE ou local)"
+        ),
     )
     serve.add_argument(
         "--database",
         type=Path,
-        help="fichier SQLite (défaut : SENTINEL_DATABASE ou data/...)",
+        help=(
+            "fichier SQLite "
+            "(défaut : SENTINELLE_FONCTIONNELLE_DATABASE ou data/...)"
+        ),
     )
     serve.add_argument(
         "--host",
-        help="adresse d'écoute (défaut : SENTINEL_HOST ou 127.0.0.1)",
+        help=(
+            "adresse d'écoute "
+            "(défaut : SENTINELLE_FONCTIONNELLE_HOST ou 127.0.0.1)"
+        ),
     )
     serve.add_argument(
         "--port",
         type=int,
-        help="port HTTP (défaut : SENTINEL_PORT ou 8000)",
+        help=(
+            "port HTTP "
+            "(défaut : SENTINELLE_FONCTIONNELLE_PORT ou 8000)"
+        ),
     )
     return parser
 
@@ -110,7 +122,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
     if arguments.command == "serve":
-        from sentinelfonctionnelle.web import (
+        from sentinelle_fonctionnelle.web import (
             ServerSettings,
             UnsupportedDeploymentMode,
             create_web_app,
@@ -118,13 +130,15 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         environment = dict(os.environ)
         if arguments.mode is not None:
-            environment["SENTINEL_MODE"] = arguments.mode
+            environment["SENTINELLE_FONCTIONNELLE_MODE"] = arguments.mode
         if arguments.database is not None:
-            environment["SENTINEL_DATABASE"] = str(arguments.database)
+            environment["SENTINELLE_FONCTIONNELLE_DATABASE"] = str(
+                arguments.database
+            )
         if arguments.host is not None:
-            environment["SENTINEL_HOST"] = arguments.host
+            environment["SENTINELLE_FONCTIONNELLE_HOST"] = arguments.host
         if arguments.port is not None:
-            environment["SENTINEL_PORT"] = str(arguments.port)
+            environment["SENTINELLE_FONCTIONNELLE_PORT"] = str(arguments.port)
         try:
             settings = ServerSettings.from_environment(
                 environment,

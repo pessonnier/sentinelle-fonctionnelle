@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from typing import Any
 
-from sentinelfonctionnelle.application.projects import (
+from sentinelle_fonctionnelle.application.projects import (
     ApplicationMode,
     AuthenticatedIdentity,
     ProjectApplication,
 )
-from sentinelfonctionnelle.domain import NodeKind
+from sentinelle_fonctionnelle.domain import NodeKind
 
 
 def build_deployment_demo(

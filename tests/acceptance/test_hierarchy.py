@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from sentinelfonctionnelle.domain.hierarchy import HierarchyError, NodeKind, Project
+from sentinelle_fonctionnelle.domain.hierarchy import HierarchyError, NodeKind, Project
 
 
 class HierarchyAcceptanceTests(unittest.TestCase):

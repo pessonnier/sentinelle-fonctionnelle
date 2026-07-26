@@ -2,7 +2,7 @@
 name: functional-test-generation
 description: "Use when converting a confirmed functional-test definition into a deterministic Playwright candidate artifact, preserving customizations and requiring exact validation before approval."
 version: 1.0.0
-author: SentinelFonctionnelle
+author: SentinelleFonctionnelle
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

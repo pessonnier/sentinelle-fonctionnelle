@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light">
-  <title>SentinelFonctionnelle — tutoriel du mode local</title>
+  <title>Sentinelle Fonctionnelle — tutoriel du mode local</title>
   <style>
     :root {
       --ink: #172033;
@@ -520,7 +520,7 @@
 
   <header class="topbar">
     <div class="topbar-inner">
-      <div class="brand">SentinelFonctionnelle</div>
+      <div class="brand">Sentinelle Fonctionnelle</div>
       <div class="version">Tutoriel local · 0.1.0.dev0 · vérifié le 26 juillet 2026</div>
     </div>
   </header>
@@ -662,25 +662,25 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><code>SENTINEL_MODE</code> / <code>--mode</code></td>
+                  <td><code>SENTINELLE_FONCTIONNELLE_MODE</code> / <code>--mode</code></td>
                   <td>Serveur</td>
                   <td><code>local</code> par défaut. <code>online</code> est refusé tant que ses adaptateurs manquent.</td>
                   <td>Non</td>
                 </tr>
                 <tr>
-                  <td><code>SENTINEL_DATABASE</code> / <code>--database</code></td>
+                  <td><code>SENTINELLE_FONCTIONNELLE_DATABASE</code> / <code>--database</code></td>
                   <td>Persistance locale</td>
-                  <td><code>data/sentinelfonctionnelle.db</code>, relatif à la racine de lancement.</td>
+                  <td><code>data/sentinelle_fonctionnelle.db</code>, relatif à la racine de lancement.</td>
                   <td>Non</td>
                 </tr>
                 <tr>
-                  <td><code>SENTINEL_HOST</code> / <code>--host</code></td>
+                  <td><code>SENTINELLE_FONCTIONNELLE_HOST</code> / <code>--host</code></td>
                   <td>Serveur local</td>
                   <td><code>127.0.0.1</code>. Ne pas utiliser <code>0.0.0.0</code> pour ce prototype.</td>
                   <td>Non</td>
                 </tr>
                 <tr>
-                  <td><code>SENTINEL_PORT</code> / <code>--port</code></td>
+                  <td><code>SENTINELLE_FONCTIONNELLE_PORT</code> / <code>--port</code></td>
                   <td>Serveur local</td>
                   <td><code>8000</code>, entier compris entre 1 et 65535.</td>
                   <td>Non</td>
@@ -703,14 +703,14 @@
           </p>
 
           <h3>Windows PowerShell</h3>
-          <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli serve `
-  --database ".\data\sentinelfonctionnelle.db" `
+          <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli serve `
+  --database ".\data\sentinelle_fonctionnelle.db" `
   --host 127.0.0.1 `
   --port 8000</code></pre>
 
           <h3>Linux ou macOS</h3>
-          <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli serve \
-  --database "./data/sentinelfonctionnelle.db" \
+          <pre><code>./.venv/bin/python -m sentinelle_fonctionnelle.cli serve \
+  --database "./data/sentinelle_fonctionnelle.db" \
   --host 127.0.0.1 \
   --port 8000</code></pre>
 
@@ -724,7 +724,7 @@
           <h3>Arrêter et nettoyer</h3>
           <p>
             Revenir au terminal et presser <kbd>Ctrl</kbd>+<kbd>C</kbd>.
-            Conserver <code>data/sentinelfonctionnelle.db</code> pour retrouver
+            Conserver <code>data/sentinelle_fonctionnelle.db</code> pour retrouver
             les projets au prochain lancement. Pour repartir à zéro, arrêter
             d’abord le serveur, sauvegarder si nécessaire, puis supprimer
             explicitement ce seul fichier.
@@ -950,9 +950,9 @@ chloe@example.invalid;standard;0</code></pre>
               <h3>Créer et déplacer un cas de test</h3>
               <p><strong>Objectif :</strong> construire une hiérarchie et vérifier qu’un déplacement conserve l’identité et l’historique.</p>
               <p><strong>Windows</strong></p>
-              <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-hierarchy</code></pre>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli demo-hierarchy</code></pre>
               <p><strong>POSIX</strong></p>
-              <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli demo-hierarchy</code></pre>
+              <pre><code>./.venv/bin/python -m sentinelle_fonctionnelle.cli demo-hierarchy</code></pre>
               <p class="result">
                 Observer <code>"node_count": 4</code>,
                 <code>"case_count": 2</code> et deux identifiants identiques
@@ -969,9 +969,9 @@ chloe@example.invalid;standard;0</code></pre>
               <h3>Exercer le contrat du mode local</h3>
               <p><strong>Objectif :</strong> créer plusieurs projets avec l’identité locale implicite et le même cœur applicatif que le mode en ligne.</p>
               <p><strong>Windows</strong></p>
-              <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-deployment --mode local</code></pre>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli demo-deployment --mode local</code></pre>
               <p><strong>POSIX</strong></p>
-              <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli demo-deployment --mode local</code></pre>
+              <pre><code>./.venv/bin/python -m sentinelle_fonctionnelle.cli demo-deployment --mode local</code></pre>
               <p class="result">
                 Observer les projets « Projet principal » et « Projet
                 secondaire », puis le chemin du cas de connexion.
@@ -989,11 +989,11 @@ chloe@example.invalid;standard;0</code></pre>
               <p><strong>Windows PowerShell</strong></p>
               <pre><code>New-Item -ItemType Directory -Force ".\data" | Out-Null
 $database = ".\data\tutorial-$(Get-Date -Format yyyyMMdd-HHmmss).db"
-.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-persistence --database $database</code></pre>
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli demo-persistence --database $database</code></pre>
               <p><strong>Linux ou macOS</strong></p>
               <pre><code>mkdir -p ./data
 database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
-./.venv/bin/python -m sentinelfonctionnelle.cli demo-persistence --database "$database"</code></pre>
+./.venv/bin/python -m sentinelle_fonctionnelle.cli demo-persistence --database "$database"</code></pre>
               <p class="result">
                 Observer <code>"project_count": 2</code>,
                 <code>"identity_preserved": true</code>,
@@ -1026,7 +1026,7 @@ database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
           <p class="eyebrow">Aide</p>
           <h2>Résoudre les problèmes fréquents</h2>
           <details>
-            <summary><code>No module named sentinelfonctionnelle</code></summary>
+            <summary><code>No module named sentinelle_fonctionnelle</code></summary>
             <div>
               Vérifier que le terminal se trouve à la racine du dépôt et rejouer
               l’installation éditable avec le Python de <code>.venv</code>.

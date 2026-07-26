@@ -2,7 +2,7 @@
 name: functional-load-test-design
 description: "Use when an LLM must guide the definition and safe parameterization of a load test distinct from a single-user performance test."
 version: 1.0.0
-author: SentinelFonctionnelle
+author: SentinelleFonctionnelle
 license: MIT
 platforms: [linux, macos, windows]
 metadata:

@@ -15,8 +15,8 @@ from os import PathLike
 from pathlib import Path
 from uuid import UUID
 
-from sentinelfonctionnelle.application.projects import ProjectRole
-from sentinelfonctionnelle.domain import (
+from sentinelle_fonctionnelle.application.projects import ProjectRole
+from sentinelle_fonctionnelle.domain import (
     DataIterationMode,
     ExecutionResultSummary,
     FunctionalTestSpecification,

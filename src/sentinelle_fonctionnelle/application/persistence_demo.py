@@ -6,8 +6,8 @@ from datetime import UTC, datetime
 from os import PathLike
 from typing import Any
 
-from sentinelfonctionnelle.application.projects import ProjectApplication
-from sentinelfonctionnelle.domain import NodeKind
+from sentinelle_fonctionnelle.application.projects import ProjectApplication
+from sentinelle_fonctionnelle.domain import NodeKind
 
 
 def build_persistence_demo(

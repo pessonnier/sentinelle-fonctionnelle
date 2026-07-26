@@ -1,4 +1,4 @@
-"""Configuration explicite et sûre du serveur SentinelFonctionnelle.
+"""Configuration explicite et sûre du serveur SentinelleFonctionnelle.
 
 Références : EF-001.2, ENF-013 et ACC-061.
 """
@@ -9,7 +9,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 
-from sentinelfonctionnelle.application import ApplicationMode
+from sentinelle_fonctionnelle.application import ApplicationMode
 
 
 class UnsupportedDeploymentMode(RuntimeError):
@@ -20,7 +20,7 @@ class UnsupportedDeploymentMode(RuntimeError):
 class ServerSettings:
     """Paramètres effectifs du point d'entrée web."""
 
-    database: Path = Path("data/sentinelfonctionnelle.db")
+    database: Path = Path("data/sentinelle_fonctionnelle.db")
     host: str = "127.0.0.1"
     port: int = 8000
     mode: ApplicationMode = ApplicationMode.LOCAL
@@ -31,7 +31,9 @@ class ServerSettings:
         if not self.host.strip():
             raise ValueError("L'adresse d'écoute ne peut pas être vide.")
         if not 1 <= self.port <= 65535:
-            raise ValueError("SENTINEL_PORT doit être compris entre 1 et 65535.")
+            raise ValueError(
+                "SENTINELLE_FONCTIONNELLE_PORT doit être compris entre 1 et 65535."
+            )
         if self.mode is ApplicationMode.ONLINE:
             raise UnsupportedDeploymentMode(
                 "Le mode online exige les adaptateurs d'authentification et "
@@ -47,22 +49,30 @@ class ServerSettings:
     ) -> ServerSettings:
         """Construit la configuration à partir des seules variables documentées."""
 
-        mode_value = environment.get("SENTINEL_MODE", ApplicationMode.LOCAL.value)
+        mode_value = environment.get(
+            "SENTINELLE_FONCTIONNELLE_MODE",
+            ApplicationMode.LOCAL.value,
+        )
         database_value = environment.get(
-            "SENTINEL_DATABASE",
-            "data/sentinelfonctionnelle.db",
+            "SENTINELLE_FONCTIONNELLE_DATABASE",
+            "data/sentinelle_fonctionnelle.db",
         )
         database = Path(database_value)
         if not database.is_absolute():
             database = base_directory / database
-        raw_port = environment.get("SENTINEL_PORT", "8000")
+        raw_port = environment.get("SENTINELLE_FONCTIONNELLE_PORT", "8000")
         try:
             port = int(raw_port)
         except ValueError as error:
-            raise ValueError("SENTINEL_PORT doit être un entier.") from error
+            raise ValueError(
+                "SENTINELLE_FONCTIONNELLE_PORT doit être un entier."
+            ) from error
         return cls(
             database=database,
-            host=environment.get("SENTINEL_HOST", "127.0.0.1"),
+            host=environment.get(
+                "SENTINELLE_FONCTIONNELLE_HOST",
+                "127.0.0.1",
+            ),
             port=port,
             mode=ApplicationMode(mode_value),
         )

@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Any
 
-from sentinelfonctionnelle.domain.hierarchy import NodeKind, Project
+from sentinelle_fonctionnelle.domain.hierarchy import NodeKind, Project
 
 
 def build_hierarchy_demo() -> dict[str, Any]:

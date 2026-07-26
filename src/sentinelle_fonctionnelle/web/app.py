@@ -15,13 +15,13 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from sentinelfonctionnelle.adapters.persistence.sqlite import SCHEMA_VERSION
-from sentinelfonctionnelle.adapters.tabular import (
+from sentinelle_fonctionnelle.adapters.persistence.sqlite import SCHEMA_VERSION
+from sentinelle_fonctionnelle.adapters.tabular import (
     MAX_FILE_BYTES,
     parse_tabular_data,
 )
-from sentinelfonctionnelle.application import ProjectApplication
-from sentinelfonctionnelle.domain import (
+from sentinelle_fonctionnelle.application import ProjectApplication
+from sentinelle_fonctionnelle.domain import (
     DataIterationMode,
     HierarchyError,
     HierarchyNode,
@@ -31,7 +31,7 @@ from sentinelfonctionnelle.domain import (
     TabularDataError,
     TestPlan,
 )
-from sentinelfonctionnelle.web.settings import ServerSettings
+from sentinelle_fonctionnelle.web.settings import ServerSettings
 
 
 PACKAGE_DIRECTORY = Path(__file__).resolve().parent
@@ -51,7 +51,7 @@ def create_web_app(settings: ServerSettings | None = None) -> FastAPI:
     effective_settings.prepare()
     project_application = ProjectApplication.sqlite(effective_settings.database)
     app = FastAPI(
-        title="SentinelFonctionnelle",
+        title="Sentinelle Fonctionnelle",
         version="0.1.0.dev0",
         docs_url="/api/docs",
         redoc_url=None,

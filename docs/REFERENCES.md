@@ -1,19 +1,19 @@
 # Références normatives et terminologiques
 
-- **Projet :** SentinelFonctionnelle
+- **Projet :** SentinelleFonctionnelle
 - **Dernière vérification :** 26 juillet 2026
 - **Portée :** vocabulaire, processus et documentation du test logiciel
 
 ## 1. Objet
 
-Ce document recense les sources de référence utilisées par les spécifications de SentinelFonctionnelle. Il permet :
+Ce document recense les sources de référence utilisées par les spécifications de SentinelleFonctionnelle. Il permet :
 
 - d’employer un vocabulaire stable et reconnu dans le domaine du test logiciel ;
 - de distinguer les concepts normatifs des conventions propres au produit ;
 - de vérifier la version et le statut des documents utilisés ;
 - de retrouver les sources officielles sans reproduire de contenu protégé.
 
-L’emploi de ces références ne constitue pas, à lui seul, une déclaration de conformité de SentinelFonctionnelle à l’ISO/IEC/IEEE 29119. Une telle déclaration nécessiterait une évaluation séparée des processus, des documents produits et des preuves d’application.
+L’emploi de ces références ne constitue pas, à lui seul, une déclaration de conformité de SentinelleFonctionnelle à l’ISO/IEC/IEEE 29119. Une telle déclaration nécessiterait une évaluation séparée des processus, des documents produits et des preuves d’application.
 
 ## 2. Normes ISO/IEC/IEEE
 
@@ -72,7 +72,7 @@ Le syllabus et le glossaire ISTQB complètent les normes ISO/IEC/IEEE pour l’u
 
 ## 4. Correspondance terminologique du projet
 
-| Terme français retenu | Terme anglais de référence | Usage dans SentinelFonctionnelle |
+| Terme français retenu | Terme anglais de référence | Usage dans SentinelleFonctionnelle |
 |---|---|---|
 | plan de test | test plan | objectifs, périmètre, approche, ressources, risques et critères ; non exécutable |
 | base de test | test basis | sources utilisées pour l’analyse et la conception |

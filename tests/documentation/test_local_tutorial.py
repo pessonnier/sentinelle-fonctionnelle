@@ -42,7 +42,7 @@ class LocalTutorialDocumentationTests(unittest.TestCase):
     def test_tutorial_documents_real_commands_and_current_limits(self) -> None:
         content = TUTORIAL.read_text(encoding="utf-8")
         for command in (
-            "sentinelfonctionnelle.cli serve",
+            "sentinelle_fonctionnelle.cli serve",
             "demo-hierarchy",
             "demo-deployment --mode local",
             "demo-persistence",
@@ -53,7 +53,7 @@ class LocalTutorialDocumentationTests(unittest.TestCase):
         self.assertIn("FastAPI", content)
         self.assertIn("interface web", content)
         self.assertIn("Pas encore disponible", content)
-        self.assertIn("SENTINEL_DATABASE", content)
+        self.assertIn("SENTINELLE_FONCTIONNELLE_DATABASE", content)
         self.assertIn("ACC-060", content)
         self.assertIn("proofs/iteration-005.md", content)
         self.assertIn("ACC-063", content)
