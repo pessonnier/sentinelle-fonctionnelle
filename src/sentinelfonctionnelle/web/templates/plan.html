@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+{% block title %}{{ plan.name }} · SentinelFonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span>
+    <a href="/projects/{{ project.id }}">{{ project.name }}</a><span>/</span>
+    <span aria-current="page">{{ plan.name }}</span>
+  </nav>
+
+  <header class="page-heading compact-heading">
+    <div>
+      <p class="eyebrow">Plan de test</p>
+      <h1>{{ plan.name }}</h1>
+      <p class="lead">{{ plan.objective }}</p>
+    </div>
+    <dl class="project-meta">
+      <div><dt>Périmètre</dt><dd>{{ plan.scope }}</dd></div>
+      <div><dt>Approche</dt><dd>{{ plan.approach }}</dd></div>
+      <div><dt>Cible</dt><dd>{{ plan.target }}</dd></div>
+    </dl>
+  </header>
+
+  <div class="flow-strip" aria-label="Organisation du plan">
+    <a href="/projects/{{ project.id }}">Projet</a><span>→</span>
+    <strong>Plan de test</strong><span>→</span>
+    <span>Suite ou dossier</span><span>→</span>
+    <span>Cas de test</span>
+  </div>
+
+  <div class="plan-layout">
+    <section class="tree-workspace" aria-labelledby="tree-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Organisation</p>
+          <h2 id="tree-title">Suites, dossiers et cas</h2>
+        </div>
+        <a class="text-link" href="?show_archived={{ 'false' if show_archived else 'true' }}">
+          {{ "Masquer les archives" if show_archived else "Afficher les archives" }}
+        </a>
+      </div>
+
+      <form class="filter-bar" method="get">
+        <label>
+          Vue
+          <select name="organization">
+            {% for view in organization_views %}
+              <option value="{{ view.value }}" {% if view == organization %}selected{% endif %}>{{ view.label }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <label>
+          Rechercher un cas
+          <input type="search" name="q" value="{{ query }}" placeholder="Nom, tag, exigence">
+        </label>
+        <button type="submit" class="secondary-button">Filtrer</button>
+      </form>
+
+      {% if organization.value != "tree" %}
+        <div class="group-view">
+          {% for group in groups %}
+            <section class="computed-group">
+              <header><h3>{{ group.label }}</h3><span>{{ group.tests|length }} cas</span></header>
+              {% for case in group.tests %}
+                <a class="grouped-test" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}">
+                  <span>{{ case.name }}</span>
+                  <small>{{ case.specification.objective if case.specification else "À définir" }}</small>
+                </a>
+              {% endfor %}
+            </section>
+          {% else %}
+            <div class="empty-state compact">Aucun cas pour cette vue.</div>
+          {% endfor %}
+        </div>
+      {% elif rows %}
+        <div class="tree" role="tree">
+          {% for row in rows %}
+            <article id="node-{{ row.node.id }}" class="tree-row {{ 'archived' if row.node.archived else '' }}" style="--depth: {{ row.depth }}">
+              <div class="tree-line">
+                <span class="kind-icon" aria-hidden="true">
+                  {{ "S" if row.node.kind.value == "suite" else ("D" if row.node.kind.value == "folder" else "C") }}
+                </span>
+                {% if row.node.kind.value == "test" %}
+                  <a class="node-name" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ row.node.id }}">{{ row.node.name }}</a>
+                {% else %}
+                  <strong class="node-name">{{ row.node.name }}</strong>
+                {% endif %}
+                <span class="node-kind">{{ row.node.kind.label }}</span>
+                {% if row.node.archived %}<span class="archive-badge">Archivé</span>{% endif %}
+                {% if not row.node.archived %}
+                  <details class="row-menu">
+                    <summary aria-label="Actions pour {{ row.node.name }}">•••</summary>
+                    <div class="row-menu-panel">
+                      <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/rename" method="post">
+                        <label>Renommer<input name="name" value="{{ row.node.name }}" required></label>
+                        <button type="submit" class="small-button">Appliquer</button>
+                      </form>
+                      <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/move" method="post">
+                        <label>
+                          Nouveau parent
+                          <select name="new_parent_id">
+                            {% if row.node.kind.value != "test" %}<option value="">Racine du plan</option>{% endif %}
+                            {% for container in containers %}
+                              {% if container.id != row.node.id %}
+                                <option value="{{ container.id }}">{{ container.name }}</option>
+                              {% endif %}
+                            {% endfor %}
+                          </select>
+                        </label>
+                        <label>Position<input name="position" type="number" min="0" placeholder="fin"></label>
+                        <button type="submit" class="small-button">Déplacer</button>
+                      </form>
+                      <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/archive" method="post">
+                        <button type="submit" class="small-button danger">Archiver avec ses descendants</button>
+                      </form>
+                    </div>
+                  </details>
+                {% endif %}
+              </div>
+              {% if row.node.kind.value == "suite" and row.node.objective %}
+                <p class="node-description">{{ row.node.objective }}</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>Plan sans organisation</strong>
+          <span>Créez d’abord une suite ou un dossier, puis ajoutez-y des cas.</span>
+        </div>
+      {% endif %}
+    </section>
+
+    <aside class="creation-rail">
+      <section class="form-panel">
+        <p class="eyebrow">Niveau 3</p>
+        <h2>Suite ou dossier</h2>
+        <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes" method="post">
+          <label>
+            Nature
+            <select name="kind">
+              <option value="suite">Suite de tests</option>
+              <option value="folder">Dossier de classement</option>
+            </select>
+          </label>
+          <label>Nom<input name="name" required placeholder="Parcours de commande"></label>
+          <label>
+            Objectif d’exécution
+            <textarea name="objective" rows="2" placeholder="Requis pour une suite ; ignoré pour un dossier"></textarea>
+          </label>
+          <label>
+            Parent facultatif
+            <select name="parent_id">
+              <option value="">Racine du plan</option>
+              {% for container in containers %}
+                <option value="{{ container.id }}">{{ container.name }}</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="two-columns">
+            <label>Type par défaut<input name="test_type" value="{{ plan.test_type }}"></label>
+            <label>Tags<input name="tags" placeholder="commande, critique"></label>
+          </div>
+          <label>Préconditions communes<textarea name="preconditions" rows="2"></textarea></label>
+          <label>Postconditions communes<textarea name="postconditions" rows="2"></textarea></label>
+          <label>Déclaration CI par défaut<input name="execution_declaration" placeholder="manual, on_merge_request"></label>
+          <button type="submit">Ajouter au plan</button>
+        </form>
+      </section>
+
+      <section class="form-panel">
+        <p class="eyebrow">Niveau 4</p>
+        <h2>Cas de test</h2>
+        {% if containers %}
+          <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes" method="post">
+            <input type="hidden" name="kind" value="test">
+            <label>Nom du cas<input name="name" required placeholder="Paiement accepté"></label>
+            <label>
+              Suite ou dossier parent
+              <select name="parent_id" required>
+                <option value="">Sélectionner…</option>
+                {% for container in containers %}
+                  <option value="{{ container.id }}">{{ container.name }}</option>
+                {% endfor %}
+              </select>
+            </label>
+            <label>Tags<input name="tags" placeholder="nominal, paiement"></label>
+            <button type="submit">Créer et définir le cas</button>
+          </form>
+        {% else %}
+          <p class="rail-note">Une suite ou un dossier est nécessaire avant de créer un cas de test.</p>
+        {% endif %}
+      </section>
+
+      <details class="form-panel plan-settings">
+        <summary>Modifier le cadre du plan</summary>
+        <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/details" method="post">
+          <label>Nom<input name="name" value="{{ plan.name }}" required></label>
+          <label>Objectif<textarea name="objective" rows="2" required>{{ plan.objective }}</textarea></label>
+          <label>Périmètre<textarea name="scope" rows="3" required>{{ plan.scope }}</textarea></label>
+          <label>Approche<textarea name="approach" rows="2" required>{{ plan.approach }}</textarea></label>
+          <label>Cible<input name="target" value="{{ plan.target }}" required></label>
+          <label>Risques<textarea name="risks" rows="2">{{ plan.risks|join("\n") }}</textarea></label>
+          <label>Critères d’entrée<textarea name="entry_criteria" rows="2">{{ plan.entry_criteria|join("\n") }}</textarea></label>
+          <label>Critères de sortie<textarea name="exit_criteria" rows="2">{{ plan.exit_criteria|join("\n") }}</textarea></label>
+          <label>Ressources<input name="resources" value="{{ plan.resources }}"></label>
+          <label>Contraintes<input name="constraints" value="{{ plan.constraints }}"></label>
+          <label>Ordonnancement<input name="schedule" value="{{ plan.schedule }}"></label>
+          <label>Type par défaut<input name="test_type" value="{{ plan.test_type }}"></label>
+          <label>Tags<input name="tags" value="{{ plan.tags|join(', ') }}"></label>
+          <button type="submit">Enregistrer le plan</button>
+        </form>
+      </details>
+    </aside>
+  </div>
+{% endblock %}

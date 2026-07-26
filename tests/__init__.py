@@ -1,0 +1,2 @@
+"""Tests automatisés de SentinelFonctionnelle."""
+

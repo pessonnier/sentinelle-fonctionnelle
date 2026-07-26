@@ -1,0 +1,4 @@
+interface:
+  display_name: "Documentation HTML d’implémentation"
+  short_description: "Rédiger des guides HTML traçables et vérifiés"
+  default_prompt: "Use $write-implementation-html-docs to create an accessible HTML guide reflecting implemented specifications, scenarios, configuration, and launch commands."

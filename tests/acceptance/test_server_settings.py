@@ -1,0 +1,69 @@
+"""ACC-061 — configuration sûre du serveur local."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+
+from sentinelfonctionnelle.application import ApplicationMode
+from sentinelfonctionnelle.web.settings import (
+    ServerSettings,
+    UnsupportedDeploymentMode,
+)
+
+
+class ServerSettingsAcceptanceTests(unittest.TestCase):
+    def test_local_defaults_are_loopback_and_workspace_relative(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_directory = Path(temporary_directory)
+            settings = ServerSettings.from_environment(
+                {},
+                base_directory=base_directory,
+            )
+            self.assertEqual(ApplicationMode.LOCAL, settings.mode)
+            self.assertEqual("127.0.0.1", settings.host)
+            self.assertEqual(8000, settings.port)
+            self.assertEqual(
+                base_directory / "data" / "sentinelfonctionnelle.db",
+                settings.database,
+            )
+            settings.prepare()
+            self.assertTrue(settings.database.parent.is_dir())
+
+    def test_environment_can_override_local_database_host_and_port(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            base_directory = Path(temporary_directory)
+            settings = ServerSettings.from_environment(
+                {
+                    "SENTINEL_MODE": "local",
+                    "SENTINEL_DATABASE": "var/custom.db",
+                    "SENTINEL_HOST": "localhost",
+                    "SENTINEL_PORT": "9123",
+                },
+                base_directory=base_directory,
+            )
+            self.assertEqual(base_directory / "var" / "custom.db", settings.database)
+            self.assertEqual("localhost", settings.host)
+            self.assertEqual(9123, settings.port)
+
+    def test_online_mode_is_refused_until_required_adapters_exist(self) -> None:
+        with self.assertRaisesRegex(
+            UnsupportedDeploymentMode,
+            "authentification",
+        ):
+            ServerSettings.from_environment(
+                {"SENTINEL_MODE": "online"},
+                base_directory=Path.cwd(),
+            )
+
+    def test_invalid_port_is_rejected(self) -> None:
+        with self.assertRaisesRegex(ValueError, "SENTINEL_PORT"):
+            ServerSettings.from_environment(
+                {"SENTINEL_PORT": "70000"},
+                base_directory=Path.cwd(),
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

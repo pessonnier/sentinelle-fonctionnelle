@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Projets · SentinelFonctionnelle{% endblock %}
+{% block content %}
+  <section class="hero">
+    <div>
+      <p class="eyebrow">Espace de conception</p>
+      <h1>Projets de tests</h1>
+      <p class="lead">
+        Chaque projet regroupe ses plans, suites, dossiers et cas de test.
+      </p>
+    </div>
+    <div class="metric">
+      <strong>{{ projects|length }}</strong>
+      <span>projet{{ "s" if projects|length != 1 else "" }}</span>
+    </div>
+  </section>
+
+  <div class="dashboard">
+    <section class="panel">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Catalogue</p>
+          <h2>Projets</h2>
+        </div>
+      </div>
+      {% if projects %}
+        <div class="project-grid">
+          {% for project in projects %}
+            <a class="project-card" href="/projects/{{ project.id }}">
+              <span class="project-icon" aria-hidden="true">↗</span>
+              <strong>{{ project.name }}</strong>
+              <span>{{ project.description or "Aucune description" }}</span>
+              <small>{{ project.web_target }}</small>
+            </a>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="empty-state">
+          <strong>Aucun projet pour le moment</strong>
+          <span>Le formulaire ci-contre crée votre premier espace.</span>
+        </div>
+      {% endif %}
+    </section>
+
+    <aside class="panel form-panel">
+      <p class="eyebrow">Création</p>
+      <h2>Nouveau projet</h2>
+      <form action="/projects" method="post">
+        <label>
+          Nom
+          <input name="name" required maxlength="120" placeholder="Portail citoyen">
+        </label>
+        <label>
+          Description
+          <textarea name="description" rows="3" placeholder="Parcours critiques du portail"></textarea>
+        </label>
+        <label>
+          Cible web
+          <input name="web_target" type="url" required placeholder="https://demo.example">
+        </label>
+        <label>
+          Politique de sécurité
+          <input name="security_policy" required value="demo-only">
+        </label>
+        <button type="submit">Créer et définir le plan</button>
+      </form>
+    </aside>
+  </div>
+{% endblock %}

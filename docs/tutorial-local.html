@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>SentinelFonctionnelle — tutoriel du mode local</title>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #5b6475;
+      --paper: #f7f5f0;
+      --surface: #ffffff;
+      --surface-alt: #edf1f7;
+      --line: #d9dee8;
+      --navy: #17365d;
+      --teal: #087f78;
+      --teal-dark: #075f5a;
+      --amber: #9a5b00;
+      --amber-soft: #fff2d8;
+      --green-soft: #e2f4ed;
+      --red-soft: #fde8e7;
+      --code: #111827;
+      --shadow: 0 18px 45px rgb(23 54 93 / 10%);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 15% 0%, rgb(8 127 120 / 12%), transparent 28rem),
+        var(--paper);
+      font-family:
+        Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: var(--teal-dark);
+      text-underline-offset: 0.18em;
+    }
+
+    a:focus-visible,
+    summary:focus-visible {
+      outline: 3px solid #f3b63f;
+      outline-offset: 3px;
+      border-radius: 4px;
+    }
+
+    .skip-link {
+      position: fixed;
+      z-index: 20;
+      top: 0.75rem;
+      left: 0.75rem;
+      padding: 0.75rem 1rem;
+      color: white;
+      background: var(--navy);
+      border-radius: 8px;
+      transform: translateY(-160%);
+    }
+
+    .skip-link:focus {
+      transform: translateY(0);
+    }
+
+    .topbar {
+      color: white;
+      background: var(--navy);
+      border-bottom: 4px solid var(--teal);
+    }
+
+    .topbar-inner,
+    .page {
+      width: min(1180px, calc(100% - 2rem));
+      margin-inline: auto;
+    }
+
+    .topbar-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      min-height: 64px;
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .version {
+      color: #dce8f7;
+      font-size: 0.88rem;
+    }
+
+    .hero {
+      padding: clamp(3rem, 8vw, 6rem) 0 2.5rem;
+    }
+
+    .eyebrow {
+      margin: 0 0 0.75rem;
+      color: var(--teal-dark);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--navy);
+      line-height: 1.2;
+      text-wrap: balance;
+    }
+
+    h1 {
+      max-width: 18ch;
+      margin: 0;
+      font-size: clamp(2.45rem, 7vw, 5.5rem);
+      letter-spacing: -0.05em;
+    }
+
+    .lede {
+      max-width: 68ch;
+      margin: 1.4rem 0 0;
+      color: var(--muted);
+      font-size: clamp(1.05rem, 2vw, 1.25rem);
+    }
+
+    .hero-meta,
+    .badge-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      margin-top: 1.5rem;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.35rem 0.7rem;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--navy);
+      background: white;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .badge.implemented::before {
+      content: "✓";
+      color: var(--teal-dark);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr);
+      gap: 2rem;
+      align-items: start;
+      padding-bottom: 5rem;
+    }
+
+    nav {
+      position: sticky;
+      top: 1rem;
+      padding: 1rem;
+      background: rgb(255 255 255 / 88%);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(12px);
+    }
+
+    nav strong {
+      display: block;
+      margin-bottom: 0.6rem;
+      color: var(--navy);
+      font-size: 0.9rem;
+    }
+
+    nav ul {
+      display: grid;
+      gap: 0.25rem;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    nav a {
+      display: block;
+      padding: 0.45rem 0.55rem;
+      color: var(--muted);
+      border-radius: 7px;
+      text-decoration: none;
+    }
+
+    nav a:hover {
+      color: var(--navy);
+      background: var(--surface-alt);
+    }
+
+    main {
+      min-width: 0;
+    }
+
+    section {
+      min-width: 0;
+      scroll-margin-top: 1rem;
+      margin-bottom: 1.25rem;
+      padding: clamp(1.25rem, 3vw, 2.2rem);
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+
+    section > :first-child {
+      margin-top: 0;
+    }
+
+    section > :last-child {
+      margin-bottom: 0;
+    }
+
+    h2 {
+      margin-bottom: 1rem;
+      font-size: clamp(1.55rem, 3vw, 2rem);
+    }
+
+    h3 {
+      margin-top: 1.6rem;
+      font-size: 1.15rem;
+    }
+
+    .callout {
+      margin: 1rem 0;
+      padding: 1rem 1.1rem;
+      border-left: 5px solid var(--amber);
+      color: #5c3b09;
+      background: var(--amber-soft);
+      border-radius: 0 10px 10px 0;
+    }
+
+    .callout strong {
+      color: #4b3005;
+    }
+
+    .status-grid,
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .status-card,
+    .scenario {
+      padding: 1.15rem;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fbfcfe;
+    }
+
+    .status-card strong {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--navy);
+    }
+
+    .scenario {
+      position: relative;
+      overflow: hidden;
+    }
+
+    .scenario.wide {
+      grid-column: 1 / -1;
+    }
+
+    .scenario::before {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      content: "";
+      background: var(--teal);
+    }
+
+    .scenario .number {
+      color: var(--teal-dark);
+      font-size: 0.76rem;
+      font-weight: 850;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .scenario h3 {
+      margin-top: 0.45rem;
+    }
+
+    .specs {
+      margin-top: 1rem;
+      color: var(--muted);
+      font-size: 0.82rem;
+    }
+
+    pre {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+      margin: 0.8rem 0 1rem;
+      padding: 1rem;
+      color: #f8fafc;
+      background: var(--code);
+      border-radius: 11px;
+      box-shadow: inset 0 0 0 1px rgb(255 255 255 / 8%);
+      tab-size: 2;
+    }
+
+    pre > code {
+      display: block;
+      width: max-content;
+      min-width: 100%;
+    }
+
+    code,
+    kbd {
+      font-family: "Cascadia Code", "SFMono-Regular", Consolas, monospace;
+      font-size: 0.9em;
+    }
+
+    :not(pre) > code {
+      padding: 0.12em 0.35em;
+      color: #293750;
+      background: var(--surface-alt);
+      border-radius: 5px;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+
+    .result {
+      padding: 0.9rem 1rem;
+      border: 1px solid #b8ddd1;
+      border-radius: 10px;
+      background: var(--green-soft);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.92rem;
+    }
+
+    th,
+    td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--navy);
+      background: var(--surface-alt);
+    }
+
+    .table-wrap {
+      width: 100%;
+      min-width: 0;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    details {
+      border-bottom: 1px solid var(--line);
+    }
+
+    details:last-child {
+      border-bottom: 0;
+    }
+
+    summary {
+      padding: 0.85rem 0;
+      color: var(--navy);
+      font-weight: 750;
+      cursor: pointer;
+    }
+
+    details > div {
+      padding: 0 0 1rem;
+    }
+
+    footer {
+      padding: 1rem 0 3rem;
+      color: var(--muted);
+      text-align: center;
+      font-size: 0.86rem;
+    }
+
+    @media (max-width: 820px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      nav {
+        position: static;
+      }
+
+      nav ul {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .status-grid,
+      .scenario-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .layout,
+      .layout > *,
+      main,
+      section,
+      .status-grid,
+      .scenario-grid,
+      .scenario,
+      .table-wrap,
+      pre {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .topbar-inner,
+      .page {
+        width: min(100% - 1rem, 1180px);
+      }
+
+      .topbar-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        padding-block: 0.7rem;
+      }
+
+      .hero {
+        padding-top: 2.5rem;
+      }
+
+      h1 {
+        font-size: 2.65rem;
+      }
+
+      nav ul {
+        grid-template-columns: 1fr;
+      }
+
+      section {
+        border-radius: 13px;
+      }
+    }
+
+    @media print {
+      body {
+        color: black;
+        background: white;
+        font-size: 10pt;
+      }
+
+      .topbar,
+      nav,
+      .skip-link {
+        display: none;
+      }
+
+      .page {
+        width: 100%;
+      }
+
+      .hero {
+        padding: 0 0 1rem;
+      }
+
+      h1 {
+        font-size: 30pt;
+      }
+
+      .layout {
+        display: block;
+      }
+
+      section {
+        break-inside: avoid;
+        box-shadow: none;
+      }
+
+      a {
+        color: black;
+      }
+
+      pre {
+        white-space: pre-wrap;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Aller au contenu principal</a>
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">SentinelFonctionnelle</div>
+      <div class="version">Tutoriel local · 0.1.0.dev0 · vérifié le 26 juillet 2026</div>
+    </div>
+  </header>
+
+  <div class="page">
+    <header class="hero">
+      <p class="eyebrow">Guide de prise en main locale</p>
+      <h1>Structurer des plans et cas de test dans l’application locale.</h1>
+      <p class="lede">
+        Ce tutoriel installe et lance l’interface web locale, crée plusieurs
+        projets et plans de test, puis montre comment organiser les suites et
+        dossiers et rédiger chaque cas en pas-à-pas, Given/When/Then, tableau d’exemples
+        ou checklist. Il associe ensuite des saisies CSV ou Excel et prépare
+        leur itération en série, en parallèle ou aléatoirement. L’ensemble est
+        persisté dans SQLite.
+      </p>
+      <div class="hero-meta" aria-label="Résumé du statut">
+        <span class="badge implemented">Python 3.12+</span>
+        <span class="badge implemented">FastAPI locale</span>
+        <span class="badge implemented">SQLite v5</span>
+        <span class="badge implemented">4 modes de spécification</span>
+        <span class="badge implemented">CSV et XLSX</span>
+        <span class="badge">19 critères vérifiés sur 72</span>
+      </div>
+    </header>
+
+    <div class="layout">
+      <nav aria-label="Sommaire du tutoriel">
+        <strong>Dans ce guide</strong>
+        <ul>
+          <li><a href="#current-status">État actuel</a></li>
+          <li><a href="#prerequisites">Prérequis</a></li>
+          <li><a href="#configuration">Configuration</a></li>
+          <li><a href="#launch">Lancement</a></li>
+          <li><a href="#scenarios">Scénarios</a></li>
+          <li><a href="#troubleshooting">Dépannage</a></li>
+          <li><a href="#limitations">Limites</a></li>
+          <li><a href="#traceability">Traçabilité</a></li>
+        </ul>
+      </nav>
+
+      <main id="main-content">
+        <section id="current-status">
+          <p class="eyebrow">Avant de commencer</p>
+          <h2>État actuel du produit</h2>
+          <div class="callout">
+            <strong>À savoir :</strong> l’interface web FastAPI locale est
+            disponible sur la boucle locale. Le serveur ne lance pas
+            automatiquement le navigateur : ouvrir manuellement
+            <code>http://127.0.0.1:8000</code> après son démarrage.
+          </div>
+          <div class="status-grid">
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Interface web multi-projet : création de projets et plans de
+              test, puis de suites, sous-suites, dossiers et cas de test.
+            </div>
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Renommage, déplacement, ordre et archivage récursif, avec
+              identité stable et restauration après redémarrage.
+            </div>
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Persistance SQLite locale, migration version&nbsp;5, transactions,
+              sonde de santé et documentation OpenAPI.
+            </div>
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Spécification d’un cas de test en pas-à-pas, Given/When/Then, tableau
+              d’exemples ou checklist, avec métadonnées et version courante.
+            </div>
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Vues calculées par tag, exigence, règle métier et mode de
+              spécification, complétées par une recherche textuelle.
+            </div>
+            <div class="status-card">
+              <strong>Disponible</strong>
+              Import CSV UTF-8 ou XLSX, aperçu des cas et préparation d’un plan
+              série, parallèle borné ou aléatoire reproductible.
+            </div>
+            <div class="status-card">
+              <strong>Pas encore disponible</strong>
+              Déploiement web partagé, dialogue LLM, génération Playwright,
+              runner isolé, PostgreSQL et déploiement conteneurisé.
+            </div>
+          </div>
+        </section>
+
+        <section id="prerequisites">
+          <p class="eyebrow">Étape 1</p>
+          <h2>Préparer le poste</h2>
+          <p>Utiliser un clone du dépôt et se placer dans sa racine, celle qui contient <code>pyproject.toml</code>.</p>
+          <ul>
+            <li>Python 3.12 ou plus récent ;</li>
+            <li>PowerShell sous Windows, ou un shell POSIX sous Linux/macOS ;</li>
+            <li>droits d’écriture dans le répertoire choisi pour SQLite ;</li>
+            <li>accès au registre Python lors de la première installation des dépendances.</li>
+          </ul>
+
+          <h3>Vérifier Python</h3>
+          <p><strong>Windows</strong></p>
+          <pre><code>py -3 --version</code></pre>
+          <p><strong>Linux ou macOS</strong></p>
+          <pre><code>python3 --version</code></pre>
+          <p class="result">Résultat attendu : une version égale ou supérieure à Python 3.12.</p>
+
+          <h3>Créer l’environnement et installer l’application</h3>
+          <p><strong>Windows PowerShell</strong></p>
+          <pre><code>py -3 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install --editable ".[test]"</code></pre>
+          <p><strong>Linux ou macOS</strong></p>
+          <pre><code>python3 -m venv .venv
+./.venv/bin/python -m pip install --editable ".[test]"</code></pre>
+          <p class="result">
+            Résultat attendu : FastAPI, Uvicorn, Jinja et l’application sont
+            installés dans <code>.venv</code>, sans modifier le Python système.
+          </p>
+        </section>
+
+        <section id="configuration">
+          <p class="eyebrow">Étape 2</p>
+          <h2>Comprendre la configuration actuelle</h2>
+          <p>
+            Le serveur lit quatre variables d’environnement, que les options
+            de <code>serve</code> peuvent remplacer. Aucun fichier YAML n’est
+            encore lu : un tel fichier serait ignoré.
+          </p>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Paramètre</th>
+                  <th>Portée</th>
+                  <th>Valeur / rôle</th>
+                  <th>Sensible</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>SENTINEL_MODE</code> / <code>--mode</code></td>
+                  <td>Serveur</td>
+                  <td><code>local</code> par défaut. <code>online</code> est refusé tant que ses adaptateurs manquent.</td>
+                  <td>Non</td>
+                </tr>
+                <tr>
+                  <td><code>SENTINEL_DATABASE</code> / <code>--database</code></td>
+                  <td>Persistance locale</td>
+                  <td><code>data/sentinelfonctionnelle.db</code>, relatif à la racine de lancement.</td>
+                  <td>Non</td>
+                </tr>
+                <tr>
+                  <td><code>SENTINEL_HOST</code> / <code>--host</code></td>
+                  <td>Serveur local</td>
+                  <td><code>127.0.0.1</code>. Ne pas utiliser <code>0.0.0.0</code> pour ce prototype.</td>
+                  <td>Non</td>
+                </tr>
+                <tr>
+                  <td><code>SENTINEL_PORT</code> / <code>--port</code></td>
+                  <td>Serveur local</td>
+                  <td><code>8000</code>, entier compris entre 1 et 65535.</td>
+                  <td>Non</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            Ne placer aucun mot de passe ou jeton dans la ligne de commande ou
+            dans SQLite. Aucun secret n’est nécessaire pour ce tutoriel.
+          </div>
+        </section>
+
+        <section id="launch">
+          <p class="eyebrow">Étape 3</p>
+          <h2>Lancer l’application web locale</h2>
+          <p>
+            Exécuter la commande depuis la racine du dépôt. Le répertoire
+            <code>data</code> et la base sont créés automatiquement.
+          </p>
+
+          <h3>Windows PowerShell</h3>
+          <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli serve `
+  --database ".\data\sentinelfonctionnelle.db" `
+  --host 127.0.0.1 `
+  --port 8000</code></pre>
+
+          <h3>Linux ou macOS</h3>
+          <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli serve \
+  --database "./data/sentinelfonctionnelle.db" \
+  --host 127.0.0.1 \
+  --port 8000</code></pre>
+
+          <p class="result">
+            Résultat attendu : Uvicorn annonce
+            <code>http://127.0.0.1:8000</code>. Cette adresse affiche la liste
+            des projets ; <code>/health</code> répond
+            <code>{"status":"ok","mode":"local","schema_version":5}</code>.
+          </p>
+
+          <h3>Arrêter et nettoyer</h3>
+          <p>
+            Revenir au terminal et presser <kbd>Ctrl</kbd>+<kbd>C</kbd>.
+            Conserver <code>data/sentinelfonctionnelle.db</code> pour retrouver
+            les projets au prochain lancement. Pour repartir à zéro, arrêter
+            d’abord le serveur, sauvegarder si nécessaire, puis supprimer
+            explicitement ce seul fichier.
+          </p>
+        </section>
+
+        <section id="scenarios">
+          <p class="eyebrow">Étape 4</p>
+          <h2>Utiliser les fonctionnalités implémentées</h2>
+          <div class="scenario-grid">
+            <article
+              class="scenario"
+              data-spec="EF-001 EF-001.2 EF-002 ENF-013 ACC-060 ACC-061"
+              data-status="implemented">
+              <span class="number">Scénario 01</span>
+              <h3>Créer deux projets depuis le navigateur</h3>
+              <p><strong>Objectif :</strong> vérifier le fonctionnement multi-projet et sa persistance locale.</p>
+              <ol>
+                <li>lancer le serveur avec la commande de l’étape 3 ;</li>
+                <li>ouvrir <code>http://127.0.0.1:8000</code> ;</li>
+                <li>renseigner nom, description, cible web et politique, puis choisir <strong>Créer le projet</strong> ;</li>
+                <li>revenir à <strong>Projets</strong> et répéter l’opération ;</li>
+                <li>arrêter puis relancer le serveur avec le même fichier SQLite.</li>
+              </ol>
+              <p class="result">Les deux cartes de projet réapparaissent avec les mêmes données.</p>
+              <p class="specs">Traçabilité : EF-001 · EF-001.2 · EF-002 · ENF-013 · ACC-060 · ACC-061</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-001.2 EF-002 EF-002.1 ENF-013 ACC-060 ACC-062 ACC-069 ACC-070 ACC-072"
+              data-status="implemented">
+              <span class="number">Scénario 02</span>
+              <h3>Construire et réorganiser une arborescence</h3>
+              <p><strong>Objectif :</strong> créer un plan, une suite, un dossier et un cas de test, puis exercer les opérations persistantes.</p>
+              <ol>
+                <li>ouvrir un projet, compléter le formulaire du plan « Parcours critiques », puis ouvrir ce plan ;</li>
+                <li>ajouter une suite à la racine, puis un dossier en choisissant la suite comme parent ;</li>
+                <li>ajouter un cas de test sous le dossier ; la racine du plan n’est pas proposée comme parent d’un cas ;</li>
+                <li>renommer le cas, choisir un nouveau parent et une position, puis cliquer <strong>Déplacer</strong> ;</li>
+                <li>archiver un conteneur, puis afficher les archivés.</li>
+              </ol>
+              <p class="result">Le même identifiant reste visible ; le conteneur et ses descendants portent l’état « Archivé » après redémarrage.</p>
+              <p class="specs">Traçabilité : EF-001.2 · EF-002 · EF-002.1 · ENF-013 · ACC-060 · ACC-062 · ACC-069 · ACC-070 · ACC-072</p>
+            </article>
+
+            <article
+              class="scenario wide"
+              data-spec="EF-007 EF-007.4 ACC-063 ACC-064 ACC-071"
+              data-status="implemented">
+              <span class="number">Scénario 03</span>
+              <h3>Choisir une manière de spécifier le cas de test</h3>
+              <p>
+                <strong>Objectif :</strong> partir du vocabulaire le plus naturel
+                pour l’équipe tout en obtenant la même définition structurée.
+                Le cas et un plan « Parcours critiques » doivent déjà exister.
+              </p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Mode</th>
+                      <th>À privilégier pour</th>
+                      <th>Forme attendue</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Pas-à-pas</strong></td>
+                      <td>un parcours linéaire dont chaque action a un résultat observable</td>
+                      <td><code>Action =&gt; Résultat</code>, une paire par ligne</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Given/When/Then</strong></td>
+                      <td>partager une règle métier entre produit, recette et développement</td>
+                      <td><code>Étant donné…</code>, <code>Quand…</code>, <code>Alors…</code></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Tableau d’exemples</strong></td>
+                      <td>couvrir des combinaisons de données et des tables de décision</td>
+                      <td>en-têtes et lignes, avec colonnes séparées par <code>;</code></td>
+                    </tr>
+                    <tr>
+                      <td><strong>Checklist</strong></td>
+                      <td>une revue visuelle, d’accessibilité ou de conformité</td>
+                      <td>un contrôle observable et indépendant par ligne</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <ol>
+                <li>ouvrir le cas depuis l’arbre du plan ;</li>
+                <li>sélectionner le mode approprié avec le tableau ci-dessus ;</li>
+                <li>renseigner le contexte, les étapes, les données facultatives et les résultats attendus ;</li>
+                <li>ajouter si utile environnement, préconditions, données, postconditions, exigences, règles métier et déclaration d’exécution ;</li>
+                <li>choisir <strong>Enregistrer le cas de test</strong>, puis modifier un champ et enregistrer de nouveau.</li>
+              </ol>
+              <p class="result">
+                Le mode choisi et la version sont affichés. La seconde sauvegarde
+                passe à la version 2 ; après redémarrage, le texte et toutes les
+                métadonnées réapparaissent.
+              </p>
+              <p class="specs">Traçabilité : EF-007 · EF-007.4 · ACC-063 · ACC-064 · ACC-071</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-007.4 ACC-065"
+              data-status="implemented">
+              <span class="number">Scénario 04</span>
+              <h3>Organiser les mêmes cas selon le besoin de revue</h3>
+              <p>
+                <strong>Objectif :</strong> changer de point de vue sans déplacer
+                ni dupliquer les cas. Plusieurs cas spécifiés avec des tags,
+                exigences et règles métier différents sont nécessaires.
+              </p>
+              <p><strong>Trois structures d’arbre sont particulièrement utiles :</strong></p>
+              <ul>
+                <li><strong>par domaine métier</strong> — « Clients / Réservations / Paiements » : stable et recommandée pour un produit durable ;</li>
+                <li><strong>par parcours utilisateur</strong> — « Découvrir / Acheter / Annuler » : lisible pour une recette orientée expérience ;</li>
+                <li><strong>par composant applicatif</strong> — « Portail / API / Back-office » : pratique quand les responsabilités techniques structurent les équipes.</li>
+              </ul>
+              <p>
+                La combinaison conseillée est un arbre stable
+                <strong>domaine → parcours</strong>, des tags pour le risque, la
+                campagne et le canal, puis les exigences et règles métier pour
+                la traçabilité. Éviter un arbre par sprint ou par version : ces
+                dimensions changent souvent et conviennent mieux aux tags.
+              </p>
+              <p><strong>Les vues disponibles complètent cet arbre :</strong></p>
+              <ul>
+                <li><strong>Arbre :</strong> organisation de référence pour la navigation, le parent et l’ordre ;</li>
+                <li><strong>Tags :</strong> campagnes transversales telles que <code>smoke</code>, <code>paiement</code> ou <code>critique</code> ;</li>
+                <li><strong>Exigences :</strong> couverture et revue de traçabilité par identifiant ;</li>
+                <li><strong>Règles métier :</strong> analyse d’impact lorsqu’une règle change ;</li>
+                <li><strong>Modes de spécification :</strong> homogénéisation éditoriale et accompagnement des auteurs ;</li>
+                <li><strong>Recherche :</strong> localisation ponctuelle par nom, tag, exigence ou contenu.</li>
+              </ul>
+              <ol>
+                <li>choisir une valeur dans <strong>Vue d’organisation</strong> ;</li>
+                <li>saisir éventuellement un mot dans <strong>Recherche</strong> ;</li>
+                <li>cliquer <strong>Filtrer</strong> et ouvrir le cas recherché par son identifiant stable ;</li>
+                <li>revenir à <strong>Arbre</strong> pour retrouver son parent et sa position d’origine.</li>
+              </ol>
+              <p class="result">
+                Les groupes changent, mais l’identifiant du cas, son parent et
+                son ordre restent identiques.
+              </p>
+              <p class="specs">Traçabilité : EF-007.4 · ACC-065</p>
+            </article>
+
+            <article
+              class="scenario wide"
+              data-spec="EF-007.2 EF-007.5 ACC-066 ACC-067 ACC-068"
+              data-status="implemented">
+              <span class="number">Scénario 05</span>
+              <h3>Associer des saisies CSV ou Excel à un cas de test</h3>
+              <p>
+                <strong>Objectif :</strong> transformer chaque ligne d’un
+                tableau en cas de saisie et vérifier le plan qui sera transmis
+                au futur runner. Un cas de test non archivé doit déjà exister.
+              </p>
+              <p>
+                Télécharger le
+                <a href="examples/modele-donnees-tests.xlsx">modèle Excel prêt à remplir</a>
+                ou créer un CSV UTF-8 dont la première ligne contient les noms
+                de variables :
+              </p>
+              <pre><code>courriel;profil;montant
+alice@example.invalid;standard;10.50
+bob@example.invalid;premium;25.00
+chloe@example.invalid;standard;0</code></pre>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Stratégie</th>
+                      <th>Plan produit</th>
+                      <th>Utilisation conseillée</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td><strong>Série</strong></td>
+                      <td>un lot d’un cas par ligne, dans l’ordre du fichier</td>
+                      <td>parcours qui modifient un état partagé ou diagnostic simple</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Parallèle</strong></td>
+                      <td>lots limités par la concurrence choisie, de 1 à 20</td>
+                      <td>cas indépendants sur une cible capable d’absorber la concurrence</td>
+                    </tr>
+                    <tr>
+                      <td><strong>Aléatoire</strong></td>
+                      <td>échantillon sans doublon, ordre reproduit par la même graine</td>
+                      <td>varier l’ordre ou sélectionner un sous-ensemble reproductible</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <ol>
+                <li>ouvrir le cas, puis la section <strong>Fichier de données</strong> ;</li>
+                <li>choisir le fichier et la stratégie d’itération ;</li>
+                <li>pour <strong>Parallèle</strong>, fixer la concurrence maximale ;</li>
+                <li>pour <strong>Aléatoire</strong>, fixer la graine et éventuellement le nombre de cas ;</li>
+                <li>cliquer <strong>Analyser et associer les données</strong> ;</li>
+                <li>contrôler les colonnes, l’empreinte, les lignes et le nombre de lots avant tout futur lancement.</li>
+              </ol>
+              <p class="result">
+                Le fichier, sa version, les cas et le plan apparaissent. Après
+                redémarrage, les mêmes valeurs et le même ordre aléatoire sont
+                restaurés. Cet écran prépare le plan mais ne lance pas encore
+                Playwright.
+              </p>
+              <p class="specs">Traçabilité : EF-007.2 · EF-007.5 · ACC-066 · ACC-067 · ACC-068</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-001 EF-002 EF-007 ACC-002 ACC-003"
+              data-status="implemented">
+              <span class="number">Scénario 06</span>
+              <h3>Créer et déplacer un cas de test</h3>
+              <p><strong>Objectif :</strong> construire une hiérarchie et vérifier qu’un déplacement conserve l’identité et l’historique.</p>
+              <p><strong>Windows</strong></p>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-hierarchy</code></pre>
+              <p><strong>POSIX</strong></p>
+              <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli demo-hierarchy</code></pre>
+              <p class="result">
+                Observer <code>"node_count": 4</code>,
+                <code>"case_count": 2</code> et deux identifiants identiques
+                dans <code>moved_case</code>.
+              </p>
+              <p class="specs">Traçabilité : EF-001 · EF-002 · EF-007 · ACC-002 · ACC-003</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-001.1 ENF-008 ENF-013 ACC-051 ACC-052"
+              data-status="implemented">
+              <span class="number">Scénario 07</span>
+              <h3>Exercer le contrat du mode local</h3>
+              <p><strong>Objectif :</strong> créer plusieurs projets avec l’identité locale implicite et le même cœur applicatif que le mode en ligne.</p>
+              <p><strong>Windows</strong></p>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-deployment --mode local</code></pre>
+              <p><strong>POSIX</strong></p>
+              <pre><code>./.venv/bin/python -m sentinelfonctionnelle.cli demo-deployment --mode local</code></pre>
+              <p class="result">
+                Observer les projets « Projet principal » et « Projet
+                secondaire », puis le chemin du cas de connexion.
+              </p>
+              <p class="specs">Traçabilité : EF-001.1 · ENF-008 · ENF-013 · ACC-051 · ACC-052</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-001 EF-002 ENF-001 ENF-013 ACC-053"
+              data-status="implemented">
+              <span class="number">Scénario 08</span>
+              <h3>Persister et restaurer avec SQLite</h3>
+              <p><strong>Objectif :</strong> créer deux projets, déplacer un cas de test, fermer la composition puis restaurer les données.</p>
+              <p><strong>Windows PowerShell</strong></p>
+              <pre><code>New-Item -ItemType Directory -Force ".\data" | Out-Null
+$database = ".\data\tutorial-$(Get-Date -Format yyyyMMdd-HHmmss).db"
+.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli demo-persistence --database $database</code></pre>
+              <p><strong>Linux ou macOS</strong></p>
+              <pre><code>mkdir -p ./data
+database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
+./.venv/bin/python -m sentinelfonctionnelle.cli demo-persistence --database "$database"</code></pre>
+              <p class="result">
+                Observer <code>"project_count": 2</code>,
+                <code>"identity_preserved": true</code>,
+                <code>"history_count": 1</code> et le chemin restauré.
+              </p>
+              <p class="specs">Traçabilité : EF-001 · EF-002 · ENF-001 · ENF-013 · ACC-053</p>
+            </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-001 EF-002 EF-001.2 EF-007 EF-007.2 EF-007.4 EF-007.5 ENF-013 ACC-002 ACC-003 ACC-051 ACC-052 ACC-053 ACC-060 ACC-061 ACC-062 ACC-063 ACC-064 ACC-065 ACC-066 ACC-067 ACC-068"
+              data-status="implemented">
+              <span class="number">Scénario 09</span>
+              <h3>Rejouer toutes les vérifications</h3>
+              <p><strong>Objectif :</strong> confirmer que le dépôt local respecte encore tous les comportements implémentés.</p>
+              <p><strong>Windows</strong></p>
+              <pre><code>.\.venv\Scripts\python.exe -m unittest discover -s tests -p "test_*.py" -v</code></pre>
+              <p><strong>POSIX</strong></p>
+              <pre><code>./.venv/bin/python -m unittest discover -s tests -p "test_*.py" -v</code></pre>
+              <p class="result">
+                Les tests doivent finir par <code>OK</code>. Le nombre exact
+                peut augmenter lorsque de nouvelles tranches sont ajoutées.
+              </p>
+              <p class="specs">Traçabilité : critères vérifiés ACC-002, ACC-003, ACC-051 à ACC-054 et ACC-060 à ACC-068</p>
+            </article>
+          </div>
+        </section>
+
+        <section id="troubleshooting">
+          <p class="eyebrow">Aide</p>
+          <h2>Résoudre les problèmes fréquents</h2>
+          <details>
+            <summary><code>No module named sentinelfonctionnelle</code></summary>
+            <div>
+              Vérifier que le terminal se trouve à la racine du dépôt et rejouer
+              l’installation éditable avec le Python de <code>.venv</code>.
+            </div>
+          </details>
+          <details>
+            <summary><code>unable to open database file</code></summary>
+            <div>
+              Vérifier les droits d’écriture sur le chemin demandé. Le serveur
+              crée le répertoire parent, mais ne peut pas contourner les droits
+              du système.
+            </div>
+          </details>
+          <details>
+            <summary>Le nombre de projets est supérieur à deux</summary>
+            <div>
+              La commande de démonstration ajoute des données à chaque
+              exécution. Utiliser un nouveau nom de fichier SQLite pour obtenir
+              le résultat initial du tutoriel.
+            </div>
+          </details>
+          <details>
+            <summary><code>address already in use</code></summary>
+            <div>
+              Un autre processus utilise le port. Relancer avec
+              <code>--port 8010</code>, puis ouvrir
+              <code>http://127.0.0.1:8010</code>.
+            </div>
+          </details>
+          <details>
+            <summary>Le CSV est refusé alors qu’il s’ouvre dans Excel</summary>
+            <div>
+              Réenregistrer le fichier en CSV UTF-8. Vérifier que la première
+              ligne contient des en-têtes uniques et qu’au moins une ligne de
+              données suit l’en-tête.
+            </div>
+          </details>
+          <details>
+            <summary>Le classeur XLSX contient une formule</summary>
+            <div>
+              Copier les résultats utiles puis les coller comme valeurs dans un
+              nouveau classeur sans macro ni connexion. Les formules sont
+              refusées afin que l’import ne dépende jamais d’un calcul actif.
+            </div>
+          </details>
+          <details>
+            <summary>Le mode <code>online</code> est refusé</summary>
+            <div>
+              C’est volontaire : l’authentification réelle et la persistance
+              partagée ne sont pas disponibles. Utiliser <code>local</code> ;
+              ne pas exposer ce prototype sur le réseau.
+            </div>
+          </details>
+        </section>
+
+        <section
+          id="limitations"
+          data-spec="EF-003 EF-004 EF-009 EF-012 ENF-013"
+          data-status="planned">
+          <p class="eyebrow">Périmètre honnête</p>
+          <h2>Ce que ce tutoriel ne lance pas encore</h2>
+          <ul>
+            <li>un fournisseur LLM de conception ou d’exécution ;</li>
+            <li>la génération de code Playwright ;</li>
+            <li>le runner navigateur isolé ;</li>
+            <li>le lancement effectif des lots série, parallèles ou aléatoires préparés par l’import ;</li>
+            <li>PostgreSQL, l’authentification réelle et l’application partagée multi-utilisateur ;</li>
+            <li>l’historique consultable de toutes les versions et leur approbation immuable ;</li>
+            <li>la protection CSRF nécessaire avant toute exposition réseau ;</li>
+            <li>Docker, Podman et les modèles CI.</li>
+          </ul>
+          <p>
+            Ces éléments existent dans les spécifications mais restent
+            planifiés. Ils seront ajoutés à ce guide uniquement après une preuve
+            RED/GREEN et un point d’entrée réel vérifié.
+          </p>
+        </section>
+
+        <section id="traceability">
+          <p class="eyebrow">Références</p>
+          <h2>Traçabilité et preuves</h2>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Scénario</th>
+                  <th>Spécifications</th>
+                  <th>Acceptation</th>
+                  <th>Preuve</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Données CSV/XLSX et stratégies</td>
+                  <td>EF-007.2, EF-007.5</td>
+                  <td>ACC-066 à ACC-068</td>
+                  <td><a href="proofs/iteration-007.md">Itération 007</a></td>
+                </tr>
+                <tr>
+                  <td>Spécifier et organiser les tests</td>
+                  <td>EF-007, EF-007.4</td>
+                  <td>ACC-063 à ACC-065</td>
+                  <td><a href="proofs/iteration-006.md">Itération 006</a></td>
+                </tr>
+                <tr>
+                  <td>Interface web locale</td>
+                  <td>EF-001.2, EF-002, ENF-013</td>
+                  <td>ACC-060 à ACC-062</td>
+                  <td><a href="proofs/iteration-005.md">Itération 005</a></td>
+                </tr>
+                <tr>
+                  <td>Créer et déplacer</td>
+                  <td>EF-001, EF-002, EF-007</td>
+                  <td>ACC-002, ACC-003</td>
+                  <td><a href="proofs/iteration-001.md">Itération 001</a></td>
+                </tr>
+                <tr>
+                  <td>Contrat local/en ligne</td>
+                  <td>EF-001.1, ENF-008, ENF-013</td>
+                  <td>ACC-051, ACC-052</td>
+                  <td><a href="proofs/iteration-002.md">Itération 002</a></td>
+                </tr>
+                <tr>
+                  <td>Persistance SQLite</td>
+                  <td>EF-001, EF-002, ENF-001, ENF-013</td>
+                  <td>ACC-053</td>
+                  <td><a href="proofs/iteration-003.md">Itération 003</a></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p>
+            Références complètes :
+            <a href="SPECIFICATIONS.md">spécifications</a> ·
+            <a href="IMPLEMENTATION_STATUS.md">avancement</a> ·
+            <a href="../README.md">présentation du dépôt</a>.
+          </p>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <footer>
+    Documentation autonome — aucune ressource réseau ni donnée secrète.
+  </footer>
+</body>
+</html>
