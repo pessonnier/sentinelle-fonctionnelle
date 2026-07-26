@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sentinelfonctionnelle.application import ProjectApplication
-from sentinelfonctionnelle.domain import (
+from sentinelle_fonctionnelle.application import ProjectApplication
+from sentinelle_fonctionnelle.domain import (
     HierarchyError,
     NodeKind,
     OrganizationView,

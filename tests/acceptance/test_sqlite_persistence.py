@@ -12,8 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from sentinelfonctionnelle.application.projects import ProjectApplication
-from sentinelfonctionnelle.domain import NodeKind
+from sentinelle_fonctionnelle.application.projects import ProjectApplication
+from sentinelle_fonctionnelle.domain import NodeKind
 
 
 class SQLitePersistenceAcceptanceTests(unittest.TestCase):

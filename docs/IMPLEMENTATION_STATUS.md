@@ -1,6 +1,6 @@
 # Avancement de l'implémentation
 
-Ce document est le tableau de bord durable de SentinelFonctionnelle. Il est mis à
+Ce document est le tableau de bord durable de SentinelleFonctionnelle. Il est mis à
 jour après chaque tranche verticale et complète les spécifications sans en
 modifier les identifiants.
 

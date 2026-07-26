@@ -22,7 +22,7 @@ class HierarchyCliAcceptanceTests(unittest.TestCase):
             [
                 sys.executable,
                 "-m",
-                "sentinelfonctionnelle.cli",
+                "sentinelle_fonctionnelle.cli",
                 "demo-hierarchy",
             ],
             cwd=ROOT,
@@ -83,7 +83,7 @@ class HierarchyCliAcceptanceTests(unittest.TestCase):
         environment = os.environ.copy()
         environment["PYTHONPATH"] = str(ROOT / "src")
         completed = subprocess.run(
-            [sys.executable, "-m", "sentinelfonctionnelle.cli", *arguments],
+            [sys.executable, "-m", "sentinelle_fonctionnelle.cli", *arguments],
             cwd=ROOT,
             env=environment,
             check=False,

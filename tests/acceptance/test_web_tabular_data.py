@@ -9,8 +9,8 @@ from uuid import UUID
 
 from fastapi.testclient import TestClient
 
-from sentinelfonctionnelle.web.app import create_web_app
-from sentinelfonctionnelle.web.settings import ServerSettings
+from sentinelle_fonctionnelle.web.app import create_web_app
+from sentinelle_fonctionnelle.web.settings import ServerSettings
 
 
 class WebTabularDataAcceptanceTests(unittest.TestCase):

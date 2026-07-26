@@ -1,6 +1,6 @@
-# SentinelFonctionnelle
+# SentinelleFonctionnelle
 
-SentinelFonctionnelle est un outillage web destiné à transformer des indications utilisateur et des captures d’écran en scénarios de tests fonctionnels exécutables, grâce à une interaction guidée avec un LLM configurable.
+SentinelleFonctionnelle est un outillage web destiné à transformer des indications utilisateur et des captures d’écran en scénarios de tests fonctionnels exécutables, grâce à une interaction guidée avec un LLM configurable.
 
 Le produit sépare explicitement deux activités :
 
@@ -74,7 +74,7 @@ SQLite (`ACC-066` à `ACC-068`).
 Lancer l’interface locale après installation éditable :
 
 ```powershell
-.\.venv\Scripts\python.exe -m sentinelfonctionnelle.cli serve
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli serve
 ```
 
 Le déploiement partagé PostgreSQL avec authentification, les fonctions LLM, la

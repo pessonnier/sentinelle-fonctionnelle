@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sentinelfonctionnelle.application.projects import ProjectRole
-from sentinelfonctionnelle.domain import Project
+from sentinelle_fonctionnelle.application.projects import ProjectRole
+from sentinelle_fonctionnelle.domain import Project
 
 
 class InMemoryProjectRepository:

@@ -1,8 +1,8 @@
 ---
 name: functional-test-development
-description: "Use when implementing, testing, reviewing, and publishing the functional-test design and execution capabilities from numbered SentinelFonctionnelle specifications."
+description: "Use when implementing, testing, reviewing, and publishing the functional-test design and execution capabilities from numbered SentinelleFonctionnelle specifications."
 version: 1.0.0
-author: SentinelFonctionnelle
+author: SentinelleFonctionnelle
 license: MIT
 platforms: [linux, macos, windows]
 metadata:
@@ -17,13 +17,13 @@ metadata:
 
 Faire développer les capacités de conception, génération, validation et exécution en tranches verticales vérifiables. Chaque modification doit relier une spécification stable (`EF-*`, `ENF-*`, `GEN-*`, `LOAD-*`) à un critère `ACC-*`, un test et une preuve d’exécution.
 
-Référence normative : `docs/SPECIFICATIONS.md` dans le dépôt SentinelFonctionnelle.
+Référence normative : `docs/SPECIFICATIONS.md` dans le dépôt SentinelleFonctionnelle.
 
 ## Déclencheurs
 
 Utiliser ce skill pour :
 
-- implémenter une exigence de SentinelFonctionnelle ;
+- implémenter une exigence de SentinelleFonctionnelle ;
 - développer le domaine des jeux de tests ;
 - développer le générateur ou le runner ;
 - ajouter un profil de charge ;
@@ -35,7 +35,7 @@ Utiliser ce skill pour :
 Avant toute modification :
 
 1. vérifier le dépôt et la branche ;
-2. confirmer le chemin `/opt/data/SentinelFonctionnelle` ;
+2. confirmer le chemin `/opt/data/sentinelle-fonctionnelle` ;
 3. inspecter `git status`, les tests et les fichiers concernés ;
 4. sélectionner les identifiants de spécification et d’acceptation ;
 5. vérifier que la fonction n’appartient pas à un autre projet.

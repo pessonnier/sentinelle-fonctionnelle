@@ -1,8 +1,8 @@
-# Spécifications initiales de SentinelFonctionnelle
+# Spécifications initiales de SentinelleFonctionnelle
 
 - **Statut :** base de cadrage à valider et affiner
-- **Projet :** SentinelFonctionnelle
-- **Dépôt :** `pessonnier/SentinelFonctionnelle`
+- **Projet :** SentinelleFonctionnelle
+- **Dépôt :** `pessonnier/sentinelle-fonctionnelle`
 - **Branche principale :** `main`
 - **Licence :** MIT
 
@@ -45,7 +45,7 @@ Cet alignement terminologique ne constitue pas, à lui seul, une déclaration de
 
 ## 2. Vision du produit
 
-SentinelFonctionnelle est un outillage web qui aide un utilisateur à élaborer des plans, suites et cas de test fonctionnels à partir :
+SentinelleFonctionnelle est un outillage web qui aide un utilisateur à élaborer des plans, suites et cas de test fonctionnels à partir :
 
 - d’indications exprimées en langage naturel ;
 - de captures d’écran d’une application web ;
@@ -67,13 +67,13 @@ Le résultat attendu est une bibliothèque hiérarchisée de cas de test fonctio
 
 ### 3.1 Identité et responsabilité
 
-Le nom officiel du projet est **SentinelFonctionnelle**.
+Le nom officiel du projet est **SentinelleFonctionnelle**.
 
 Sa responsabilité est d’assister la conception, la génération, la validation et l’exécution de cas de test fonctionnels d’interfaces web.
 
 ### 3.1.1 Deux modes de déploiement, un seul produit
 
-SentinelFonctionnelle fournit les mêmes capacités fonctionnelles dans deux modes :
+SentinelleFonctionnelle fournit les mêmes capacités fonctionnelles dans deux modes :
 
 - **local** : application web exécutée sur le poste de l’utilisateur, avec une identité locale implicite et une persistance locale ;
 - **online** : application web partagée, multi-utilisateur et multi-projet, avec authentification obligatoire et persistance partagée.
@@ -118,7 +118,7 @@ Pendant cette phase :
 
 Le code exécuté peut être :
 
-- entièrement généré par SentinelFonctionnelle ;
+- entièrement généré par SentinelleFonctionnelle ;
 - généré puis personnalisé par un développeur ;
 - écrit manuellement mais enregistré et exécuté dans le même format de projet.
 
@@ -445,7 +445,7 @@ default_branch: main
 publication:
   mode: merge_request
   branch_prefix: sentinel/
-  destination_path: sentinel-bundle/
+  destination_path: sentinelle-bundle/
 auth:
   secret_ref: gitlab-enterprise-publisher
 tls:
@@ -668,7 +668,7 @@ Chaque procédure contient :
 - la création et le stockage de l’éventuel secret sans afficher sa valeur ;
 - les endpoints et protocoles pris en charge, avec un lien daté vers la documentation officielle du fournisseur ;
 - un exemple de profil complet utilisant des valeurs fictives et une référence de secret ;
-- les paramètres configurables et leurs valeurs par défaut dans SentinelFonctionnelle ;
+- les paramètres configurables et leurs valeurs par défaut dans SentinelleFonctionnelle ;
 - la configuration TLS, proxy et réseau, y compris le cas local d’Ollama ;
 - la sélection du modèle et la vérification des capacités nécessaires ;
 - la procédure de test de connectivité depuis l’interface et, lorsqu’elle existe, depuis la CLI ;
@@ -1355,7 +1355,7 @@ L’architecture doit optimiser en priorité :
 ```text
                          PHASE DE CONCEPTION
 ┌──────────────┐   HTTPS   ┌────────────────────────────────────┐
-│ Navigateur   │──────────▶│ Application SentinelFonctionnelle  │
+│ Navigateur   │──────────▶│ Application Sentinelle Fonctionnelle │
 │ utilisateur  │◀──────────│                                    │
 └──────────────┘            │  UI + API applicative              │
                             │  Domaine et versionnement          │
@@ -1423,7 +1423,7 @@ L’application de conception ne lance jamais de script de test dans son propre 
 ### 10.4 Modules de l’application de conception
 
 ```text
-sentinelfonctionnelle/
+sentinelle_fonctionnelle/
 ├── domain/            # Entités, règles, états et événements métier
 ├── application/       # Cas d’utilisation et ports
 ├── adapters/
@@ -1482,8 +1482,8 @@ Les dépendances pointent vers le domaine et les ports applicatifs. Le domaine n
 La frontière est un bundle versionné contenant au minimum :
 
 ```text
-sentinel-bundle/
-├── sentinel-manifest.json
+sentinelle-bundle/
+├── sentinelle-manifest.json
 ├── hierarchy.yaml
 ├── tests/
 ├── pages/
@@ -1580,9 +1580,9 @@ permissions:
   contents: read
 
 env:
-  TARGET_BASE_URL: http://sentinel-target:8080
-  SENTINEL_RUNNER_IMAGE: ghcr.io/pessonnier/sentinelfonctionnelle-runner:0.1.0
-  SENTINEL_TARGET_IMAGE: ghcr.io/pessonnier/sentinelfonctionnelle-demo-target:0.1.0
+  TARGET_BASE_URL: http://sentinelle-target:8080
+  SENTINELLE_FONCTIONNELLE_RUNNER_IMAGE: ghcr.io/pessonnier/sentinelle-fonctionnelle-runner:0.1.0
+  SENTINELLE_FONCTIONNELLE_TARGET_IMAGE: ghcr.io/pessonnier/sentinelle-fonctionnelle-demo-target:0.1.0
 
 jobs:
   sentinel:
@@ -1596,20 +1596,20 @@ jobs:
           sudo chown 10001:10001 artifacts
       - name: Run functional tests
         run: |
-          docker network create --internal sentinel-ci
-          trap 'docker rm -f sentinel-target >/dev/null 2>&1 || true; docker network rm sentinel-ci >/dev/null 2>&1 || true' EXIT
+          docker network create --internal sentinelle-ci
+          trap 'docker rm -f sentinelle-target >/dev/null 2>&1 || true; docker network rm sentinelle-ci >/dev/null 2>&1 || true' EXIT
           docker run -d --rm \
-            --name sentinel-target \
-            --network=sentinel-ci \
+            --name sentinelle-target \
+            --network=sentinelle-ci \
             --user=10001:10001 \
             --read-only \
             --cap-drop=ALL \
             --security-opt=no-new-privileges \
-            "$SENTINEL_TARGET_IMAGE"
+            "$SENTINELLE_FONCTIONNELLE_TARGET_IMAGE"
           declaration=manual
           if [ "$GITHUB_EVENT_NAME" = pull_request ]; then declaration=on_merge_request; fi
           docker run --rm \
-            --network=sentinel-ci \
+            --network=sentinelle-ci \
             --user=10001:10001 \
             --read-only \
             --cap-drop=ALL \
@@ -1618,16 +1618,16 @@ jobs:
             --memory=2g \
             --cpus=2 \
             --tmpfs /tmp:rw,noexec,nosuid,size=512m \
-            -v "$PWD/sentinel-bundle:/bundle:ro" \
+            -v "$PWD/sentinelle-bundle:/bundle:ro" \
             -v "$PWD/artifacts:/artifacts:rw" \
             -e TARGET_BASE_URL \
-            -e SENTINEL_DECLARATION="$declaration" \
-            "$SENTINEL_RUNNER_IMAGE" \
-            sentinel-run --bundle /bundle --declaration "$declaration" --junit /artifacts/junit.xml
+            -e SENTINELLE_FONCTIONNELLE_DECLARATION="$declaration" \
+            "$SENTINELLE_FONCTIONNELLE_RUNNER_IMAGE" \
+            sentinelle-run --bundle /bundle --declaration "$declaration" --junit /artifacts/junit.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: sentinel-results
+          name: sentinelle-results
           path: artifacts/
 ```
 
@@ -1640,17 +1640,17 @@ Les cas de test authentifiés ou visant une cible externe doivent utiliser un wo
 Le dépôt doit fournir un modèle équivalent :
 
 ```yaml
-sentinel-functional-tests:
+sentinelle-functional-tests:
   image:
-    name: ghcr.io/pessonnier/sentinelfonctionnelle-runner:0.1.0
+    name: ghcr.io/pessonnier/sentinelle-fonctionnelle-runner:0.1.0
     entrypoint: [""]
   variables:
-    TARGET_BASE_URL: $SENTINEL_TARGET_BASE_URL
-    SENTINEL_DECLARATION: on_merge_request
+    TARGET_BASE_URL: $SENTINELLE_FONCTIONNELLE_TARGET_BASE_URL
+    SENTINELLE_FONCTIONNELLE_DECLARATION: on_merge_request
   before_script:
     - mkdir -p artifacts
   script:
-    - sentinel-run --bundle ./sentinel-bundle --declaration "$SENTINEL_DECLARATION" --junit ./artifacts/junit.xml
+    - sentinelle-run --bundle ./sentinelle-bundle --declaration "$SENTINELLE_FONCTIONNELLE_DECLARATION" --junit ./artifacts/junit.xml
   artifacts:
     when: always
     reports:
@@ -1659,9 +1659,9 @@ sentinel-functional-tests:
       - artifacts/
 ```
 
-L’image garantit que `sentinel-run` est disponible dans le `PATH`. L’`entrypoint` vide rend le contrat explicite pour les runners GitLab qui injectent leur propre script.
+L’image garantit que `sentinelle-run` est disponible dans le `PATH`. L’`entrypoint` vide rend le contrat explicite pour les runners GitLab qui injectent leur propre script.
 
-Le modèle utilise `on_merge_request` pour un pipeline de merge request. Les jobs `on_commit`, `nightly` et `release` doivent fournir la valeur correspondante dans `SENTINEL_DECLARATION`.
+Le modèle utilise `on_merge_request` pour un pipeline de merge request. Les jobs `on_commit`, `nightly` et `release` doivent fournir la valeur correspondante dans `SENTINELLE_FONCTIONNELLE_DECLARATION`.
 
 Les variables sensibles utilisent les variables CI/CD masquées et protégées de GitLab et ne sont disponibles que sur les branches ou environnements protégés. Les pipelines de merge requests externes ou non approuvées n’accèdent à aucune variable protégée ni cible sensible. L’exécuteur GitLab doit lui-même être non privilégié, sans montage de socket de runtime, et appliquer les limites de ressources et la politique réseau définies par `ENF-005`.
 

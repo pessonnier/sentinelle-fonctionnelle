@@ -10,7 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "src"))
 
-from sentinelfonctionnelle.application.projects import (
+from sentinelle_fonctionnelle.application.projects import (
     ApplicationMode,
     AuthenticatedIdentity,
     AuthenticationRequired,
@@ -19,7 +19,7 @@ from sentinelfonctionnelle.application.projects import (
     ProjectNotFound,
     ProjectRole,
 )
-from sentinelfonctionnelle.domain import NodeKind
+from sentinelle_fonctionnelle.domain import NodeKind
 
 
 class OnlineIsolationAcceptanceTests(unittest.TestCase):

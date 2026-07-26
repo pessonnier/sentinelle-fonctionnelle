@@ -8,9 +8,9 @@ import unittest
 import zipfile
 from pathlib import Path
 
-from sentinelfonctionnelle.adapters.tabular import parse_tabular_data
-from sentinelfonctionnelle.application import ProjectApplication
-from sentinelfonctionnelle.domain import (
+from sentinelle_fonctionnelle.adapters.tabular import parse_tabular_data
+from sentinelle_fonctionnelle.application import ProjectApplication
+from sentinelle_fonctionnelle.domain import (
     DataIterationMode,
     HierarchyError,
     NodeKind,

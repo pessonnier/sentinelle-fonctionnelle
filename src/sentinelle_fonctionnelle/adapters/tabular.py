@@ -14,7 +14,7 @@ import zipfile
 from pathlib import PurePosixPath
 from xml.etree import ElementTree
 
-from sentinelfonctionnelle.domain.tabular_data import (
+from sentinelle_fonctionnelle.domain.tabular_data import (
     TabularDataError,
     TabularDataSet,
 )

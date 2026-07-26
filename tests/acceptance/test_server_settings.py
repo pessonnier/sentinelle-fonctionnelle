@@ -6,8 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from sentinelfonctionnelle.application import ApplicationMode
-from sentinelfonctionnelle.web.settings import (
+from sentinelle_fonctionnelle.application import ApplicationMode
+from sentinelle_fonctionnelle.web.settings import (
     ServerSettings,
     UnsupportedDeploymentMode,
 )
@@ -25,7 +25,7 @@ class ServerSettingsAcceptanceTests(unittest.TestCase):
             self.assertEqual("127.0.0.1", settings.host)
             self.assertEqual(8000, settings.port)
             self.assertEqual(
-                base_directory / "data" / "sentinelfonctionnelle.db",
+                base_directory / "data" / "sentinelle_fonctionnelle.db",
                 settings.database,
             )
             settings.prepare()
@@ -36,10 +36,10 @@ class ServerSettingsAcceptanceTests(unittest.TestCase):
             base_directory = Path(temporary_directory)
             settings = ServerSettings.from_environment(
                 {
-                    "SENTINEL_MODE": "local",
-                    "SENTINEL_DATABASE": "var/custom.db",
-                    "SENTINEL_HOST": "localhost",
-                    "SENTINEL_PORT": "9123",
+                    "SENTINELLE_FONCTIONNELLE_MODE": "local",
+                    "SENTINELLE_FONCTIONNELLE_DATABASE": "var/custom.db",
+                    "SENTINELLE_FONCTIONNELLE_HOST": "localhost",
+                    "SENTINELLE_FONCTIONNELLE_PORT": "9123",
                 },
                 base_directory=base_directory,
             )
@@ -53,14 +53,17 @@ class ServerSettingsAcceptanceTests(unittest.TestCase):
             "authentification",
         ):
             ServerSettings.from_environment(
-                {"SENTINEL_MODE": "online"},
+                {"SENTINELLE_FONCTIONNELLE_MODE": "online"},
                 base_directory=Path.cwd(),
             )
 
     def test_invalid_port_is_rejected(self) -> None:
-        with self.assertRaisesRegex(ValueError, "SENTINEL_PORT"):
+        with self.assertRaisesRegex(
+            ValueError,
+            "SENTINELLE_FONCTIONNELLE_PORT",
+        ):
             ServerSettings.from_environment(
-                {"SENTINEL_PORT": "70000"},
+                {"SENTINELLE_FONCTIONNELLE_PORT": "70000"},
                 base_directory=Path.cwd(),
             )
 

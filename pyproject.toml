@@ -3,7 +3,7 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "sentinelfonctionnelle"
+name = "sentinelle-fonctionnelle"
 version = "0.1.0.dev0"
 description = "Conception et exécution contrôlées de tests fonctionnels"
 readme = "README.md"
@@ -22,7 +22,7 @@ test = [
 ]
 
 [project.scripts]
-sentinelfonctionnelle = "sentinelfonctionnelle.cli:main"
+sentinelle-fonctionnelle = "sentinelle_fonctionnelle.cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -31,7 +31,7 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.setuptools.package-data]
-sentinelfonctionnelle = [
+sentinelle_fonctionnelle = [
     "web/static/*.css",
     "web/templates/*.html",
 ]

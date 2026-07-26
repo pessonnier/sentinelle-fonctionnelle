@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from sentinelfonctionnelle.cli import build_parser
+from sentinelle_fonctionnelle.cli import build_parser
 
 
 class ServeCommandAcceptanceTests(unittest.TestCase):
