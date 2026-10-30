@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Saisie collaborateur · Bureau des Talents Intersidéraux</title>
+    <link rel="stylesheet" href="/static/hr-demo.css">
+  </head>
+  <body class="hr-demo hr-form-page" data-page="employee-form" data-role="{{ persona.role }}">
+    <header class="demo-header">
+      <a href="/demo/hr/saisie" class="brand">🪩 BTI-RH</a>
+      <div>
+        <strong>{{ persona.display_name }}</strong>
+        <span class="role-pill">{{ persona.role }}</span>
+      </div>
+      {% if not parser_preview %}
+        <form method="post" action="/demo/hr/logout">
+          <button class="ghost-button" type="submit">Sortir du vortex</button>
+        </form>
+      {% endif %}
+    </header>
+
+    <main class="form-shell">
+      <div class="page-intro">
+        <p class="kicker">Dossier d’intégration galactique</p>
+        <h1>Déclarer un nouveau talent</h1>
+        <p>
+          Cette page mélange volontairement HTML soigné, balisage discutable,
+          champs injectés et rubriques dépendant du profil connecté.
+        </p>
+      </div>
+
+      {% if parser_preview %}
+        <aside class="preview-banner" role="note">
+          Aperçu statique pour le parseur · persona {{ persona.key }} ·
+          l’enregistrement est désactivé.
+        </aside>
+      {% endif %}
+
+      <form
+        id="employee-form"
+        method="post"
+        action="/demo/hr/saisie"
+        data-testid="employee-form"
+        {% if parser_preview %}onsubmit="return false"{% endif %}
+      >
+        <section class="form-card quality-high">
+          <div class="section-heading">
+            <span>01</span>
+            <div>
+              <p class="kicker">HTML propre</p>
+              <h2>Identité administrative</h2>
+            </div>
+          </div>
+          <div class="field-grid">
+            <div class="field">
+              <label for="employee-number">Matricule</label>
+              <input id="employee-number" name="employee_number" value="EMP-" pattern="EMP-[A-Z0-9-]+" required>
+            </div>
+            <div class="field">
+              <label for="first-name">Prénom</label>
+              <input id="first-name" name="first_name" autocomplete="given-name" required>
+            </div>
+            <div class="field">
+              <label for="last-name">Nom</label>
+              <input id="last-name" name="last_name" autocomplete="family-name" required>
+            </div>
+            <div class="field">
+              <label for="work-email">E-mail professionnel</label>
+              <input id="work-email" name="work_email" type="email" autocomplete="email" required>
+            </div>
+            <div class="field">
+              <label for="hire-date">Date d’arrivée</label>
+              <input id="hire-date" name="hire_date" type="date" required>
+            </div>
+            <div class="field">
+              <label for="department">Constellation de rattachement</label>
+              <select id="department" name="department" required>
+                <option value="">Choisir une constellation</option>
+                {% for department in persona.departments %}
+                  <option value="{{ department }}">{{ department }}</option>
+                {% endfor %}
+              </select>
+            </div>
+          </div>
+          <fieldset class="radio-cluster">
+            <legend>Contrat spatio-temporel</legend>
+            <label><input type="radio" name="contract_type" value="CDI intersidéral" required> CDI intersidéral</label>
+            <label><input type="radio" name="contract_type" value="CDD lunaire"> CDD lunaire</label>
+            <label><input type="radio" name="contract_type" value="Stage en apesanteur"> Stage en apesanteur</label>
+          </fieldset>
+        </section>
+
+        <section class="form-card quality-chaos">
+          <center><font size="5">02 — Zone HTML à la qualité météorologique</font></center>
+          <table role="presentation" class="retro-table">
+            <tr>
+              <td><b>Animal totem bureaucratique</b></td>
+              <td>
+                <input
+                  id="x7"
+                  name="animal_totem"
+                  placeholder="ex. Poulpe comptable"
+                  data-testid="animal-totem"
+                >
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2">
+                <div class="fake-label">Ce champ décoratif n’est pas associé correctement ↓</div>
+                <input id="decorative-chaos" value="Non soumis" tabindex="-1">
+              </td>
+            </tr>
+          </table>
+        </section>
+
+        <section class="form-card quality-runtime">
+          <div class="section-heading">
+            <span>03</span>
+            <div>
+              <p class="kicker">Rendu conditionnel serveur</p>
+              <h2>Champs liés à la session</h2>
+            </div>
+          </div>
+          <p>Ce bloc dépend du rôle <strong>{{ persona.role }}</strong>.</p>
+          {% if persona.role == "manager" %}
+            <div class="field-grid">
+              <div class="field">
+                <label for="manager-budget">Budget d’accueil autorisé</label>
+                <input id="manager-budget" name="manager_budget" type="number" min="0" max="999999" step="100">
+              </div>
+              <div class="field">
+                <label for="manager-comment">Directive secrètement non secrète du manager</label>
+                <textarea id="manager-comment" name="manager_comment" rows="3"></textarea>
+              </div>
+            </div>
+          {% else %}
+            <p class="restricted-note" data-testid="manager-fields-absent">
+              Les champs budgétaires sont absents pour un agent.
+            </p>
+          {% endif %}
+        </section>
+
+        <section class="form-card quality-javascript">
+          <div class="section-heading">
+            <span>04</span>
+            <div>
+              <p class="kicker">JavaScript différé</p>
+              <h2>Affinités et paramètres souples</h2>
+            </div>
+          </div>
+          <div id="dynamic-employee-fields" class="dynamic-zone" aria-live="polite">
+            <span class="loading-squiggle">Assemblage des champs à la main par un petit robot…</span>
+          </div>
+          <rh-skill-cloud data-input-name="skills"></rh-skill-cloud>
+        </section>
+
+        <div class="sticky-actions">
+          <span>Les astérisques imaginaires sont obligatoires.</span>
+          <button type="submit" class="primary-button" {% if parser_preview %}disabled{% endif %}>
+            Propulser le dossier
+          </button>
+        </div>
+      </form>
+    </main>
+    <footer class="demo-source-footer">
+      <a href="https://github.com/pessonnier/sentinelle-fonctionnelle" target="_blank" rel="noopener noreferrer">Projet sur GitHub</a>
+    </footer>
+    <script src="/static/hr-demo.js" defer></script>
+  </body>
+</html>

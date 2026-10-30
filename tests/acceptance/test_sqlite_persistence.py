@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sqlite3
 import sys
 import tempfile
 import unittest
@@ -17,6 +18,54 @@ from sentinelle_fonctionnelle.domain import NodeKind
 
 
 class SQLitePersistenceAcceptanceTests(unittest.TestCase):
+    def test_legacy_free_text_approach_is_preserved_for_requalification(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database = Path(temporary_directory) / "legacy.db"
+            application = ProjectApplication.sqlite(database)
+            project = application.create_project(
+                actor=None,
+                name="Migration",
+                description="Plan historique",
+                web_target="https://migration.invalid",
+                security_policy="demo-only",
+            )
+            plan = application.create_test_plan(
+                actor=None,
+                project_id=project.id,
+                name="Ancien plan",
+                objective="Préserver l'approche",
+                target="demo",
+                scope="Fonctions historiques",
+                test_approach_id="functional-risk-based",
+                test_approach_version=1,
+            )
+            connection = sqlite3.connect(database)
+            try:
+                connection.execute(
+                    """
+                    UPDATE test_sets
+                    SET approach = ?,
+                        test_approach_id = 'legacy-free-text'
+                    WHERE id = ?
+                    """,
+                    ("Cas nominaux et erreurs métier", str(plan.id)),
+                )
+                connection.commit()
+            finally:
+                connection.close()
+
+            restored = ProjectApplication.sqlite(database).get_project(
+                None,
+                project.id,
+            ).test_plan(plan.id)
+            self.assertEqual("legacy-free-text", restored.test_approach_id)
+            self.assertEqual(
+                "Cas nominaux et erreurs métier",
+                restored.legacy_approach_text,
+            )
+
     def test_restart_restores_projects_tree_move_and_history(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             database = Path(temporary_directory) / "sentinel.db"

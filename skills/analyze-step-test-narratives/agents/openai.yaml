@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyse textes par étape"
+  short_description: "Structure un texte pour chaque étape"
+  default_prompt: "Use $analyze-step-test-narratives to turn each step narrative into a canonical test workflow."

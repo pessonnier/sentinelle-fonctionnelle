@@ -12,6 +12,7 @@ license = "MIT"
 dependencies = [
     "fastapi>=0.116,<1",
     "jinja2>=3.1,<4",
+    "pyyaml>=6,<7",
     "python-multipart>=0.0.20,<1",
     "uvicorn>=0.35,<1",
 ]
@@ -19,10 +20,21 @@ dependencies = [
 [project.optional-dependencies]
 test = [
     "httpx>=0.28,<1",
+    "playwright>=1.55,<2",
+    "pytest>=8,<10",
+    "pytest-playwright>=0.7,<1",
+]
+quality = [
+    "mypy>=1.20,<1.21",
+    "ruff>=0.16,<0.17",
+]
+online = [
+    "psycopg[binary]>=3.2,<4",
 ]
 
 [project.scripts]
 sentinelle-fonctionnelle = "sentinelle_fonctionnelle.cli:main"
+sentinelle-run = "sentinelle_fonctionnelle.runner_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}
@@ -32,6 +44,43 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 sentinelle_fonctionnelle = [
+    "configuration/*.yaml",
     "web/static/*.css",
+    "web/static/*.js",
+    "web/static/*.svg",
     "web/templates/*.html",
 ]
+
+[tool.pytest.ini_options]
+testpaths = [
+    "tests/acceptance",
+    "tests/documentation",
+    "tests/unit",
+]
+python_files = ["test_*.py"]
+python_classes = ["*Tests"]
+addopts = [
+    "--strict-config",
+    "--strict-markers",
+]
+filterwarnings = [
+    "ignore:Using `httpx` with `starlette.testclient` is deprecated.*",
+    "ignore:The anyio.abc.BlockingPortal alias is deprecated.*",
+]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = [
+    ".tmp",
+    "outputs",
+    "tests/generated",
+]
+
+[tool.ruff.lint]
+select = ["E9", "F63", "F7", "F82"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_unused_configs = true
+show_error_codes = true

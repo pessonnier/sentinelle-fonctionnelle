@@ -11,6 +11,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
+from .design_dialogue import DesignDialogue
 from .specifications import (
     FunctionalTestSpecification,
     OrganizationView,
@@ -23,6 +24,7 @@ from .tabular_data import (
     TabularDataError,
     TabularDataSet,
 )
+from .workflow import GenerationWorkflowInput
 
 class HierarchyError(ValueError):
     """Signale une opération qui rendrait l'arborescence invalide."""
@@ -77,6 +79,7 @@ class HierarchyNode:
     archived: bool = False
     specification: FunctionalTestSpecification | None = None
     data_binding: TabularDataBinding | None = None
+    design_dialogue: DesignDialogue | None = None
     _result_history: list[ExecutionResultSummary] = field(
         default_factory=list,
         repr=False,
@@ -98,7 +101,9 @@ class TestPlan:
     objective: str
     target: str
     scope: str = ""
-    approach: str = ""
+    test_approach_id: str = ""
+    test_approach_version: int = 1
+    legacy_approach_text: str = ""
     risks: tuple[str, ...] = ()
     entry_criteria: tuple[str, ...] = ()
     exit_criteria: tuple[str, ...] = ()
@@ -117,7 +122,8 @@ class TestPlan:
         objective: str,
         target: str,
         scope: str,
-        approach: str,
+        test_approach_id: str,
+        test_approach_version: int,
         risks: tuple[str, ...] = (),
         entry_criteria: tuple[str, ...] = (),
         exit_criteria: tuple[str, ...] = (),
@@ -134,10 +140,15 @@ class TestPlan:
         )
         self.target = _required_text(target, "La cible du plan de test")
         self.scope = _required_text(scope, "Le périmètre du plan de test")
-        self.approach = _required_text(
-            approach,
-            "L'approche du plan de test",
+        self.test_approach_id = _required_text(
+            test_approach_id,
+            "L'identifiant du profil d'approche de test",
         )
+        if test_approach_version < 1:
+            raise HierarchyError(
+                "La version du profil d'approche de test doit être positive."
+            )
+        self.test_approach_version = test_approach_version
         self.risks = tuple(risks)
         self.entry_criteria = tuple(entry_criteria)
         self.exit_criteria = tuple(exit_criteria)
@@ -318,6 +329,8 @@ class TestPlan:
         requirements: tuple[str, ...] = (),
         business_rules: tuple[str, ...] = (),
         execution_declaration: tuple[str, ...] = (),
+        workflow: GenerationWorkflowInput | None = None,
+        summary: str = "",
     ) -> FunctionalTestSpecification:
         node = self.node(node_id)
         if node.kind is not NodeKind.TEST:
@@ -345,11 +358,33 @@ class TestPlan:
                 requirements=requirements,
                 business_rules=business_rules,
                 execution_declaration=execution_declaration,
+                workflow=workflow,
+                summary=summary,
             )
         except SpecificationError as error:
             raise HierarchyError(str(error)) from error
         node.specification = specification
         return specification
+
+    def update_design_dialogue(
+        self,
+        node_id: UUID,
+        *,
+        dialogue: DesignDialogue,
+    ) -> DesignDialogue:
+        """Conserve le dialogue de conception attaché à un cas de test."""
+
+        node = self.node(node_id)
+        if node.kind is not NodeKind.TEST:
+            raise HierarchyError(
+                "Seul un cas de test peut recevoir un dialogue de conception."
+            )
+        if node.archived:
+            raise HierarchyError(
+                "Un cas de test archivé ne peut pas recevoir de dialogue."
+            )
+        node.design_dialogue = dialogue
+        return dialogue
 
     def organize_tests(
         self,
@@ -573,6 +608,30 @@ class Project:
             ),
         )
 
+    def update_details(
+        self,
+        *,
+        name: str,
+        description: str,
+        web_target: str,
+        security_policy: str,
+    ) -> Project:
+        """Modifie les informations propres au projet sans réécrire ses plans."""
+
+        if self.archived:
+            raise HierarchyError("Un projet archivé ne peut pas être modifié.")
+        normalized_name = _required_text(name, "Le nom du projet")
+        normalized_target = _required_text(web_target, "La cible web")
+        normalized_policy = _required_text(
+            security_policy,
+            "La politique de sécurité",
+        )
+        self.name = normalized_name
+        self.description = description.strip()
+        self.web_target = normalized_target
+        self.security_policy = normalized_policy
+        return self
+
     def create_test_plan(
         self,
         *,
@@ -580,7 +639,8 @@ class Project:
         objective: str,
         target: str,
         scope: str = "",
-        approach: str = "",
+        test_approach_id: str = "",
+        test_approach_version: int = 1,
         risks: tuple[str, ...] = (),
         entry_criteria: tuple[str, ...] = (),
         exit_criteria: tuple[str, ...] = (),
@@ -593,13 +653,21 @@ class Project:
     ) -> TestPlan:
         if self.archived:
             raise HierarchyError("Un projet archivé ne peut pas être modifié.")
+        if test_approach_version < 1:
+            raise HierarchyError(
+                "La version du profil d'approche de test doit être positive."
+            )
         test_plan = TestPlan(
             id=uuid4(),
             name=_required_text(name, "Le nom du plan de test"),
             objective=_required_text(objective, "L'objectif du plan de test"),
             target=_required_text(target, "La cible du plan de test"),
             scope=_required_text(scope, "Le périmètre du plan de test"),
-            approach=_required_text(approach, "L'approche du plan de test"),
+            test_approach_id=_required_text(
+                test_approach_id,
+                "L'identifiant du profil d'approche de test",
+            ),
+            test_approach_version=test_approach_version,
             risks=tuple(risks),
             entry_criteria=tuple(entry_criteria),
             exit_criteria=tuple(exit_criteria),
@@ -629,7 +697,8 @@ class Project:
             name=name,
             objective=objective,
             scope=objective,
-            approach="Approche fonctionnelle guidée",
+            test_approach_id="functional-risk-based",
+            test_approach_version=1,
             test_type=test_type,
             target=target,
             tags=tags,

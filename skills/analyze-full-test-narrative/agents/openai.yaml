@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyse scénario complet"
+  short_description: "Structure un scénario narratif complet"
+  default_prompt: "Use $analyze-full-test-narrative to turn a complete test narrative into a canonical workflow."

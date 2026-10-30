@@ -89,6 +89,15 @@ class OnlineIsolationAcceptanceTests(unittest.TestCase):
 
         self.assertEqual(project, self.application.get_project(self.bob, project.id))
         with self.assertRaises(AuthorizationDenied):
+            self.application.update_project(
+                actor=self.bob,
+                project_id=project.id,
+                name="Modification interdite",
+                description=project.description,
+                web_target=project.web_target,
+                security_policy=project.security_policy,
+            )
+        with self.assertRaises(AuthorizationDenied):
             self.application.create_test_set(
                 actor=self.bob,
                 project_id=project.id,
@@ -156,6 +165,14 @@ class DeploymentParityAcceptanceTests(unittest.TestCase):
             name="Connexion réussie",
             parent_id=suite.id,
         )
+        application.update_project(
+            actor=actor,
+            project_id=first_project.id,
+            name="Projet principal édité",
+            description="Contrat partagé mis à jour",
+            web_target="https://updated.demo.invalid",
+            security_policy="demo-only",
+        )
 
         return {
             "project_names": [
@@ -164,6 +181,7 @@ class DeploymentParityAcceptanceTests(unittest.TestCase):
             ],
             "test_set_name": test_set.name,
             "test_path": list(test_set.path(test.id)),
+            "updated_target": first_project.web_target,
         }
 
 

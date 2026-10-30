@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+{% block title %}Tutoriel de rédaction · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span><span aria-current="page">Tutoriel de rédaction</span>
+  </nav>
+
+  <header class="page-heading documentation-heading">
+    <div>
+      <p class="eyebrow">Tutoriel guidé</p>
+      <h1>Configurer et rédiger un cas de test</h1>
+      <p class="lead">
+        De la cible web au workflow structuré prêt pour la génération Playwright.
+      </p>
+    </div>
+  </header>
+
+  <div class="documentation-layout">
+    <nav class="documentation-nav" aria-label="Sommaire du tutoriel">
+      <strong>Étapes</strong>
+      <a href="#display">Repères d’interface</a>
+      <a href="#project">1. Configurer le projet</a>
+      <a href="#generation-config">1 bis. Configurer le LLM</a>
+      <a href="#case-context">2. Préparer le cas</a>
+      <a href="#preconditions">2 bis. Traduire les préconditions</a>
+      <a href="#assistant">3. Utiliser l’assistant</a>
+      <a href="#analyze">4. Analyser une page</a>
+      <a href="#steps">5. Rédiger les étapes</a>
+      <a href="#data">6. Paramétrer les données</a>
+      <a href="#llm">7. Finaliser avec le LLM</a>
+      <a href="#structure">8. Vérifier la structure</a>
+      <a href="#save">9. Enregistrer</a>
+    </nav>
+
+    <article class="documentation-content tutorial-content">
+      <section id="display">
+        <p class="eyebrow">Avant de commencer</p>
+        <h2>Se repérer dans l’interface</h2>
+        <p>
+          Chaque catalogue présente les éléments existants avant le formulaire de
+          création. Utilisez le bouton <strong>+ Ajouter…</strong> sous la liste :
+          le formulaire s’ouvre sur toute la largeur et le premier champ reçoit le
+          focus. Le bouton <strong>−</strong> ou la touche <kbd>Échap</kbd> le replie
+          sans effacer ce que vous avez commencé à saisir.
+        </p>
+        <p>
+          Le sélecteur <strong>Thème</strong> de l’en-tête permet de choisir Forêt,
+          Océan, Prune, Coucher de soleil, Graphite, Contraste élevé ou Défense —
+          ministère des Armées. Le choix est
+          conservé par ce navigateur et n’influence jamais les tests ni leur code.
+        </p>
+      </section>
+
+      <section id="project">
+        <p class="eyebrow">Étape 1</p>
+        <h2>Configurer le projet</h2>
+        <ol>
+          <li>Depuis l’accueil, utilisez <strong>+ Ajouter un projet</strong>, puis saisissez un nom métier explicite.</li>
+          <li>Indiquez la cible web autorisée, par exemple <code>https://recette.example.net</code>.</li>
+          <li>Choisissez une politique de sécurité qui interdit les autres origines.</li>
+          <li>Dans le projet, utilisez <strong>+ Ajouter un plan de test</strong> et sélectionnez son profil d’approche versionné.</li>
+          <li>Pour corriger le projet, revenez au catalogue et dépliez <strong>Modifier le projet</strong> à côté de sa carte. Si sa cible change, contrôlez séparément les plans existants.</li>
+          <li>Dans la page du projet, construisez directement l’arborescence <strong>Plan → Dossier → Suite → Cas</strong> avec les boutons <strong>+</strong> de chaque niveau.</li>
+          <li>Ajoutez une suite, puis le cas de test à rédiger.</li>
+        </ol>
+        <p>
+          La cible du projet définit la frontière de l’analyse. Une page située sur
+          une autre origine est refusée avant tout téléchargement.
+        </p>
+      </section>
+
+      <section id="generation-config">
+        <p class="eyebrow">Préparation de la génération</p>
+        <h2>Configurer l’accès LLM et le code attendu</h2>
+        <ol>
+          <li>Ouvrez <a href="/configuration/llm-access">Accès aux LLM</a>.</li>
+          <li>Utilisez le bouton <strong>+ Ajouter une nouvelle connexion</strong> sous la liste, puis indiquez le fournisseur et l’URL de base.</li>
+          <li>Dans le champ <strong>Modèle</strong>, utilisez ↻ pour charger la liste exposée par cette URL, puis choisissez l’identifiant attendu.</li>
+          <li>Saisissez uniquement le nom de la variable contenant la clé, par exemple <code>OPENAI_API_KEY</code>.</li>
+          <li>Définissez cette variable dans l’environnement qui lancera l’application ou le futur worker. Ne copiez jamais sa valeur dans le formulaire.</li>
+          <li>Ouvrez ensuite <a href="/configuration/code-generation">Génération de code</a>, utilisez <strong>+ Ajouter un profil de génération</strong> et liez-le à la version de cet accès.</li>
+          <li>Choisissez le langage, le framework, le répertoire relatif, les motifs de fichiers et les validations autorisées.</li>
+          <li>Dans le cas de test, sélectionnez les deux références versionnées avant de confirmer la structure.</li>
+        </ol>
+        <p>
+          Utilisez <strong>proposal-only</strong> pour produire un candidat sans
+          remplacer de fichier. Les contrôles sont choisis dans une liste fermée ;
+          aucune commande shell libre ne doit être confiée au modèle.
+        </p>
+        <h3>Configuration locale Ollama utilisée</h3>
+        <ol>
+          <li>Vérifiez le service avec <code>http://127.0.0.1:11434/api/version</code>.</li>
+          <li>Dans <strong>Accès aux LLM</strong>, utilisez le fournisseur <code>ollama</code>, l’URL <code>http://127.0.0.1:11434/v1</code> et le modèle exact <code>qwen3.6-35b-a3b-q4_K_M_128k:latest</code>.</li>
+          <li>Laissez la variable de clé vide uniquement pour la boucle locale et fixez le délai à 600 secondes.</li>
+          <li>Laissez d’abord le profil désactivé puis cliquez sur <strong>Tester la connexion et le JSON</strong>.</li>
+          <li>Activez une nouvelle version du profil seulement lorsque le test complet, avec le contexte déclaré, réussit.</li>
+        </ol>
+        <p>
+          Le test utilise un contrat synthétique : aucune information du cas
+          n’est envoyée. La documentation complète et le diagnostic matériel
+          observé se trouvent dans <code>docs/llm/ollama.md</code>.
+        </p>
+      </section>
+
+      <section id="case-context">
+        <p class="eyebrow">Étape 2</p>
+        <h2>Préparer le contexte du cas</h2>
+        <dl class="documentation-fields">
+          <div><dt>Objectif</dt><dd>Un seul comportement métier à démontrer.</dd></div>
+          <div><dt>Acteur métier</dt><dd>Le rôle compréhensible dans la documentation.</dd></div>
+          <div><dt>Profil d’acteur</dt><dd>La fixture d’authentification non secrète utilisée par le runner.</dd></div>
+          <div><dt>Profil d’environnement</dt><dd>La configuration versionnée qui résout l’URL, la locale, le navigateur et les origines.</dd></div>
+          <div><dt>Page de départ</dt><dd>La première page ouverte par le parcours.</dd></div>
+          <div><dt>Préparation</dt><dd>Les états et fixtures nécessaires avant la première action.</dd></div>
+          <div><dt>Nettoyage</dt><dd>La remise en état qui rend le cas réexécutable.</dd></div>
+        </dl>
+        <p>
+          Ne saisissez jamais de mot de passe. Utilisez uniquement une référence
+          telle que <code>client-password</code>.
+        </p>
+      </section>
+
+      <section id="preconditions">
+        <p class="eyebrow">Avant les étapes</p>
+        <h2>Traduire et confirmer les préconditions</h2>
+        <ol>
+          <li>Saisissez une condition métier autonome par ligne, sans décrire sa solution technique.</li>
+          <li>Cliquez sur <strong>Préparer les traductions</strong>. Une carte non confirmée est créée pour chaque ligne.</li>
+          <li>Choisissez sa nature : condition vérifiable, fixture, dépendance technique, préparation ou nettoyage.</li>
+          <li>Pour une fixture ou une dépendance, renseignez sa référence non secrète. Une fixture doit aussi être ajoutée dans <strong>Données de test référencées</strong>.</li>
+          <li>Reformulez précisément la traduction, puis cochez sa confirmation. Toute modification ultérieure la décoche.</li>
+          <li>Dans <strong>Structure envoyée au générateur</strong>, cliquez sur <strong>Vérifier la préparation</strong>.</li>
+        </ol>
+        <p>
+          Le contrôle est local et déterministe. Il vérifie l’origine de la cible,
+          les traductions, les fixtures, la seule présence des secrets et le runtime
+          Playwright. Il n’affiche jamais la valeur d’un secret et le LLM ne peut pas
+          convertir un échec en réussite.
+        </p>
+        <aside class="syntax-note">
+          <strong>Compatibilité</strong>
+          <p>
+            Les workflows historiques de version 1 restent lisibles. Dès qu’ils
+            sont réenregistrés par le nouvel éditeur, la version 2 exige cette revue
+            avant la génération.
+          </p>
+        </aside>
+      </section>
+
+      <section id="assistant">
+        <p class="eyebrow">Étape 3</p>
+        <h2>Utiliser l’assistant de conception</h2>
+        <ol>
+          <li>Dans le cas de test, ouvrez la section <strong>Assistant</strong>.</li>
+          <li>Sélectionnez l’intention qui correspond à un seul comportement métier.</li>
+          <li>Cliquez sur <strong>Analyser les informations manquantes</strong>.</li>
+          <li>Lisez chaque question et surtout la ligne <strong>Utilité</strong>, qui explique l’impact de la réponse.</li>
+          <li>Utilisez <strong>Compléter le champ concerné</strong> pour revenir directement à la bonne zone du formulaire.</li>
+          <li>Relancez le diagnostic après vos modifications pour voir la complétude progresser.</li>
+        </ol>
+        <p>
+          Exemple : pour « Se connecter avec succès », l’assistant recherche
+          l’acteur, la page de connexion, les références d’identifiants, les
+          actions de saisie et une preuve visible de l’ouverture de session. Il ne
+          vous redemande pas une information déjà présente dans la structure.
+        </p>
+        <aside class="syntax-note">
+          <strong>À retenir</strong>
+          <p>
+            Le pourcentage de complétude signifie que les rubriques attendues sont
+            renseignées. Il ne signifie pas que le cas est validé, que la page
+            fonctionne ou que du code a déjà été généré.
+          </p>
+        </aside>
+      </section>
+
+      <section id="analyze">
+        <p class="eyebrow">Étape 4</p>
+        <h2>Analyser une page</h2>
+        <ol>
+          <li>Copiez l’URL de la page dans le champ <strong>Page à analyser</strong>.</li>
+          <li>Cliquez sur <strong>Analyser la page</strong>.</li>
+          <li>Relisez les champs, boutons, liens et titres affichés dans la palette.</li>
+          <li>Cliquez dans une cible d’action ou de validation, puis sur une carte de la palette pour insérer sa référence.</li>
+        </ol>
+        <p>
+          Une référence comme <code>page:login#email</code> ne constitue pas un
+          sélecteur CSS. Elle conserve le libellé, le rôle et la stratégie de
+          localisation proposés. Le générateur doit encore contrôler l’unicité et
+          la stabilité du localisateur.
+        </p>
+        <h3>Comprendre les suggestions issues de la page</h3>
+        <p>
+          Revenez dans la section <strong>Assistant</strong> après l’analyse. Le
+          panneau <strong>Ce que les champs HTML permettent de faire</strong>
+          distingue :
+        </p>
+        <ul>
+          <li>les éléments manipulables, avec leurs actions compatibles ;</li>
+          <li>les éléments observables, avec leurs validations possibles ;</li>
+          <li>les exemples de valeurs issus des options HTML ou des espaces de noms de données ;</li>
+          <li>les éléments uniquement destinés à une validation, comme un titre.</li>
+        </ul>
+        <p>
+          Cliquez d’abord dans la cible d’une carte d’étape, puis sur
+          <strong>Utiliser cette référence</strong>. La référence est insérée sans
+          transformer le libellé métier en sélecteur CSS fragile.
+        </p>
+        <p>
+          L’analyse HTML statique n’utilise pas de session ni de secret. Pour une
+          page rendue par JavaScript ou protégée par authentification, utilisez le
+          plan déclaratif de l’exploration contrôlée Playwright décrit ci-dessous.
+        </p>
+        <h3>Cataloguer une page après connexion</h3>
+        <ol>
+          <li>Créez un plan JSON versionné avec l’URL de départ, l’URL finale à cataloguer et une liste fermée d’actions.</li>
+          <li>Référencez une ligne XLSX synthétique avec son identifiant de source, sa colonne clé et sa clé de ligne.</li>
+          <li>Utilisez des valeurs comme <code>{% raw %}{{data.login.email}}{% endraw %}</code> : les valeurs résolues ne sont pas écrites dans le catalogue.</li>
+          <li>Lancez <code>analyze-rendered-page</code> depuis un processus local distinct de l’application web.</li>
+          <li>Relisez <code>discovery.rendered_only_references</code> pour identifier ce que JavaScript a ajouté.</li>
+          <li>Appliquez le catalogue à une copie du workflow avec <code>apply-page-catalog</code> ; l’opération est refusée si une cible utilisée disparaît.</li>
+        </ol>
+        <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli analyze-rendered-page `
+  --plan .\config\examples\hr-demo-rendered-page-plan.json `
+  --base-url http://127.0.0.1:8775 `
+  --output .\outputs\hr-demo\catalog-saisie-manager.json
+
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli apply-page-catalog `
+  --catalog .\outputs\hr-demo\catalog-saisie-manager.json `
+  --workflow .\config\examples\hr-demo-workflow.json `
+  --output .\outputs\hr-demo\hr-demo-workflow.rendered.json</code></pre>
+        <aside class="syntax-note">
+          <strong>Pourquoi un plan fermé ?</strong>
+          <p>
+            Le navigateur accepte au plus vingt actions et ne sait ni exécuter
+            un script libre ni quitter l’origine locale. Le HTML source et les
+            valeurs saisies ne sont jamais conservés dans l’artefact.
+          </p>
+        </aside>
+      </section>
+
+      <section id="steps">
+        <p class="eyebrow">Étape 5</p>
+        <h2>Ajouter et ordonner les étapes</h2>
+        <p>
+          Choisissez d’abord le mode qui correspond au niveau de précision dont
+          vous disposez. Les trois modes alimentent la même structure de
+          génération : vous pouvez commencer en texte puis accepter une
+          proposition structurée.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Formulaires action et contrôle</dt><dd>Pour une saisie précise : une carte décrit le contexte, l’action, sa donnée et le contrôle. Utilisez <strong>Ajouter un contrôle à la suite</strong> lorsqu’une action exige plusieurs observations.</dd></div>
+          <div><dt>Un texte par étape</dt><dd>Ajoutez les textes un à un. Chaque texte indique ce qui est vrai avant l’étape, l’action, la donnée utilisée et le résultat observable.</dd></div>
+          <div><dt>Un texte pour tout le parcours</dt><dd>Décrivez toutes les actions et validations dans l’ordre. Le petit LLM propose le découpage ; vérifiez chaque opération avant de l’accepter.</dd></div>
+        </dl>
+        <p>Dans le mode formulaire, une carte représente une unité lisible et contient trois parties :</p>
+        <ol>
+          <li><strong>Contexte local</strong> : nom, page courante et éventuel prérequis.</li>
+          <li><strong>Action</strong> : verbe contrôlé, cible et valeur.</li>
+          <li><strong>Validation</strong> : assertion, cible observée et résultat attendu.</li>
+        </ol>
+        <p>
+          Utilisez les flèches pour réordonner, le symbole de copie pour dupliquer et
+          la croix pour retirer une carte. Préférez une action principale par étape.
+          Un cas peut contenir des étapes sans assertion, mais il doit posséder au
+          moins une validation observable.
+        </p>
+        <aside class="syntax-note">
+          <strong>Rôle des skills du petit LLM</strong>
+          <p>
+            Chaque mode sélectionne un contrat spécialisé : relecture des
+            formulaires, analyse isolée des textes d’étape ou découpage du récit
+            complet. Le modèle pose une question si une cible HTML, une donnée ou
+            un contrôle manque. Il ne génère pas le code et ne confirme rien à
+            votre place.
+          </p>
+          <p>
+            Ouvrez <strong>Voir le prompt et le skill utilisés</strong> sous le
+            bouton d’assistance pour contrôler le nom du skill, les données
+            analysées, le prompt exact et ses règles avant tout appel au modèle.
+          </p>
+        </aside>
+        <h3>Exemple</h3>
+        <dl class="documentation-fields">
+          <div><dt>Action</dt><dd><code>fill</code> sur <code>page:login#email</code> avec <code>{% raw %}{{data.email}}{% endraw %}</code>.</dd></div>
+          <div><dt>Validation</dt><dd><code>value</code> sur le même champ avec <code>{% raw %}{{data.email}}{% endraw %}</code>.</dd></div>
+        </dl>
+      </section>
+
+      <section id="data">
+        <p class="eyebrow">Étape 6</p>
+        <h2>Paramétrer les données sans exposer de secret</h2>
+        <p>
+          Ajoutez les références une par une avec <strong>Ajouter une donnée</strong>.
+          Placez ensuite la valeur dans l’action concernée. Les résultats attendus
+          se saisissent dans le bloc <strong>Contrôle</strong> de chaque étape, au
+          plus près de l’action qu’ils vérifient.
+        </p>
+        <p>Trois espaces de noms sont disponibles :</p>
+        <dl class="documentation-fields">
+          <div><dt><code>{% raw %}{{data.email}}{% endraw %}</code></dt><dd>Colonne d’un CSV ou XLSX associé au cas.</dd></div>
+          <div><dt><code>{% raw %}{{data.login.email}}{% endraw %}</code></dt><dd>Colonne qualifiée lorsque plusieurs sources nommées participent au même cas.</dd></div>
+          <div><dt><code>{% raw %}{{fixture.customer_id}}{% endraw %}</code></dt><dd>Valeur reproductible non secrète fournie par une fixture.</dd></div>
+          <div><dt><code>{% raw %}{{secret.client_password}}{% endraw %}</code></dt><dd>Valeur résolue seulement dans l’environnement du runner.</dd></div>
+        </dl>
+        <p>
+          Les références sont enregistrées et contrôlables ; les valeurs secrètes ne
+          doivent apparaître ni dans le formulaire, ni dans le JSON, ni dans le code.
+        </p>
+        <p>
+          Pour plusieurs classeurs, choisissez une colonne clé stable et
+          associez explicitement une ligne de chaque source à chaque cas. Ne
+          comptez pas sur l’ordre des lignes : la matrice visible dans la
+          structure de génération constitue la source de vérité.
+        </p>
+      </section>
+
+      <section id="llm">
+        <p class="eyebrow">Étape 7</p>
+        <h2>Finaliser avec le LLM</h2>
+        <ol>
+          <li>Vérifiez que l’intention fonctionnelle et le profil d’accès LLM sont sélectionnés.</li>
+          <li>Lancez d’abord <strong>Analyser les informations manquantes</strong> et complétez les faits que vous connaissez déjà.</li>
+          <li>Dans <strong>Dialogue avec le LLM</strong>, écrivez un fait métier ou demandez une relecture du brouillon.</li>
+          <li>Pour démarrer rapidement, utilisez <strong>Développer le cas complet</strong>, <strong>Exploiter les champs HTML</strong> ou <strong>Renforcer les validations</strong>. Le texte reste modifiable avant envoi.</li>
+          <li>Le LLM reçoit la structure courante, l’intention, le diagnostic et les capacités des pages analysées, jamais la seule conversation ni le HTML brut.</li>
+          <li>Relisez chaque question et chaque proposition : libellé, justification, chemin structuré et nouvelle valeur.</li>
+          <li>Cochez uniquement les opérations que vous acceptez. Une case non cochée est refusée lorsque vous appliquez le lot.</li>
+          <li>Cliquez sur <strong>Appliquer la sélection</strong>. Le formulaire est mis à jour et la description est reconstruite depuis les seuls faits acceptés.</li>
+          <li>Corrigez si nécessaire la description synthétique, puis relancez le dialogue si vous souhaitez une nouvelle revue.</li>
+        </ol>
+        <p>
+          Le LLM ne confirme jamais une hypothèse, un contrôle système ou une
+          authentification. Une ligne restant dans <strong>Hypothèses ou
+          ambiguïtés</strong> interdit de marquer le workflow comme confirmé.
+        </p>
+        <aside class="syntax-note">
+          <strong>Pourquoi la décision peut être refusée</strong>
+          <p>
+            Chaque lot mémorise l’empreinte du formulaire au moment de la réponse.
+            Si vous modifiez le brouillon avant d’appliquer les propositions,
+            relancez le dialogue : l’ancienne décision est bloquée pour ne pas
+            écraser votre travail récent.
+          </p>
+        </aside>
+        <h3>Ce que le LLM ne peut pas modifier</h3>
+        <p>
+          Les profils LLM et de génération, les pages analysées et la case
+          <strong>Définition confirmée</strong> sont hors du contrat de
+          proposition. Une réponse qui vise ces champs est rejetée en entier et
+          ne laisse pas de message enregistré.
+        </p>
+        <h3>Quand le cas est suffisamment développé</h3>
+        <p>
+          Le cas doit décrire un comportement métier unique, référencer chaque
+          élément manipulé depuis une page analysée, utiliser des références de
+          données ou de secrets, contenir au moins une validation observable et
+          ne plus conserver d’ambiguïté bloquante. Le LLM aide à atteindre cet
+          état ; seul l’utilisateur accepte les faits et confirme ensuite la
+          structure.
+        </p>
+      </section>
+
+      <section id="structure">
+        <p class="eyebrow">Étape 8</p>
+        <h2>Vérifier la Structure de génération</h2>
+        <p>
+          Le panneau JSON est mis à jour pendant la saisie. Il contient la version du
+          schéma, les profils, la préparation, le nettoyage, les politiques, les
+          pages analysées et les étapes ordonnées. Il contient aussi
+          <code>llm_access_profile</code> et
+          <code>code_generation_profile</code>, ainsi que
+          <code>functional_intent</code>. Elle conserve aussi
+          <code>authoring_mode</code>, <code>step_narratives</code> et
+          <code>scenario_narrative</code>. Utilisez <strong>Copier la
+          structure</strong> pour l’inspecter à tout moment.
+        </p>
+        <p>Avant confirmation, vérifiez :</p>
+        <ul>
+          <li>qu’au moins une validation observable existe ;</li>
+          <li>que chaque action manipulant un élément possède une cible ;</li>
+          <li>que les valeurs dynamiques utilisent un espace de noms connu ;</li>
+          <li>que les secrets ne sont que des références ;</li>
+          <li>que les versions d’accès LLM et de génération sont cohérentes ;</li>
+          <li>qu’aucune hypothèse ne reste ouverte.</li>
+        </ul>
+      </section>
+
+      <section id="save">
+        <p class="eyebrow">Étape 9</p>
+        <h2>Enregistrer puis préparer la génération</h2>
+        <ol>
+          <li>Cochez <strong>Définition confirmée</strong> après la revue.</li>
+          <li>Enregistrez la définition structurée.</li>
+          <li>Relisez la nouvelle version et son aperçu JSON.</li>
+          <li>Ouvrez <strong>Voir les skills du prompt de génération</strong> pour vérifier les contrats et leurs sources.</li>
+          <li>Utilisez <strong>Ouvrir le prompt de génération</strong> : un onglet séparé montre la demande exacte adressable au LLM, ses profils, ses skills, son contrat JSON et son empreinte.</li>
+          <li>Contrôlez que les mots de passe sont remplacés par <code>&lt;secret-value-redacted&gt;</code> et qu’aucune clé API n’apparaît.</li>
+          <li>Utilisez <strong>Télécharger le code généré</strong> depuis le cas confirmé. Le fichier est téléchargé sans afficher son contenu dans la page.</li>
+          <li>La génération produit un artefact candidat, jamais une version approuvée automatiquement.</li>
+          <li>Le candidat devra être exécuté individuellement avant approbation.</li>
+          <li>Vérifiez le manifeste, puis utilisez le runner local pour obtenir JUnit et <code>execution.json</code>. Une modification du code impose une nouvelle génération.</li>
+        </ol>
+        <p><a class="secondary-button" href="/">Revenir aux projets</a></p>
+        <aside class="syntax-note">
+          <strong>Exercice complet prêt à l’emploi</strong>
+          <p>
+            Ouvrez le <a href="/demo/hr/login">Bureau des Talents
+            Intersidéraux</a> pour rédiger un cas réel à partir de champs
+            statiques, JavaScript et conditionnels, puis l’alimenter avec les
+            classeurs XLSX fournis.
+          </p>
+          <p>
+            Pour partir d’un projet déjà rédigé, exécutez
+            <code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli seed-hr-demo-project</code>,
+            puis ouvrez <strong>Exemple — Bureau des Talents Intersidéraux</strong>
+            dans le Catalogue. Les cas montrent où vérifier la préparation et
+            télécharger le code Playwright.
+          </p>
+        </aside>
+      </section>
+    </article>
+  </div>
+{% endblock %}

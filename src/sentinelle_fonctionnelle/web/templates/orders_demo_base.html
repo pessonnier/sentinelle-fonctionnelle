@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Comptoir des commandes{% endblock %}</title>
+    <link rel="stylesheet" href="/static/orders-demo.css">
+  </head>
+  <body class="orders-demo">
+    <header class="orders-header">
+      <a class="orders-brand" href="/demo/commandes/client">Comptoir des commandes</a>
+      <nav aria-label="Démonstration">
+        <a href="/demo/commandes/client">Nouvelle commande</a>
+        <a href="/demo/commandes/liste">Commandes enregistrées</a>
+      </nav>
+    </header>
+    <main class="orders-shell">
+      <ol class="stepper" aria-label="Progression">
+        <li class="{% if step >= 1 %}active{% endif %}"><span>1</span> Client</li>
+        <li class="{% if step >= 2 %}active{% endif %}"><span>2</span> Articles</li>
+        <li class="{% if step >= 3 %}active{% endif %}"><span>3</span> Récapitulatif</li>
+        <li class="{% if step >= 4 %}active{% endif %}"><span>4</span> Suivi</li>
+      </ol>
+      {% if parser_preview %}<p class="preview-note" role="note">Aperçu stable destiné à l’analyseur de pages.</p>{% endif %}
+      {% if error %}<p class="demo-error" role="alert">{{ error }}</p>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    <footer class="orders-footer">
+      <a href="https://github.com/pessonnier/sentinelle-fonctionnelle" target="_blank" rel="noopener noreferrer">Projet sur GitHub</a>
+    </footer>
+    <script src="/static/orders-demo.js" defer></script>
+  </body>
+</html>

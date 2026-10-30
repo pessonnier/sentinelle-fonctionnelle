@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion · Bureau des Talents Intersidéraux</title>
+    <link rel="stylesheet" href="/static/hr-demo.css">
+  </head>
+  <body class="hr-demo hr-login-page" data-page="login">
+    <div class="orbit orbit-one" aria-hidden="true">🪐</div>
+    <div class="orbit orbit-two" aria-hidden="true">🦙</div>
+    <main class="login-shell">
+      <section class="hero-card">
+        <p class="kicker">Ministère des Ressources Humaines Approximatives</p>
+        <h1>Le Bureau des Talents Intersidéraux</h1>
+        <p>
+          Connectez-vous pour recruter des humains, des cactus et, sous réserve
+          budgétaire, une licorne à temps partiel.
+        </p>
+        <ul>
+          <li>Champ e-mail statique et correctement étiqueté</li>
+          <li>Mot de passe statique avec aide accessible</li>
+          <li>Code portail injecté par JavaScript après le chargement</li>
+        </ul>
+      </section>
+
+      <form class="login-card" method="post" action="/demo/hr/login" data-testid="hr-login-form">
+        <div class="stamp" aria-hidden="true">RH<br>∿</div>
+        <h2>Authentification cosmique</h2>
+        {% if error %}
+          <p class="form-error" role="alert">{{ error }}</p>
+        {% endif %}
+
+        <div class="field">
+          <label for="login-email">Adresse professionnelle</label>
+          <input
+            id="login-email"
+            name="email"
+            type="email"
+            autocomplete="username"
+            placeholder="prenom.nom@example.test"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="login-password">Mot de passe de démonstration</label>
+          <input
+            id="login-password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            aria-describedby="password-help"
+            required
+          >
+          <small id="password-help">Valeur synthétique uniquement. Aucun vrai secret ici.</small>
+        </div>
+
+        <div id="portal-code-host" class="dynamic-zone" aria-live="polite">
+          <span class="loading-squiggle">Le greffier JavaScript cherche le troisième champ…</span>
+        </div>
+
+        <label class="legal-pretzel">
+          <input type="checkbox" name="cosmic_charter" required>
+          J’accepte que mon dossier soit relu par un lama syndiqué.
+        </label>
+
+        <button type="submit" class="primary-button">Ouvrir le sas RH</button>
+        <p class="demo-hint">
+          Cette cible est volontairement fantaisiste et ne doit jamais être
+          exposée comme une vraie application d’authentification.
+        </p>
+      </form>
+    </main>
+    <footer class="demo-source-footer">
+      <a href="https://github.com/pessonnier/sentinelle-fonctionnelle" target="_blank" rel="noopener noreferrer">Projet sur GitHub</a>
+    </footer>
+    <script src="/static/hr-demo.js" defer></script>
+  </body>
+</html>

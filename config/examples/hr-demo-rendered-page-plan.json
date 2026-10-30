@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "catalog_url": "http://127.0.0.1:8000/demo/hr/saisie",
+  "start_url": "http://127.0.0.1:8000/demo/hr/login",
+  "timeout_seconds": 30,
+  "data_sources": [
+    {
+      "id": "login",
+      "path": "outputs/hr-demo/connexion-rh.xlsx",
+      "key_column": "case_id",
+      "row_key": "LOGIN-MANAGER-OK"
+    }
+  ],
+  "actions": [
+    {
+      "action": "fill",
+      "locator": {
+        "strategy": "label",
+        "value": "Adresse professionnelle"
+      },
+      "value": "{{data.login.email}}"
+    },
+    {
+      "action": "fill",
+      "locator": {
+        "strategy": "label",
+        "value": "Mot de passe de démonstration"
+      },
+      "value": "{{data.login.password}}"
+    },
+    {
+      "action": "fill",
+      "locator": {
+        "strategy": "label",
+        "value": "Code du portail astral"
+      },
+      "value": "{{data.login.portal_code}}"
+    },
+    {
+      "action": "check",
+      "locator": {
+        "strategy": "label",
+        "value": "J’accepte que mon dossier soit relu par un lama syndiqué."
+      }
+    },
+    {
+      "action": "click",
+      "locator": {
+        "strategy": "role",
+        "value": "button|Ouvrir le sas RH"
+      }
+    },
+    {
+      "action": "wait_visible",
+      "locator": {
+        "strategy": "label",
+        "value": "Couleur d’aura préférée"
+      }
+    },
+    {
+      "action": "wait_visible",
+      "locator": {
+        "strategy": "label",
+        "value": "Note dynamique du manager"
+      }
+    }
+  ]
+}

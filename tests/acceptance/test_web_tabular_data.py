@@ -39,7 +39,7 @@ class WebTabularDataAcceptanceTests(unittest.TestCase):
                         "name": "Formulaires",
                         "objective": "Paramétrer les saisies",
                         "scope": "Création de compte",
-                        "approach": "Itérations pilotées par les données",
+                        "test_approach": "functional-risk-based@1",
                         "test_type": "acceptance",
                         "target": "recette",
                     },

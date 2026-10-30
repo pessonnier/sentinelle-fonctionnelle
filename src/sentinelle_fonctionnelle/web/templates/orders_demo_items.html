@@ -1,0 +1,44 @@
+{% extends "orders_demo_base.html" %}
+{% block title %}Articles · Comptoir des commandes{% endblock %}
+{% block content %}
+  <header class="demo-title">
+    <p>Écran 2 · saisie tabulaire</p>
+    <h1>Composer la commande</h1>
+    <span>Les quantités sont saisies directement dans un tableau et le sous-total est recalculé.</span>
+  </header>
+  <form class="demo-panel" action="/demo/commandes/articles/{{ draft_id }}" method="post" {% if parser_preview %}onsubmit="return false"{% endif %}>
+    <div class="table-wrap">
+      <table id="product-table">
+        <thead><tr><th>Référence</th><th>Article</th><th>Catégorie</th><th>Prix unitaire</th><th>Stock</th><th>Quantité</th><th>Total</th></tr></thead>
+        <tbody>
+          {% for product in products %}
+            <tr data-price="{{ product.price }}">
+              <td><code>{{ product.code }}</code></td>
+              <td>{{ product.name }}</td>
+              <td>{{ product.category }}</td>
+              <td>{{ product.price }} €</td>
+              <td>{{ product.stock }}</td>
+              <td><label class="sr-only" for="quantity-{{ product.code }}">Quantité {{ product.name }}</label><input id="quantity-{{ product.code }}" name="quantity_{{ product.code }}" type="number" min="0" max="{{ product.stock }}" value="{{ draft.quantities.get(product.code, 0) }}"></td>
+              <td data-line-total>0.00 €</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot><tr><th colspan="6">Sous-total indicatif</th><td id="live-subtotal">0.00 €</td></tr></tfoot>
+      </table>
+    </div>
+    <div class="form-grid compact-fields">
+      <label>Mode de livraison
+        <select name="delivery_mode">
+          <option value="standard" {% if draft.delivery_mode == 'standard' %}selected{% endif %}>Standard — 6,90 €</option>
+          <option value="express" {% if draft.delivery_mode == 'express' %}selected{% endif %}>Express — 14,90 €</option>
+          <option value="pickup" {% if draft.delivery_mode == 'pickup' %}selected{% endif %}>Retrait — gratuit</option>
+        </select>
+      </label>
+      <label>Code promotionnel
+        <input name="discount_code" value="{{ draft.discount_code }}" placeholder="DEMO10">
+      </label>
+      <label class="inline"><input type="checkbox" name="gift_wrap" value="yes" {% if draft.gift_wrap %}checked{% endif %}> Ajouter un emballage cadeau (+3,50 €)</label>
+    </div>
+    <div class="actions"><a href="/demo/commandes/client">Recommencer</a><button type="submit" {% if parser_preview %}disabled{% endif %}>Calculer le récapitulatif</button></div>
+  </form>
+{% endblock %}

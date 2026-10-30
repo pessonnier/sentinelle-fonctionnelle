@@ -1,0 +1,28 @@
+{
+  "case_slug": "hr_demo_manager_onboarding",
+  "customization_contracts": {
+    "after_workflow": "python-playwright-page-data-v1"
+  },
+  "data_case_count": 2,
+  "data_sources": [
+    {
+      "id": "login",
+      "key_column": "case_id",
+      "path": "outputs/hr-demo/connexion-rh.xlsx",
+      "sha256": "88d8e9013f2ac9419e2b4c086349622293e1be8a963d90fa35a31cf6c3021377"
+    },
+    {
+      "id": "employee",
+      "key_column": "case_id",
+      "path": "outputs/hr-demo/saisie-collaborateurs.xlsx",
+      "sha256": "76a07fb6b9b8fcd372b326212a7d95c6fb0819e1f8d029d7ae26ba61e2b3dc38"
+    }
+  ],
+  "generator": "sentinelle-python-playwright",
+  "generator_version": "0.3.0",
+  "precondition_dependencies": [],
+  "schema_version": 1,
+  "source_sha256": "a9dcfd97dbaf19713f0f78062354b5abc760f145d57fd52526141c201b7c0848",
+  "test_name": "test_manager_creates_employee_from_xlsx",
+  "workflow_sha256": "336f5a262ac45c21d7297917f78074484d70bd046e8bc95514b1ff3b43ba1ffa"
+}

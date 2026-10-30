@@ -37,7 +37,7 @@ class WebSpecificationEditorAcceptanceTests(unittest.TestCase):
                         "name": "Connexion",
                         "objective": "Définir les parcours",
                         "scope": "Authentification des clients",
-                        "approach": "Cas nominaux et erreurs métier",
+                        "test_approach": "functional-risk-based@1",
                         "test_type": "acceptance",
                         "target": "recette",
                         "tags": "authentification",

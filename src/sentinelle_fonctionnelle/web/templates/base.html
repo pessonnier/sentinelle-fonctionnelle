@@ -1,28 +1,64 @@
 <!doctype html>
-<html lang="fr">
+<html lang="fr" data-theme="forest">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}Sentinelle Fonctionnelle{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}">
+    <script src="{{ url_for('static', path='/theme-init.js') }}?v=20260802-defense-theme"></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='/dsfr-logo.min.css') }}?v=1.15.0">
+    <link rel="stylesheet" href="{{ url_for('static', path='/app.css') }}?v=20260908-lot3b">
   </head>
   <body>
     <header class="site-header">
       <a class="brand" href="/">
         <span class="brand-mark" aria-hidden="true">S</span>
-        <span>
+        <span class="defense-state-brand" aria-label="Ministère des Armées et des Anciens combattants">
+          <span class="fr-logo fr-logo--sm" aria-hidden="true">
+            Ministère<br>
+            des Armées<br>
+            et des Anciens<br>
+            combattants
+          </span>
+        </span>
+        <span class="brand-copy">
           <strong>Sentinelle Fonctionnelle</strong>
           <small>plans et cas de test</small>
         </span>
       </a>
-      <span class="mode-badge">Mode local</span>
+      <nav class="header-actions" aria-label="Navigation principale">
+        <details class="admin-menu">
+          <summary>Administration</summary>
+          <div class="admin-menu-panel">
+            <a href="/configuration/test-approaches">Approches de test</a>
+            <a href="/configuration/llm-access">Accès aux LLM</a>
+            <a href="/configuration/code-generation">Génération de code</a>
+          </div>
+        </details>
+        <a class="header-link" href="/documentation">Documentation</a>
+        <label class="theme-control">
+          <span>Thème</span>
+          <select data-theme-selector aria-label="Thème de couleur">
+            <option value="forest">Forêt</option>
+            <option value="ocean">Océan</option>
+            <option value="plum">Prune</option>
+            <option value="sunset">Coucher de soleil</option>
+            <option value="graphite">Graphite</option>
+            <option value="high-contrast">Contraste élevé</option>
+            <option value="defense">Défense — ministère des Armées</option>
+          </select>
+        </label>
+        <span class="mode-badge">Mode local</span>
+      </nav>
     </header>
     <main class="page">
       {% block content %}{% endblock %}
     </main>
     <footer>
       Données persistées localement dans SQLite ·
-      <a href="/health">santé</a> · <a href="/api/docs">API</a>
+      <a href="/documentation">documentation</a> ·
+      <a href="/health">santé</a> · <a href="/api/docs">API</a> ·
+      <a href="https://github.com/pessonnier/sentinelle-fonctionnelle" target="_blank" rel="noopener noreferrer">GitHub</a>
     </footer>
+    <script src="{{ url_for('static', path='/app.js') }}?v=20260907-lot2" defer></script>
   </body>
 </html>

@@ -1,0 +1,584 @@
+{% extends "base.html" %}
+{% block title %}Documentation · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span><span aria-current="page">Documentation</span>
+  </nav>
+
+  <header class="page-heading documentation-heading">
+    <div>
+      <p class="eyebrow">Aide intégrée</p>
+      <h1>Documentation fonctionnelle</h1>
+      <p class="lead">
+        Référence des concepts, des champs de saisie et du cheminement de conception
+        d’un jeu de tests.
+      </p>
+    </div>
+  </header>
+
+  <div class="documentation-layout">
+    <nav class="documentation-nav" aria-label="Sommaire de la documentation">
+      <strong>Sommaire</strong>
+      <a href="#workflow">Cheminement</a>
+      <a href="#interface-patterns">Présentation et thèmes</a>
+      <a href="#project">Projet</a>
+      <a href="#test-plan">Plan de test</a>
+      <a href="#organization">Suites et dossiers</a>
+      <a href="#test-case">Cas de test</a>
+      <a href="#design-guidance">Assistant de conception</a>
+      <a href="#page-analysis">Analyse des pages</a>
+      <a href="#workflow-step">Étapes structurées</a>
+      <a href="#generation-structure">Structure de génération</a>
+      <a href="#llm-generation">Accès LLM et génération</a>
+      <a href="#llm-finalization">Finalisation LLM</a>
+      <a href="#test-data">Données de test</a>
+      <a href="#hr-demo">Cible de démonstration RH</a>
+      <a href="#views">Vues et recherche</a>
+      <a href="#node-actions">Actions sur l’arborescence</a>
+      <a href="#ci">Déploiement CI/CD</a>
+      <a href="#llm">Configuration des LLM</a>
+    </nav>
+
+    <article class="documentation-content">
+      <section id="workflow">
+        <p class="eyebrow">Modèle fonctionnel</p>
+        <h2>Cheminement de conception</h2>
+        <p>
+          Dans les formulaires, un astérisque rouge <strong>*</strong> signale chaque
+          champ obligatoire. Les autres champs peuvent être laissés vides.
+          Le symbole <strong>ℹ</strong> placé avant un titre déplie les informations,
+          l’exemple éventuel et le lien vers cette documentation.
+        </p>
+        <ol class="workflow-list">
+          <li><strong>Projet</strong><span>Définit l’application web, sa cible et sa politique de sécurité.</span></li>
+          <li><strong>Plan de test</strong><span>Cadre un objectif, un périmètre, une approche et des critères de validation.</span></li>
+          <li><strong>Suite de tests ou dossier</strong><span>Organise les cas par exécution ou par classement.</span></li>
+          <li><strong>Cas de test</strong><span>Décrit le contexte, les étapes, les données et les résultats attendus.</span></li>
+        </ol>
+        <p>
+          Les captures d’écran sont facultatives. L’export du jeu de tests reste une
+          action manuelle après validation du plan.
+        </p>
+      </section>
+
+      <section id="interface-patterns">
+        <p class="eyebrow">Repères communs</p>
+        <h2>Présentation, ajout progressif et thèmes</h2>
+        <p>
+          Les catalogues affichent d’abord les éléments existants sur toute la
+          largeur. Le bouton <strong>+ Ajouter…</strong> situé sous la liste ouvre
+          le formulaire de création au même endroit. Cette présentation permet de
+          parcourir et comparer les objets avant de décider d’en créer un nouveau.
+        </p>
+        <ul>
+          <li>Le formulaire est fermé au chargement de la page.</li>
+          <li>Son ouverture place le curseur dans le premier champ utilisable.</li>
+          <li>Le bouton devenu <strong>− Masquer le formulaire</strong> ou la touche <kbd>Échap</kbd> le replie.</li>
+          <li>Un simple repli conserve les valeurs déjà saisies ; seule une navigation ou une soumission réussie change le contexte.</li>
+          <li>Les modifications d’un élément existant restent accessibles en dépliant sa fiche.</li>
+        </ul>
+        <p>
+          Dans l’en-tête, la liste <strong>Thème</strong> applique immédiatement
+          l’une des palettes Forêt, Océan, Prune, Coucher de soleil, Graphite,
+          Contraste élevé ou Défense — ministère des Armées. Le navigateur mémorise
+          ce choix sur le poste ; il ne
+          fait pas partie du projet, du cas de test ou du prompt de génération.
+          Utilisez <strong>Contraste élevé</strong> lorsque des séparations et des
+          états de focus plus marqués facilitent la lecture.
+        </p>
+        <p>
+          Le thème <strong>Défense — ministère des Armées</strong> utilise le
+          bloc-marque « Ministère des Armées et des Anciens combattants », le Bleu
+          France, le Rouge Marianne et un pictogramme Rafale provenant du site
+          officiel. Ces ressources sont embarquées localement. La marque de l’État
+          est réservée aux services autorisés : ce thème ne constitue pas, à lui
+          seul, une preuve d’affiliation ou d’habilitation.
+        </p>
+        <p>
+          L’application RH loufoque ouverte comme cible de test n’est pas recolorée :
+          son apparence et son HTML volontairement variables servent à éprouver
+          l’analyseur de pages.
+        </p>
+      </section>
+
+      <section id="project">
+        <p class="eyebrow">Niveau 1</p>
+        <h2>Projet</h2>
+        <p>
+          Un projet représente l’application web testée. Son nom et sa description
+          doivent rester compréhensibles par les équipes produit, QA et exploitation.
+          La cible web est l’URL de référence utilisée pour préparer les cas.
+        </p>
+        <p>
+          Dans le catalogue de l’accueil, dépliez <strong>Modifier le projet</strong>
+          à côté du projet concerné pour
+          corriger ces quatre informations. Une nouvelle cible devient la référence
+          du projet et des nouvelles analyses, mais ne remplace pas silencieusement
+          l’environnement déjà enregistré dans un plan de test existant.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Nom</dt><dd>Nom stable et explicite de l’application ou du produit.</dd></div>
+          <div><dt>Description</dt><dd>Finalité du projet et principaux parcours couverts.</dd></div>
+          <div><dt>Cible web</dt><dd>URL absolue d’un environnement autorisé, par exemple <code>https://recette.example.net</code>.</dd></div>
+          <div><dt>Politique de sécurité</dt><dd>Règle locale encadrant les cibles et données autorisées, par exemple <code>demo-only</code>.</dd></div>
+        </dl>
+      </section>
+
+      <section id="test-plan">
+        <p class="eyebrow">Niveau 2</p>
+        <h2>Plan de test</h2>
+        <p>
+          Le plan de test explique ce qui sera vérifié, pourquoi et dans quelles
+          conditions. Les champs multiligne acceptent une valeur par ligne pour les
+          risques et critères.
+        </p>
+        <p>
+          Il n’existe plus d’étape de navigation obligatoire entre le projet et son
+          organisation. Dans la page du projet, chaque plan constitue la racine
+          visible d’une arborescence <strong>Plan → Dossier → Suite → Cas</strong>.
+          Dépliez <strong>Modifier le plan</strong> sous sa ligne pour éditer son
+          cadre sans quitter l’arborescence.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Objectif</dt><dd>Résultat métier que le plan doit permettre de valider.</dd></div>
+          <div><dt>Périmètre</dt><dd>Fonctions incluses et exclusions explicites.</dd></div>
+          <div>
+            <dt>Profil d’approche de test</dt>
+            <dd>
+              Profil YAML versionné sélectionné dans une liste. Il fixe les
+              niveaux, types, techniques, priorités et règles de génération.
+              Les profils se créent et se modifient dans
+              <a href="/configuration/test-approaches">Configuration</a>.
+            </dd>
+          </div>
+          <div><dt>Risques</dt><dd>Événements métier ou techniques que le plan doit maîtriser.</dd></div>
+          <div><dt>Critères d’entrée et de sortie</dt><dd>Conditions nécessaires pour commencer puis considérer le plan terminé.</dd></div>
+          <div><dt>Type et tags</dt><dd>Valeurs héritées lors de la création des suites et des cas.</dd></div>
+        </dl>
+      </section>
+
+      <section id="organization">
+        <p class="eyebrow">Niveau 3</p>
+        <h2>Suites de tests et dossiers</h2>
+        <p>
+          Un <strong>dossier</strong> sert au classement fonctionnel et se crée depuis
+          le cadre Organisation du plan. Une <strong>suite de tests</strong> porte une
+          intention d’exécution et se crée depuis l’action <strong>＋</strong> de la
+          ligne du dossier qui doit la contenir.
+        </p>
+        <p>
+          Une suite peut définir des préconditions, postconditions, types et
+          déclarations CI communs. L’action <strong>＋</strong> de sa ligne crée un cas
+          directement rattaché à cette suite.
+        </p>
+      </section>
+
+      <section id="test-case">
+        <p class="eyebrow">Niveau 4</p>
+        <h2>Cas de test</h2>
+        <p>
+          Un cas de test doit rester autonome et lisible. L’éditeur utilise un unique
+          workflow pas-à-pas : chaque carte contient son contexte local, une action
+          typée et une validation observable. Les anciens modes Given/When/Then,
+          tableau d’exemples et checklist restent lisibles mais ne sont plus proposés
+          comme formats concurrents.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Contexte</dt><dd>Objectif, acteur métier, profils d’acteur et d’environnement, page de départ, préconditions, exigences et règles métier.</dd></div>
+          <div><dt>Traduction des préconditions</dt><dd>Cartes confirmables reliant chaque phrase métier à une vérification, une fixture, une dépendance ou une opération de préparation/nettoyage.</dd></div>
+          <div><dt>Étapes</dt><dd>Cartes ordonnées contenant une action, sa cible, sa valeur, une validation et son résultat attendu.</dd></div>
+          <div><dt>Données</dt><dd>Références non secrètes ou fichier tabulaire associé.</dd></div>
+          <div><dt>Limites</dt><dd>Délai maximal, politique de preuve et politique d’utilisation du LLM.</dd></div>
+          <div><dt>Confirmation</dt><dd>Statut explicite interdit tant qu’une hypothèse ou ambiguïté reste ouverte.</dd></div>
+        </dl>
+        <p>
+          Le tutoriel complet est disponible dans
+          <a href="/tutorials/test-case">Configurer et rédiger un cas de test</a>.
+        </p>
+      </section>
+
+      <section id="design-guidance">
+        <p class="eyebrow">Cadrage du cas</p>
+        <h2>Dialogue guidé par les informations manquantes</h2>
+        <p>
+          L’assistant ne démarre pas par une conversation libre. L’utilisateur
+          sélectionne d’abord une <strong>intention fonctionnelle</strong>, par
+          exemple « Se connecter avec succès » ou « Vérifier une permission ».
+          Cette intention provient du catalogue YAML administrable et déclare les
+          informations nécessaires, les exemples et les types de tests conseillés.
+        </p>
+        <p>
+          Le bouton <strong>Analyser les informations manquantes</strong> compare
+          cette intention avec le brouillon courant : objectif, acteur, profils,
+          préconditions, données, étapes, validations, nettoyage et pages
+          analysées. Il affiche uniquement les questions encore utiles.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Question</dt><dd>Information métier absente, formulée sans demander de nouveau une donnée déjà saisie.</dd></div>
+          <div><dt>Utilité</dt><dd>Explique comment la réponse améliore la génération, la reproductibilité ou l’observation du résultat.</dd></div>
+          <div><dt>Champ concerné</dt><dd>Le bouton de la question ramène à la zone du formulaire qui porte la réponse structurée.</dd></div>
+          <div><dt>Complétude</dt><dd>Pourcentage calculé sur les exigences de l’intention sélectionnée ; ce n’est ni une validation ni une approbation.</dd></div>
+        </dl>
+        <p>
+          Le diagnostic reste déterministe et local : il ne contacte pas le
+          fournisseur LLM et ne modifie rien. Le panneau
+          <strong>Dialogue avec le LLM</strong> utilise ensuite ce diagnostic
+          comme contexte pour poser des questions et préparer des propositions
+          structurées. L’envoi est toujours déclenché par l’utilisateur.
+        </p>
+      </section>
+
+      <section id="page-analysis">
+        <p class="eyebrow">Assistance de saisie</p>
+        <h2>Analyse des pages HTML</h2>
+        <p>
+          L’analyse télécharge une page HTML de la même origine que la cible du
+          projet, dans une limite de 2 Mio et sans secret. Avant chaque connexion,
+          le nom est résolu et l’adresse publique autorisée est épinglée à la socket.
+          Les adresses privées, réservées et les redirections vers une autre origine
+          sont refusées. La boucle locale exige la politique explicite
+          <code>local-loopback</code>. Elle inventorie ensuite les champs, listes,
+          boutons, liens et titres utilisables dans les actions ou validations.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Référence</dt><dd>Identifiant stable de rédaction tel que <code>page:connexion#email</code>.</dd></div>
+          <div><dt>Rôle</dt><dd>Rôle accessible : textbox, button, link, heading, checkbox, combobox…</dd></div>
+          <div><dt>Libellé</dt><dd>Nom compris par l’utilisateur et prioritaire pour le futur localisateur.</dd></div>
+          <div><dt>Localisateur candidat</dt><dd>Stratégie et valeur conservées avec un contrôle d’unicité à réaliser avant génération.</dd></div>
+          <div><dt>Options</dt><dd>Valeurs lisibles proposées par une liste HTML.</dd></div>
+        </dl>
+        <h3>Capacités déduites des champs HTML</h3>
+        <p>
+          Après l’analyse, l’assistant explique l’usage possible de chaque élément.
+          Ces capacités limitent les suggestions à des opérations compatibles :
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>Champ texte</dt><dd>Action <code>fill</code> ; validations de visibilité, activation et valeur. Les exemples utilisent <code>{% raw %}{{data.valeur}}{% endraw %}</code>, une fixture ou un secret pour un mot de passe.</dd></div>
+          <div><dt>Liste</dt><dd>Action <code>select</code> ; validations de visibilité, activation et valeur ; les options HTML sont présentées comme exemples.</dd></div>
+          <div><dt>Case à cocher</dt><dd>Actions <code>check</code> et <code>uncheck</code> ; validation <code>checked</code>.</dd></div>
+          <div><dt>Bouton ou lien</dt><dd>Action <code>click</code> ; validations de visibilité, activation ou texte.</dd></div>
+          <div><dt>Titre ou texte</dt><dd>Aucune action proposée ; l’élément sert de cible à une validation de visibilité ou de contenu.</dd></div>
+          <div><dt>Fichier</dt><dd>Action <code>upload</code> avec une référence de fixture, jamais un chemin local éphémère.</dd></div>
+        </dl>
+        <p>
+          Cliquer sur <strong>Utiliser cette référence</strong> insère la référence
+          dans la dernière cible d’action ou de validation sélectionnée. Ces
+          recommandations aident à rédiger ; le futur générateur devra encore
+          vérifier l’unicité et la stabilité du localisateur.
+        </p>
+        <p>
+          Une page rendue exclusivement par JavaScript ou protégée par une session
+          nécessitera l’adaptateur d’exploration contrôlée Playwright prévu par
+          <code>EF-010</code>.
+        </p>
+      </section>
+
+      <section id="workflow-step">
+        <p class="eyebrow">Unité de rédaction</p>
+        <h2>Étape structurée</h2>
+        <dl class="documentation-fields">
+          <div><dt>Nom</dt><dd>Intention courte utilisée dans les rapports.</dd></div>
+          <div><dt>Page</dt><dd>URL courante permettant de contrôler l’origine et de résoudre la palette.</dd></div>
+          <div><dt>Prérequis local</dt><dd>État observable attendu immédiatement avant l’action.</dd></div>
+          <div><dt>Action</dt><dd>Verbe contrôlé : ouvrir, cliquer, saisir, sélectionner, cocher, téléverser ou attendre.</dd></div>
+          <div><dt>Cible</dt><dd>Référence de page analysée ou brouillon descriptif à résoudre.</dd></div>
+          <div><dt>Valeur</dt><dd>Littéral ou jeton <code>{% raw %}{{data.x}}{% endraw %}</code>, <code>{% raw %}{{fixture.x}}{% endraw %}</code> ou <code>{% raw %}{{secret.x}}{% endraw %}</code>.</dd></div>
+          <div><dt>Validation</dt><dd>Visibilité, masquage, texte, valeur, URL, nombre, activation ou état coché.</dd></div>
+          <div><dt>Preuve</dt><dd>Capture forcée pour l’étape en complément de la politique générale.</dd></div>
+        </dl>
+      </section>
+
+      <section id="generation-structure">
+        <p class="eyebrow">Source de vérité</p>
+        <h2>Structure de génération</h2>
+        <p>
+          Le panneau JSON affiche à tout moment l’entrée case-level du générateur :
+          version de schéma, page de départ, profils, fixtures, références de secrets,
+          préparation, nettoyage, politiques, limites, hypothèses, pages analysées et
+          étapes ordonnées. Les références versionnées du profil d’accès LLM et du
+          profil de génération de code font partie de cette structure.
+        </p>
+        <p>
+          Le générateur reçoit cette structure confirmée ainsi que l’identité et la
+          version du cas, son chemin, son type, le profil d’approche effectif et la
+          version du générateur. Il ne reçoit jamais directement la conversation brute.
+        </p>
+        <h3>Matrice de données explicite</h3>
+        <p>
+          Avec plusieurs classeurs, chaque source reçoit un identifiant et une
+          colonne clé. Chaque cas de données sélectionne exactement une ligne
+          par source. Les jetons deviennent par exemple
+          <code>{% raw %}{{data.login.email}}{% endraw %}</code> et
+          <code>{% raw %}{{data.employee.first_name}}{% endraw %}</code>.
+          L’application ne devine ni jointure ni produit cartésien.
+        </p>
+        <h3>Manifeste et validation locale</h3>
+        <p>
+          La génération produit un manifeste portant les empreintes du workflow,
+          du code et des fichiers XLSX. La commande locale
+          <code>run-playwright</code> refuse un candidat modifié, lance pytest
+          sans shell et produit JUnit ainsi qu’un rapport
+          <code>execution.json</code>. Cette validation locale ne remplace pas
+          encore le runner OCI isolé prévu pour la CI.
+        </p>
+      </section>
+
+      <section id="llm-generation">
+        <p class="eyebrow">Administration versionnée</p>
+        <h2>Accès LLM et génération de code</h2>
+        <p>
+          Deux pages indépendantes séparent la connexion au fournisseur des
+          règles de production des fichiers :
+          <a href="/configuration/llm-access">Accès aux LLM</a> pour les
+          endpoints et modèles, puis
+          <a href="/configuration/code-generation">Génération de code</a> pour
+          les artefacts et leurs contrôles. Cette séparation permet de changer
+          une technologie ou un modèle sans recopier les secrets dans les cas.
+        </p>
+        <h3>Profil d’accès LLM</h3>
+        <dl class="documentation-fields">
+          <div><dt>Fournisseur</dt><dd>OpenAI, Azure OpenAI, Anthropic, Mistral, Ollama ou endpoint compatible OpenAI.</dd></div>
+          <div><dt>URL de base</dt><dd>Racine de l’API avec son préfixe : généralement <code>/v1</code>, ou <code>/openai/v1</code> pour Azure OpenAI. HTTP est accepté uniquement sur la boucle locale.</dd></div>
+          <div><dt>Modèle</dt><dd>Liste déroulante chargée à la demande depuis l’URL de base. Le bouton ↻ actualise le catalogue sans enregistrer le formulaire et conserve le modèle courant s’il n’est plus retourné.</dd></div>
+          <div><dt>Variable de clé API</dt><dd>Nom tel que <code>OPENAI_API_KEY</code>. La valeur n’est jamais enregistrée ou affichée.</dd></div>
+          <div><dt>Délai et tentatives</dt><dd>Bornes appliquées à l’appel réseau, indépendamment du prompt.</dd></div>
+        </dl>
+        <h3>Profil de génération</h3>
+        <dl class="documentation-fields">
+          <div><dt>Accès LLM</dt><dd>Référence immuable <code>identifiant@version</code>.</dd></div>
+          <div><dt>Technologie</dt><dd>Langage et framework compatibles, par exemple Python avec pytest-playwright.</dd></div>
+          <div><dt>Sortie</dt><dd>Répertoire relatif et motifs contenant <code>{case_slug}</code> et <code>{page_slug}</code>.</dd></div>
+          <div><dt>Protection</dt><dd>Proposition uniquement ou refus des fichiers existants ; aucun écrasement silencieux.</dd></div>
+          <div><dt>Validations</dt><dd>Vocabulaire fermé : syntaxe, formatage, lint, types et test ciblé. Aucune commande shell libre.</dd></div>
+          <div><dt>Skills</dt><dd>Liste ordonnée de références versionnées intégrées au prompt final. La configuration montre pour chacune son nom, sa source et son rôle.</dd></div>
+          <div><dt>Limites</dt><dd>Nombre maximal de fichiers, preuves, Page Objects et instructions explicites.</dd></div>
+        </dl>
+        <h3>Prompt final et code candidat</h3>
+        <p>
+          Dans un cas confirmé, <strong>Ouvrir le prompt de génération</strong>
+          ouvre une page de lecture seule : modèle, profils, skills, messages
+          système/utilisateur, workflow assaini, contrat de fichiers et empreinte.
+          Le JSON exact reste téléchargeable depuis cette page. Les valeurs des
+          champs de mot de passe sont censurées. <strong>Télécharger le code
+          généré</strong> reste une action distincte afin que le formulaire ne
+          montre ni le prompt complet ni le code source.
+        </p>
+        <p>
+          Une modification crée une nouvelle version. Les cas existants restent
+          liés à la version qu’ils ont enregistrée. Une version désactivée reste
+          lisible pour la traçabilité mais ne doit plus être choisie pour un
+          nouveau cas.
+        </p>
+      </section>
+
+      <section id="llm-finalization">
+        <p class="eyebrow">Revue guidée</p>
+        <h2>Finalisation avec le LLM</h2>
+        <p>
+          Après la première rédaction, le LLM de conception contrôle la complétude,
+          pose les questions manquantes et propose des modifications structurées :
+          traduction des préconditions, actions supportées, cibles, assertions,
+          fixtures et nettoyage. Chaque proposition reste distincte d’une valeur
+          confirmée et exige une décision utilisateur.
+        </p>
+        <p>
+          Une fois les hypothèses résolues, le système valide le schéma et les
+          contrôles déterministes. Le LLM ne peut ni confirmer un contrôle système,
+          ni approuver le code, ni contourner une erreur de destination, de secret,
+          de fixture ou de localisateur.
+        </p>
+        <p>
+          Le bouton <strong>Vérifier la préparation</strong> expose séparément les
+          faits contrôlés : profil d’environnement, origine de la destination,
+          traduction confirmée des préconditions, fixtures déclarées, présence des
+          références de secrets et runtime Playwright. La valeur des secrets n’est
+          ni lue par l’interface ni renvoyée au navigateur.
+        </p>
+        <h3>Déroulement dans l’éditeur</h3>
+        <ol>
+          <li>Sélectionner une intention fonctionnelle et un profil d’accès LLM versionné.</li>
+          <li>Analyser les informations manquantes et, si utile, les pages HTML.</li>
+          <li>Écrire un message factuel dans <strong>Dialogue avec le LLM</strong>.</li>
+          <li>Relire les questions, le chemin modifié, la valeur proposée et sa justification.</li>
+          <li>Cocher uniquement les propositions à retenir puis choisir <strong>Appliquer la sélection</strong>.</li>
+          <li>Relire le formulaire mis à jour et la description synthétique avant l’enregistrement du cas.</li>
+        </ol>
+        <dl class="documentation-fields">
+          <div><dt>Proposition</dt><dd>Modification isolée qui reste en attente ; elle n’est pas encore une donnée du cas.</dd></div>
+          <div><dt>Chemin</dt><dd>Zone structurée visée, par exemple <code>/objective</code> ou <code>/workflow/steps/0/expected</code>.</dd></div>
+          <div><dt>Décision</dt><dd>Chaque case cochée est acceptée ; chaque autre opération du même lot est enregistrée comme refusée.</dd></div>
+          <div><dt>Description</dt><dd>Synthèse déterministe de l’objectif, de l’acteur, des préconditions et d’un résultat observable acceptés.</dd></div>
+        </dl>
+        <h3>Données transmises et données exclues</h3>
+        <p>
+          Le fournisseur reçoit le brouillon structuré, l’intention, les
+          informations manquantes, les capacités des champs HTML et les huit
+          derniers messages. Il ne reçoit ni HTML brut, ni localisateur candidat,
+          ni valeur de clé API ou de secret. La clé éventuelle est résolue depuis
+          la variable d’environnement du profil uniquement pour l’en-tête HTTP.
+        </p>
+        <p>
+          Une réponse peut seulement proposer des changements dans une liste
+          fermée de champs. Elle ne peut pas changer les profils, les pages
+          analysées ou la confirmation du workflow. Si le formulaire a changé
+          depuis la proposition, l’application refuse la décision afin d’éviter
+          d’écraser une modification plus récente.
+        </p>
+      </section>
+
+      <section id="test-data">
+        <p class="eyebrow">Paramétrage</p>
+        <h2>Données de test</h2>
+        <p>
+          Un fichier CSV UTF-8 ou XLSX peut fournir une ligne par variation de données.
+          Les formules ne sont pas exécutées. Le mode séquentiel conserve l’ordre du
+          fichier, tandis que le mode aléatoire utilise la graine pour reproduire la
+          même sélection.
+        </p>
+        <p>
+          Ne placez jamais de mot de passe, jeton ou secret dans les fichiers. Utilisez
+          les variables protégées du système CI/CD lors de l’exécution.
+        </p>
+      </section>
+
+      <section id="hr-demo">
+        <p class="eyebrow">Banc d’essai intégré</p>
+        <h2>Bureau des Talents Intersidéraux</h2>
+        <p>
+          La cible <a href="/demo/hr/login">RH loufoque</a> exerce le parcours
+          complet : connexion, création d’un collaborateur et consultation des
+          valeurs enregistrées. Elle mélange volontairement du HTML accessible,
+          du balisage ancien ou imprécis, des composants injectés par JavaScript
+          et des champs rendus côté serveur selon le profil connecté.
+        </p>
+        <dl class="documentation-fields">
+          <div><dt>HTML statique</dt><dd>Visible dans le document reçu par l’analyseur et utilisable avec des libellés, rôles, identifiants de test ou sélecteurs CSS.</dd></div>
+          <div><dt>JavaScript</dt><dd>Présent seulement après exécution du script. L’analyse HTML statique ne le découvre pas encore ; le catalogue d’exemple le décrit explicitement pour tester la génération et l’exécution.</dd></div>
+          <div><dt>Session manager</dt><dd>Les champs budget, astreinte et note dynamique apparaissent uniquement après la connexion du profil manager.</dd></div>
+          <div><dt>Données XLSX</dt><dd>Les classeurs <code>connexion-rh.xlsx</code> et <code>saisie-collaborateurs.xlsx</code> alimentent le scénario sans dupliquer les valeurs dans le code.</dd></div>
+          <div><dt>Matrice exécutée</dt><dd>Deux associations manager/collaborateur sont nommées, collectées séparément et reliées à leurs lignes par <code>case_id</code>.</dd></div>
+          <div><dt>Preuve locale</dt><dd>Le manifeste, JUnit et <code>execution.json</code> relient les deux réussites aux empreintes exactes du code et des classeurs.</dd></div>
+        </dl>
+        <p>
+          Le mode opératoire détaillé, les comptes synthétiques, la matrice des
+          champs, les commandes de génération et d’exécution et les limites
+          connues sont décrits dans <code>docs/hr-demo.md</code>.
+        </p>
+      </section>
+
+      <section id="views">
+        <p class="eyebrow">Consultation</p>
+        <h2>Vues et recherche</h2>
+        <p>
+          La vue Arborescence restitue l’organisation réelle. Les autres vues sont
+          calculées à partir des métadonnées des cas. La recherche porte sur le nom,
+          les tags et les exigences.
+        </p>
+      </section>
+
+      <section id="node-actions">
+        <p class="eyebrow">Maintenance</p>
+        <h2>Actions sur l’arborescence</h2>
+        <p>
+          Le renommage modifie uniquement le libellé. Le déplacement change le parent
+          et, si elle est renseignée, la position parmi les éléments voisins.
+          L’archivage masque un élément et tous ses descendants sans les supprimer.
+        </p>
+      </section>
+
+      <section id="ci">
+        <p class="eyebrow">Export manuel</p>
+        <h2>Déploiement dans GitLab CI et GitHub Actions</h2>
+        <p>
+          L’export doit produire le code des tests, la documentation fonctionnelle
+          lisible et une documentation de déploiement adaptée à GitLab CI et GitHub
+          Actions. La configuration GitLab doit accepter l’URL d’une instance
+          d’entreprise, l’identifiant du projet, la branche cible et un jeton fourni
+          par variable protégée.
+        </p>
+        <p>
+          Les secrets ne doivent jamais être inclus dans l’archive exportée. Les
+          exemples de pipeline doivent indiquer les variables requises, la commande
+          d’installation, la commande d’exécution et la conservation des rapports.
+        </p>
+        <h3>GitLab CI, y compris une instance d’entreprise</h3>
+        <ol>
+          <li>Déclencher manuellement l’export du jeu de tests validé.</li>
+          <li>Déposer les fichiers exportés dans le dépôt GitLab cible.</li>
+          <li>Configurer l’URL de l’instance, l’identifiant du projet et la branche cible.</li>
+          <li>Créer le jeton dans les variables CI/CD protégées et masquées, jamais dans les fichiers.</li>
+          <li>Inclure le modèle <code>.gitlab-ci.yml</code> exporté puis exécuter le pipeline.</li>
+          <li>Vérifier les rapports et artefacts conservés par le job de test.</li>
+        </ol>
+        <dl class="documentation-fields">
+          <div><dt><code>GITLAB_BASE_URL</code></dt><dd>URL de l’instance, par exemple <code>https://gitlab.entreprise.example</code>.</dd></div>
+          <div><dt><code>GITLAB_PROJECT_ID</code></dt><dd>Identifiant numérique ou chemin du projet destinataire.</dd></div>
+          <div><dt><code>GITLAB_TARGET_BRANCH</code></dt><dd>Branche recevant le jeu de tests exporté.</dd></div>
+          <div><dt><code>GITLAB_TOKEN</code></dt><dd>Jeton à stocker uniquement comme variable protégée et masquée.</dd></div>
+        </dl>
+        <h3>GitHub Actions</h3>
+        <ol>
+          <li>Déclencher manuellement l’export du jeu de tests validé.</li>
+          <li>Déposer les tests et le workflow exporté dans le dépôt GitHub.</li>
+          <li>Créer les secrets requis dans les paramètres Actions du dépôt ou de l’organisation.</li>
+          <li>Déclencher le workflow manuellement ou selon les événements documentés.</li>
+          <li>Vérifier le rapport de test et les artefacts associés à l’exécution.</li>
+        </ol>
+      </section>
+
+      <section id="llm">
+        <p class="eyebrow">Assistance</p>
+        <h2>Configuration des LLM</h2>
+        <p>
+          La configuration du fournisseur, du modèle, de l’URL de service, des délais
+          et des paramètres de génération doit être modifiable. OpenAI, Ollama et
+          Mistral sont les fournisseurs attendus.
+        </p>
+        <p>
+          Pour chaque fournisseur, la documentation de connexion doit préciser
+          l’installation éventuelle, l’URL, l’authentification, les variables
+          d’environnement, un test de connexion et les erreurs courantes. Les clés et
+          jetons restent dans un gestionnaire de secrets ou des variables
+          d’environnement.
+        </p>
+        <h3>Connexion à OpenAI</h3>
+        <ol>
+          <li>Créer une clé API depuis le compte OpenAI autorisé par l’organisation.</li>
+          <li>Stocker la clé dans la variable d’environnement <code>OPENAI_API_KEY</code>.</li>
+          <li>Sélectionner le fournisseur OpenAI, l’URL de service et un modèle autorisé.</li>
+          <li>Lancer le test de connexion depuis la configuration avant toute génération.</li>
+          <li>En cas d’échec, vérifier la clé, le modèle, le quota, le proxy et le délai réseau.</li>
+        </ol>
+        <h3>Connexion à Ollama</h3>
+        <ol>
+          <li>Installer Ollama puis vérifier <code>http://127.0.0.1:11434/api/version</code>.</li>
+          <li>Télécharger le modèle choisi et contrôler son nom exact avec <code>ollama list</code>.</li>
+          <li>Pour le profil local préparé, créer l’alias <code>qwen3.6-35b-a3b-q4_K_M_128k:latest</code> depuis le Modelfile versionné.</li>
+          <li>Configurer l’URL applicative <code>http://127.0.0.1:11434/v1</code>, le modèle exact, un délai de 600 secondes et aucune clé sur la seule boucle locale.</li>
+          <li>Conserver le profil désactivé et cliquer sur <strong>Tester la connexion et le JSON</strong>. La sonde n’envoie aucune donnée métier.</li>
+          <li>N’activer le profil qu’après une inférence réussie avec son contexte déclaré. Un succès à contexte réduit ne valide pas un profil 128K.</li>
+        </ol>
+        <p>
+          Le contrôle du service, la présence du modèle et l’inférence structurée
+          sont trois résultats distincts. Sur la machine de référence, le service
+          Ollama 0.32.5 et le diagnostic JSON à 4 096 jetons réussissent, tandis
+          que le chargement 128K expire après 600 secondes. Le profil reste donc
+          désactivé.
+        </p>
+        <p>
+          La procédure reproductible, les commandes, résultats chronométrés et
+          erreurs courantes sont conservés dans
+          <code>docs/llm/ollama.md</code>.
+        </p>
+        <h3>Connexion à Mistral</h3>
+        <ol>
+          <li>Créer une clé API depuis le compte Mistral autorisé par l’organisation.</li>
+          <li>Stocker la clé dans la variable d’environnement <code>MISTRAL_API_KEY</code>.</li>
+          <li>Sélectionner le fournisseur Mistral, l’URL de service et un modèle autorisé.</li>
+          <li>Lancer le test de connexion avant la génération du premier cas.</li>
+          <li>En cas d’échec, vérifier la clé, le modèle, le quota, le proxy et le délai réseau.</li>
+        </ol>
+      </section>
+    </article>
+  </div>
+{% endblock %}

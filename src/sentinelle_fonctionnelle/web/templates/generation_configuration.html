@@ -1,0 +1,512 @@
+{% extends "base.html" %}
+{% from "help.html" import create_toggle, field_label, form_help %}
+{% macro model_picker(current_model="") -%}
+  <div class="model-picker" data-model-picker>
+    <select name="model" data-model-select required>
+      {% if current_model %}
+        <option value="{{ current_model }}" selected>{{ current_model }}</option>
+      {% else %}
+        <option value="" selected disabled>Rafraîchissez la liste des modèles</option>
+      {% endif %}
+    </select>
+    <button
+      type="button"
+      class="secondary-button model-refresh-button"
+      data-model-refresh
+      aria-label="Rafraîchir la liste des modèles"
+      title="Interroger l’URL de base et rafraîchir les modèles"
+    >↻</button>
+  </div>
+  <small class="model-refresh-status" data-model-refresh-status role="status" aria-live="polite">Utilisez ↻ après avoir renseigné l’URL de base.</small>
+{%- endmacro %}
+{% block title %}{{ "Accès aux LLM" if configuration_section == "llm" else "Génération de code" }} · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span><span aria-current="page">{{ "Accès aux LLM" if configuration_section == "llm" else "Génération de code" }}</span>
+  </nav>
+
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Configuration sécurisée</p>
+      {% if configuration_section == "llm" %}
+        <h1>Accès aux LLM</h1>
+        <p class="lead">Configurez les fournisseurs, endpoints, modèles et références d’authentification utilisés par Sentinelle.</p>
+      {% else %}
+        <h1>Génération de code</h1>
+        <p class="lead">Définissez la technologie cible, la structure des fichiers et les contrôles appliqués au code produit.</p>
+      {% endif %}
+    </div>
+    <dl class="project-meta">
+      {% if configuration_section == "llm" %}
+        <div><dt>Accès LLM</dt><dd>{{ access_profiles|length }}</dd></div>
+        <div><dt>Fournisseurs</dt><dd>{{ providers|length }}</dd></div>
+      {% else %}
+        <div><dt>Générateurs</dt><dd>{{ generation_profiles|length }}</dd></div>
+        <div><dt>Accès disponibles</dt><dd>{{ access_profiles|length }}</dd></div>
+      {% endif %}
+    </dl>
+  </header>
+
+  <nav class="section-tabs" aria-label="Sections de configuration">
+    <a href="/configuration/llm-access" {% if configuration_section == "llm" %}aria-current="page"{% endif %}>Accès aux LLM</a>
+    <a href="/configuration/code-generation" {% if configuration_section == "code" %}aria-current="page"{% endif %}>Génération de code</a>
+  </nav>
+
+  {% if configuration_section == "llm" %}
+  <section id="security" class="configuration-notice">
+    <div>
+      <strong>Aucun secret n’est enregistré</strong>
+      <p>
+        Un profil conserve seulement le nom d’une variable d’environnement,
+        par exemple <code>OPENAI_API_KEY</code>. Sa valeur est résolue au moment
+        de l’appel et ne doit apparaître ni dans le YAML, ni dans un prompt.
+      </p>
+    </div>
+    <a class="text-link" href="/documentation#llm-generation">Règles de sécurité</a>
+  </section>
+
+  <section id="llm-access" class="configuration-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Connexion et modèle</p>
+        <h2>Accès aux LLM</h2>
+        <p>Fournisseur, endpoint, modèle et références d’authentification.</p>
+      </div>
+    </div>
+
+    <div class="configuration-list llm-access-list">
+        {% for profile in access_profiles %}
+          <details id="llm-{{ profile.id }}" class="approach-card" {% if loop.first %}open{% endif %}>
+            <summary>
+              <span>
+                <strong>{{ profile.name }}</strong>
+                <small>{{ profile.provider }} · {{ profile.reference }} · {{ profile.model }}</small>
+              </span>
+              <span class="{{ 'status-enabled' if profile.enabled else 'status-disabled' }}">
+                {% if not profile.enabled %}
+                  Désactivé
+                {% elif environment_status[profile.reference] %}
+                  Prêt
+                {% else %}
+                  Variable absente
+                {% endif %}
+              </span>
+            </summary>
+            <form action="/configuration/llm-access-profiles/{{ profile.id }}" method="post" aria-label="Modifier l’accès LLM {{ profile.name }}">
+              {{ form_help("Modifier un accès LLM", "L’enregistrement crée une version. Les profils de génération existants restent liés à la version antérieure.", "llm-generation") }}
+              <p class="immutable-field"><strong>Identifiant stable :</strong> <code>{{ profile.id }}</code></p>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Libellé", "Libellé de l’accès", "Nom présenté lors du choix du modèle.", "OpenAI recette", "llm-generation") }}
+                  <input name="name" value="{{ profile.name }}" required>
+                </label>
+                <label>
+                  {{ field_label("Fournisseur", "Fournisseur LLM", "Adaptateur utilisé pour construire la requête. Les endpoints compatibles OpenAI restent explicitement identifiés.", "openai", "llm-generation") }}
+                  <select name="provider" required>
+                    {% for provider in providers %}
+                      <option value="{{ provider }}" {% if provider == profile.provider %}selected{% endif %}>{{ provider }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+              </div>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("URL de base", "Endpoint LLM", "Racine de l’API incluant son préfixe de version, par exemple /v1 ou /openai/v1 pour Azure. HTTP est limité aux endpoints locaux.", "https://api.openai.com/v1", "llm-generation") }}
+                  <input name="base_url" type="url" value="{{ profile.base_url }}" placeholder="https://api.example/v1">
+                </label>
+                <label>
+                  {{ field_label("Modèle", "Modèle disponible", "La liste est chargée depuis l’URL de base avec le bouton ↻. Le modèle enregistré est conservé s’il n’est plus retourné.", "modele-valide-par-le-projet", "llm-generation") }}
+                  {{ model_picker(profile.model) }}
+                </label>
+              </div>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Variable de clé API", "Référence de clé API", "Nom de la variable d’environnement contenant le secret. Ne saisissez jamais sa valeur.", "OPENAI_API_KEY", "llm-generation") }}
+                  <input name="api_key_environment" value="{{ profile.api_key_environment }}" pattern="[A-Z_][A-Z0-9_]*">
+                </label>
+                <label>
+                  {{ field_label("Variable d’organisation", "Référence d’organisation", "Variable d’environnement optionnelle contenant l’identifiant d’organisation ou de projet.", "OPENAI_ORG_ID", "llm-generation") }}
+                  <input name="organization_environment" value="{{ profile.organization_environment }}" pattern="[A-Z_][A-Z0-9_]*">
+                </label>
+              </div>
+              <div class="three-columns">
+                <label>
+                  {{ field_label("Délai", "Délai de requête", "Durée maximale d’un appel au modèle, en secondes.", "60", "llm-generation") }}
+                  <input name="request_timeout_seconds" type="number" min="1" max="600" value="{{ profile.request_timeout_seconds }}" required>
+                </label>
+                <label>
+                  {{ field_label("Tentatives", "Nouvelles tentatives", "Nombre maximal de répétitions après une erreur temporaire.", "2", "llm-generation") }}
+                  <input name="max_retries" type="number" min="0" max="10" value="{{ profile.max_retries }}" required>
+                </label>
+                <label class="checkbox-label">
+                  {{ field_label("Activation", "Profil actif", "Rend cette version sélectionnable par un nouveau profil de génération.", "activé", "llm-generation") }}
+                  <input type="checkbox" name="enabled" value="true" {% if profile.enabled %}checked{% endif %}>
+                  Accès sélectionnable
+                </label>
+              </div>
+              <div class="inline-actions">
+                <button type="submit">Enregistrer une nouvelle version</button>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-connectivity-url="/configuration/llm-access-profiles/{{ profile.id }}/versions/{{ profile.version }}/connectivity"
+                  data-connectivity-profile="{{ profile.reference }}"
+                >
+                  Vérifier le serveur et le modèle
+                </button>
+                <button
+                  type="button"
+                  class="secondary-button"
+                  data-structured-test-url="/configuration/llm-access-profiles/{{ profile.id }}/versions/{{ profile.version }}/structured-test"
+                  data-structured-test-profile="{{ profile.reference }}"
+                >
+                  Tester l’inférence JSON
+                </button>
+                <span class="section-note" data-connectivity-status role="status" aria-live="polite"></span>
+              </div>
+              <div class="llm-interaction" data-llm-interaction>
+                <p><strong>Interagir avec le LLM</strong></p>
+                <label>
+                  {{ field_label("Message de test", "Interagir avec le LLM", "Le message est envoyé uniquement au profil affiché et n’est pas enregistré dans le catalogue.", "Résume en trois points le rôle d’un test de non-régression.", "llm-generation") }}
+                  <textarea data-llm-message rows="3" maxlength="4000" placeholder="Saisissez un message pour vérifier la réponse du modèle…"></textarea>
+                </label>
+                <div class="inline-actions">
+                  <button
+                    type="button"
+                    class="secondary-button"
+                    data-interaction-url="/configuration/llm-access-profiles/{{ profile.id }}/versions/{{ profile.version }}/interact"
+                  >
+                    Envoyer au LLM
+                  </button>
+                  <span class="section-note" data-interaction-status role="status" aria-live="polite"></span>
+                </div>
+                <pre class="llm-interaction-response" data-llm-response hidden></pre>
+              </div>
+            </form>
+          </details>
+        {% else %}
+          <div class="empty-state">
+            <strong>Aucun accès LLM configuré</strong>
+            <span>Créez d’abord un accès qui référence une variable d’environnement.</span>
+          </div>
+        {% endfor %}
+      <div class="entity-create-control">
+        {{ create_toggle("new-llm-connection", "Ajouter une nouvelle connexion") }}
+
+        <section id="new-llm-connection" class="form-panel entity-create-panel" hidden>
+          <p class="eyebrow">Nouvel accès</p>
+          <h3>Configurer un LLM</h3>
+          {{ form_help("Créer un accès LLM", "Seuls les paramètres non secrets et les noms de variables d’environnement sont enregistrés.", "llm-generation") }}
+          <form action="/configuration/llm-access-profiles" method="post" aria-label="Créer un accès LLM">
+            <div class="two-columns">
+              <label>
+                {{ field_label("Identifiant", "Identifiant stable", "Clé technique en minuscules, chiffres et tirets.", "openai-recette", "llm-generation") }}
+                <input name="profile_id" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required placeholder="openai-recette">
+              </label>
+              <label>
+                {{ field_label("Libellé", "Libellé de l’accès", "Nom lisible affiché dans les formulaires.", "OpenAI recette", "llm-generation") }}
+                <input name="name" required placeholder="OpenAI recette">
+              </label>
+            </div>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Fournisseur", "Fournisseur LLM", "Protocole utilisé par l’adaptateur d’appel.", "openai", "llm-generation") }}
+                <select name="provider" required>
+                  {% for provider in providers %}<option value="{{ provider }}">{{ provider }}</option>{% endfor %}
+                </select>
+              </label>
+              <label>
+                {{ field_label("URL de base", "Endpoint LLM", "Racine de l’API incluant son préfixe de version, par exemple /v1 ou /openai/v1 pour Azure. HTTP local est accepté pour Ollama.", "https://api.openai.com/v1", "llm-generation") }}
+                <input name="base_url" type="url" placeholder="https://api.example/v1">
+              </label>
+            </div>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Modèle", "Modèle disponible", "Renseignez l’URL de base puis utilisez ↻ pour charger les modèles accessibles avec cette connexion.", "modele-valide-par-le-projet", "llm-generation") }}
+                {{ model_picker() }}
+              </label>
+              <label>
+                {{ field_label("Variable de clé API", "Référence de clé API", "Nom de variable uniquement ; sa valeur reste hors de l’application.", "OPENAI_API_KEY", "llm-generation") }}
+                <input name="api_key_environment" pattern="[A-Z_][A-Z0-9_]*" placeholder="OPENAI_API_KEY">
+              </label>
+            </div>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Variable d’organisation", "Référence d’organisation", "Nom optionnel de la variable portant l’organisation ou le projet fournisseur.", "OPENAI_ORG_ID", "llm-generation") }}
+                <input name="organization_environment" pattern="[A-Z_][A-Z0-9_]*">
+              </label>
+              <span aria-hidden="true"></span>
+            </div>
+            <div class="two-columns">
+            <label>
+              {{ field_label("Délai", "Délai de requête", "Durée maximale d’un appel, en secondes.", "60", "llm-generation") }}
+              <input name="request_timeout_seconds" type="number" min="1" max="600" value="60" required>
+            </label>
+            <label>
+              {{ field_label("Tentatives", "Nouvelles tentatives", "Répétitions permises après une erreur temporaire.", "2", "llm-generation") }}
+              <input name="max_retries" type="number" min="0" max="10" value="2" required>
+            </label>
+            </div>
+            <label class="checkbox-label">
+              {{ field_label("Activation", "Profil actif", "Rend le profil immédiatement sélectionnable.", "activé", "llm-generation") }}
+              <input type="checkbox" name="enabled" value="true" checked>
+              Accès sélectionnable
+            </label>
+            <button type="submit">Créer l’accès LLM</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  {% if configuration_section == "code" %}
+  <section id="code-generation" class="configuration-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">Artefacts et contrôles</p>
+        <h2>Génération de code</h2>
+        <p>Profil LLM versionné, technologie cible, structure des fichiers et garde-fous.</p>
+      </div>
+    </div>
+
+    <div class="entity-catalogue">
+      <div class="configuration-list">
+        {% for profile in generation_profiles %}
+          <details id="generation-{{ profile.id }}" class="approach-card" {% if loop.first %}open{% endif %}>
+            <summary>
+              <span>
+                <strong>{{ profile.name }}</strong>
+                <small>{{ profile.reference }} · {{ profile.language }} · {{ profile.framework }}</small>
+              </span>
+              <span class="{{ 'status-enabled' if profile.enabled else 'status-disabled' }}">{{ "Actif" if profile.enabled else "Désactivé" }}</span>
+            </summary>
+            <section class="generation-skill-summary" aria-label="Skills utilisés par {{ profile.name }}">
+              <strong>Skills utilisés pour la génération</strong>
+              <p class="section-note">Ces contrats sont intégrés au prompt final dans l’ordre affiché.</p>
+              <ul>
+                {% for reference in profile.generation_skills %}
+                  {% set skill = generation_skill_catalog.get(reference) %}
+                  <li>
+                    <code>{{ reference }}</code>
+                    {% if skill %} — {{ skill.name }} <small>· {{ skill.source }}</small>{% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            </section>
+            <form action="/configuration/code-generation-profiles/{{ profile.id }}" method="post" aria-label="Modifier la génération {{ profile.name }}">
+              {{ form_help("Modifier un profil de génération", "Une nouvelle version est créée afin que chaque cas conserve des paramètres reproductibles.", "llm-generation") }}
+              <p class="immutable-field"><strong>Identifiant stable :</strong> <code>{{ profile.id }}</code></p>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Libellé", "Libellé du générateur", "Nom présenté dans l’éditeur de cas.", "Python Playwright", "llm-generation") }}
+                  <input name="name" value="{{ profile.name }}" required>
+                </label>
+                <label>
+                  {{ field_label("Accès LLM", "Version d’accès LLM", "Référence immuable du fournisseur, de l’endpoint et du modèle.", "openai-recette@1", "llm-generation") }}
+                  <select name="llm_profile" required>
+                    {% for access in all_access_versions %}
+                      <option value="{{ access.reference }}" {% if access.reference == profile.llm_profile %}selected{% endif %}>{{ access.name }} · {{ access.reference }}</option>
+                    {% endfor %}
+                  </select>
+                </label>
+              </div>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Langage", "Langage cible", "Langage du code de test produit.", "python", "llm-generation") }}
+                  <select name="language" required>
+                    {% for language in languages %}<option value="{{ language }}" {% if language == profile.language %}selected{% endif %}>{{ language }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label>
+                  {{ field_label("Framework", "Framework de test", "Runner et API que le générateur doit employer.", "pytest-playwright", "llm-generation") }}
+                  <select name="framework" required>
+                    {% for language, values in frameworks.items() %}
+                      {% for framework in values %}<option value="{{ framework }}" {% if framework == profile.framework %}selected{% endif %}>{{ framework }}</option>{% endfor %}
+                    {% endfor %}
+                  </select>
+                </label>
+              </div>
+              <label>
+                {{ field_label("Répertoire de sortie", "Racine des artefacts", "Chemin relatif autorisé dans le dépôt. Les chemins absolus et les remontées sont refusés.", "tests/generated", "llm-generation") }}
+                <input name="output_root" value="{{ profile.output_root }}" required>
+              </label>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Motif des tests", "Nom des fichiers de test", "Motif sans répertoire contenant {case_slug}.", "test_{case_slug}.py", "llm-generation") }}
+                  <input name="test_file_pattern" value="{{ profile.test_file_pattern }}" required>
+                </label>
+                <label>
+                  {{ field_label("Motif des pages", "Nom des page objects", "Motif sans répertoire contenant {page_slug}.", "{page_slug}_page.py", "llm-generation") }}
+                  <input name="page_object_pattern" value="{{ profile.page_object_pattern }}" required>
+                </label>
+              </div>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Politique de preuve", "Preuves dans le code", "Détermine quand les captures ou traces doivent être demandées.", "on-failure", "llm-generation") }}
+                  <select name="evidence_mode" required>
+                    {% for mode in evidence_modes %}<option value="{{ mode }}" {% if mode == profile.evidence_mode %}selected{% endif %}>{{ mode }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label>
+                  {{ field_label("Politique d’écriture", "Protection des fichiers", "Le générateur propose des fichiers ou refuse les chemins déjà présents ; il ne remplace jamais silencieusement.", "proposal-only", "llm-generation") }}
+                  <select name="overwrite_policy" required>
+                    {% for policy in overwrite_policies %}<option value="{{ policy }}" {% if policy == profile.overwrite_policy %}selected{% endif %}>{{ policy }}</option>{% endfor %}
+                  </select>
+                </label>
+              </div>
+              <div class="two-columns">
+                <label>
+                  {{ field_label("Contrôles du code", "Étapes de validation", "Contrôles autorisés, un par ligne. Aucune commande shell libre n’est enregistrée.", "syntax\nlint\ntargeted-test", "llm-generation") }}
+                  <textarea name="validation_steps" rows="4" required>{{ profile.validation_steps|join("\n") }}</textarea>
+                </label>
+                <label>
+                  {{ field_label("Instructions", "Instructions de génération", "Contraintes de style et d’architecture transmises au modèle, une par ligne.", "Utiliser des localisateurs accessibles", "llm-generation") }}
+                  <textarea name="generation_instructions" rows="4" required>{{ profile.generation_instructions|join("\n") }}</textarea>
+                </label>
+              </div>
+              <label>
+                {{ field_label("Skills", "Skills de génération", "Références versionnées injectées dans le prompt, une par ligne et dans l’ordre d’application. Seuls les skills installés et contrôlés sont acceptés.", "functional-test-generation@1\ngenerate-python-playwright-code@1", "llm-generation") }}
+                <textarea name="generation_skills" rows="3" required>{{ profile.generation_skills|join("\n") }}</textarea>
+              </label>
+              <div class="three-columns">
+                <label>
+                  {{ field_label("Limite de fichiers", "Nombre maximal de fichiers", "Arrête la proposition si le modèle dépasse cette limite.", "20", "llm-generation") }}
+                  <input name="max_generated_files" type="number" min="1" max="100" value="{{ profile.max_generated_files }}" required>
+                </label>
+                <label class="checkbox-label">
+                  {{ field_label("Page objects", "Organisation en page objects", "Autorise la séparation des localisateurs et des scénarios.", "activé", "llm-generation") }}
+                  <input type="checkbox" name="use_page_objects" value="true" {% if profile.use_page_objects %}checked{% endif %}>
+                  Générer des page objects
+                </label>
+                <label class="checkbox-label">
+                  {{ field_label("Commentaires", "Commentaires générés", "Ajoute uniquement les commentaires qui expliquent une intention non évidente.", "activé", "llm-generation") }}
+                  <input type="checkbox" name="include_comments" value="true" {% if profile.include_comments %}checked{% endif %}>
+                  Autoriser les commentaires
+                </label>
+              </div>
+              <label class="checkbox-label">
+                {{ field_label("Activation", "Profil actif", "Rend cette version sélectionnable dans les nouveaux cas de test.", "activé", "llm-generation") }}
+                <input type="checkbox" name="enabled" value="true" {% if profile.enabled %}checked{% endif %}>
+                Générateur sélectionnable
+              </label>
+              <button type="submit">Enregistrer une nouvelle version</button>
+            </form>
+          </details>
+        {% else %}
+          <div class="empty-state">
+            <strong>Aucun profil de génération</strong>
+            <span>Créez un accès LLM, puis définissez la technologie et les garde-fous.</span>
+          </div>
+        {% endfor %}
+      </div>
+
+      <div class="entity-create-control">
+        {{ create_toggle("new-code-generation-profile", "Ajouter un profil de génération") }}
+        <section id="new-code-generation-profile" class="form-panel entity-create-panel" hidden>
+        <p class="eyebrow">Nouveau générateur</p>
+        <h3>Configurer la production de code</h3>
+        {{ form_help("Créer un profil de génération", "Le profil assemble un accès LLM versionné et des règles déterministes de production.", "llm-generation") }}
+        <form action="/configuration/code-generation-profiles" method="post" aria-label="Créer un profil de génération">
+          <label>
+            {{ field_label("Identifiant", "Identifiant stable", "Clé technique en minuscules, chiffres et tirets.", "python-playwright", "llm-generation") }}
+            <input name="profile_id" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required placeholder="python-playwright">
+          </label>
+          <label>
+            {{ field_label("Libellé", "Libellé du générateur", "Nom affiché dans l’éditeur du cas.", "Python Playwright", "llm-generation") }}
+            <input name="name" required placeholder="Python Playwright">
+          </label>
+          <label>
+            {{ field_label("Accès LLM", "Version d’accès LLM", "Profil exact utilisé pour finaliser le prompt et produire le candidat.", "openai-recette@1", "llm-generation") }}
+            <select name="llm_profile" required>
+              {% for access in all_access_versions %}
+                <option value="{{ access.reference }}">{{ access.name }} · {{ access.reference }}</option>
+              {% else %}
+                <option value="">Configurez d’abord un accès LLM</option>
+              {% endfor %}
+            </select>
+          </label>
+          <div class="two-columns">
+            <label>
+              {{ field_label("Langage", "Langage cible", "Langage du code produit.", "python", "llm-generation") }}
+              <select name="language" required>{% for language in languages %}<option value="{{ language }}">{{ language }}</option>{% endfor %}</select>
+            </label>
+            <label>
+              {{ field_label("Framework", "Framework de test", "Runner et API cible.", "pytest-playwright", "llm-generation") }}
+              <select name="framework" required>
+                {% for language, values in frameworks.items() %}{% for framework in values %}<option value="{{ framework }}">{{ framework }}</option>{% endfor %}{% endfor %}
+              </select>
+            </label>
+          </div>
+          <label>
+            {{ field_label("Répertoire de sortie", "Racine des artefacts", "Chemin relatif dans le dépôt.", "tests/generated", "llm-generation") }}
+            <input name="output_root" value="tests/generated" required>
+          </label>
+          <div class="two-columns">
+            <label>
+              {{ field_label("Motif des tests", "Nom des fichiers de test", "Doit contenir {case_slug}.", "test_{case_slug}.py", "llm-generation") }}
+              <input name="test_file_pattern" value="test_{case_slug}.py" required>
+            </label>
+            <label>
+              {{ field_label("Motif des pages", "Nom des page objects", "Doit contenir {page_slug}.", "{page_slug}_page.py", "llm-generation") }}
+              <input name="page_object_pattern" value="{page_slug}_page.py" required>
+            </label>
+          </div>
+          <div class="two-columns">
+            <label>
+              {{ field_label("Politique de preuve", "Preuves dans le code", "Politique de captures et traces.", "on-failure", "llm-generation") }}
+              <select name="evidence_mode" required>{% for mode in evidence_modes %}<option value="{{ mode }}">{{ mode }}</option>{% endfor %}</select>
+            </label>
+            <label>
+              {{ field_label("Politique d’écriture", "Protection des fichiers", "Interdit tout remplacement silencieux.", "proposal-only", "llm-generation") }}
+              <select name="overwrite_policy" required>{% for policy in overwrite_policies %}<option value="{{ policy }}">{{ policy }}</option>{% endfor %}</select>
+            </label>
+          </div>
+          <label>
+            {{ field_label("Contrôles du code", "Étapes de validation", "Une valeur autorisée par ligne : syntax, format, lint, type-check ou targeted-test.", "syntax\nlint\ntargeted-test", "llm-generation") }}
+            <textarea name="validation_steps" rows="4" required>syntax
+lint
+targeted-test</textarea>
+          </label>
+          <label>
+            {{ field_label("Instructions", "Instructions de génération", "Contraintes explicites transmises au générateur, une par ligne.", "Utiliser des localisateurs accessibles", "llm-generation") }}
+            <textarea name="generation_instructions" rows="4" required placeholder="Utiliser des localisateurs accessibles"></textarea>
+          </label>
+          <label>
+            {{ field_label("Skills", "Skills de génération", "Références versionnées intégrées au prompt final, une par ligne. Les deux valeurs proposées couvrent le contrat fonctionnel et la traduction Python Playwright.", "functional-test-generation@1\ngenerate-python-playwright-code@1", "llm-generation") }}
+            <textarea name="generation_skills" rows="3" required>functional-test-generation@1
+generate-python-playwright-code@1</textarea>
+          </label>
+          <label>
+            {{ field_label("Limite de fichiers", "Nombre maximal de fichiers", "Borne la taille d’une proposition.", "20", "llm-generation") }}
+            <input name="max_generated_files" type="number" min="1" max="100" value="20" required>
+          </label>
+          <label class="checkbox-label">
+            {{ field_label("Page objects", "Organisation en page objects", "Sépare les localisateurs et les scénarios lorsque plusieurs pages sont impliquées.", "activé", "llm-generation") }}
+            <input type="checkbox" name="use_page_objects" value="true" checked>
+            Générer des page objects
+          </label>
+          <label class="checkbox-label">
+            {{ field_label("Commentaires", "Commentaires générés", "Autorise uniquement les commentaires utiles à la compréhension métier.", "activé", "llm-generation") }}
+            <input type="checkbox" name="include_comments" value="true" checked>
+            Autoriser les commentaires
+          </label>
+          <label class="checkbox-label">
+            {{ field_label("Activation", "Profil actif", "Rend le profil sélectionnable dans l’éditeur des cas.", "activé", "llm-generation") }}
+            <input type="checkbox" name="enabled" value="true" checked>
+            Générateur sélectionnable
+          </label>
+          <button type="submit" {% if not all_access_versions %}disabled{% endif %}>Créer le profil de génération</button>
+        </form>
+        </section>
+      </div>
+    </div>
+  </section>
+  {% endif %}
+
+  <p class="configuration-storage">
+    Catalogue enregistré dans <code>{{ catalog_path }}</code>. Les versions
+    historiques sont conservées pour rendre chaque génération reproductible.
+  </p>
+  <script src="/static/generation-configuration.js?v=20260801-model-catalog" defer></script>
+{% endblock %}

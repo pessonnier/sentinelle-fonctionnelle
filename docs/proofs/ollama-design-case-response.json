@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "questions": [],
+  "operations": [
+    {
+      "id": "ajouter-remplissage-email",
+      "operation": "add",
+      "path": "/workflow/steps/-",
+      "value": {
+        "id": "step-fill-email",
+        "name": "Saisir l'adresse e-mail du client",
+        "page_url": "https://recette.example.test/login",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:login#email",
+        "value": "{{fixture.client-email}}",
+        "assertion": "value",
+        "assertion_target": "page:login#email",
+        "expected": "{{fixture.client-email}}",
+        "evidence": false
+      },
+      "label": "Ajouter l'étape de saisie de l'email",
+      "reason": "Le champ page:login#email accepte une action fill et nécessite la donnée du fixture client-email."
+    },
+    {
+      "id": "ajouter-remplissage-mot-de-passe",
+      "operation": "add",
+      "path": "/workflow/steps/-",
+      "value": {
+        "id": "step-fill-password",
+        "name": "Saisir le mot de passe du client",
+        "page_url": "https://recette.example.test/login",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:login#password",
+        "value": "{{secret.client-password}}",
+        "assertion": "visible",
+        "assertion_target": "page:login#password",
+        "expected": null,
+        "evidence": false
+      },
+      "label": "Ajouter l'étape de saisie du mot de passe",
+      "reason": "Le champ page:login#password accepte une action fill et nécessite le secret client-password."
+    },
+    {
+      "id": "ajouter-clic-connexion",
+      "operation": "add",
+      "path": "/workflow/steps/-",
+      "value": {
+        "id": "step-click-submit",
+        "name": "Cliquer sur le bouton Se connecter",
+        "page_url": "https://recette.example.test/login",
+        "precondition": "",
+        "action": "click",
+        "target": "page:login#submit",
+        "value": null,
+        "assertion": "none",
+        "assertion_target": null,
+        "expected": null,
+        "evidence": false
+      },
+      "label": "Ajouter l'étape de clic sur le bouton de connexion",
+      "reason": "Le bouton page:login#submit accepte une action click pour soumettre le formulaire."
+    },
+    {
+      "id": "ajouter-verification-redirection-titre",
+      "operation": "add",
+      "path": "/workflow/steps/-",
+      "value": {
+        "id": "step-verify-account-title",
+        "name": "Vérifier le titre de l'espace personnel",
+        "page_url": "https://recette.example.test/account",
+        "precondition": "",
+        "action": "none",
+        "target": null,
+        "value": null,
+        "assertion": "text",
+        "assertion_target": "page:account#title",
+        "expected": "Mon espace",
+        "evidence": true
+      },
+      "label": "Ajouter la vérification du titre sur la page de destination",
+      "reason": "La transition connue redirige vers page:account. La validation observable requise est la présence et le texte du heading page:account#title."
+    }
+  ]
+}

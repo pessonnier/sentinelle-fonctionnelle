@@ -28,7 +28,8 @@ class HierarchyAcceptanceTests(unittest.TestCase):
             name="Parcours critiques",
             objective="Valider les principaux parcours client",
             scope="Commande et paiement",
-            approach="Cas nominaux et cas d'erreur",
+            test_approach_id="functional-risk-based",
+            test_approach_version=1,
             test_type="acceptance",
             target="demo",
         )

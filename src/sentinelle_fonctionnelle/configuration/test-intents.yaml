@@ -1,0 +1,486 @@
+schema_version: 1
+intents:
+  - id: access-feature
+    version: 1
+    label: Accéder à une fonctionnalité
+    category: Navigation
+    description: Vérifier qu’un acteur peut atteindre une fonctionnalité depuis un point de départ connu.
+    examples:
+      - Un conseiller accède à la recherche des clients depuis l’accueil.
+    suggested_test_types: [smoke, acceptance]
+    required_information:
+      - key: objective
+        label: Fonctionnalité visée
+        question: Quel comportement métier précis ce cas doit-il démontrer ?
+        utility: L’objectif empêche de mélanger plusieurs comportements dans un même cas.
+        target: objective
+      - key: actor
+        label: Acteur
+        question: Quel acteur ou rôle doit pouvoir accéder à cette fonctionnalité ?
+        utility: Le rôle détermine le contexte d’authentification et les permissions attendues.
+        target: actor_name
+      - key: start-page
+        label: Point de départ
+        question: Depuis quelle page ou quel état le parcours commence-t-il ?
+        utility: La page de départ permet d’analyser les éléments réellement manipulables.
+        target: start-url
+      - key: observable-result
+        label: Résultat observable
+        question: Quel élément visible prouve que la fonctionnalité est accessible ?
+        utility: Une validation observable permettra au test généré de conclure sans interprétation.
+        target: workflow-steps
+    enabled: true
+
+  - id: authentication-login-success
+    version: 1
+    label: Se connecter avec succès
+    category: Authentification
+    description: Vérifier qu’un acteur autorisé ouvre une session avec des identifiants valides.
+    examples:
+      - Un client actif se connecte et voit son espace personnel.
+    suggested_test_types: [smoke, acceptance, regression]
+    required_information:
+      - key: objective
+        label: Résultat métier
+        question: Quel comportement métier précis ce cas doit-il démontrer ?
+        utility: L’objectif distingue la connexion réussie de ses variantes d’échec.
+        target: objective
+      - key: actor
+        label: Acteur et profil
+        question: Quel utilisateur et quel profil d’acteur réalisent la connexion ?
+        utility: Le profil d’acteur référence la préparation de session sans exposer de secret.
+        target: actor_name
+      - key: start-page
+        label: Page de connexion
+        question: Quelle page contient le formulaire de connexion ?
+        utility: Son analyse fournit les champs et le bouton utilisables dans les étapes.
+        target: start-url
+      - key: credentials
+        label: Identifiants de test
+        question: Quelles références de fixture et de secret fournissent les identifiants ?
+        utility: Les références rendent le test rejouable sans enregistrer de mot de passe.
+        target: fixture-refs
+      - key: steps
+        label: Parcours
+        question: Quelles actions permettent de renseigner puis soumettre le formulaire ?
+        utility: Les actions doivent cibler des champs analysés plutôt qu’un sélecteur fragile.
+        target: workflow-steps
+      - key: observable-result
+        label: Preuve de connexion
+        question: Quel changement visible prouve que la session est ouverte ?
+        utility: Une URL, un menu ou un message observable devient l’assertion du test.
+        target: workflow-steps
+    enabled: true
+
+  - id: authentication-logout
+    version: 1
+    label: Se déconnecter
+    category: Authentification
+    description: Vérifier qu’un utilisateur ferme explicitement sa session.
+    examples:
+      - Un client se déconnecte puis ne peut plus accéder à son espace.
+    suggested_test_types: [smoke, acceptance, regression]
+    required_information:
+      - key: objective
+        label: Déconnexion
+        question: Quel comportement métier précis la déconnexion doit-elle démontrer ?
+        utility: L’objectif précise l’état attendu après la fermeture de session.
+        target: objective
+      - key: actor
+        label: Utilisateur connecté
+        question: Quel profil d’acteur possède la session initiale ?
+        utility: La session doit être préparée sans inclure ses secrets dans le cas.
+        target: actor_name
+      - key: preconditions
+        label: Session initiale
+        question: Comment sait-on que l’utilisateur est connecté avant l’action ?
+        utility: Une précondition observable distingue une vraie déconnexion d’un accès anonyme.
+        target: setup-lines
+      - key: steps
+        label: Commande de déconnexion
+        question: Quel menu, lien ou bouton analysé ferme la session ?
+        utility: La référence HTML fournit une cible de clic stable.
+        target: workflow-steps
+      - key: observable-result
+        label: Session fermée
+        question: Quelle page ou quel élément prouve que la session est fermée ?
+        utility: Le test doit observer l’effet de sécurité après l’action.
+        target: workflow-steps
+    enabled: true
+
+  - id: authentication-session-expiration
+    version: 1
+    label: Expirer une session
+    category: Authentification
+    description: Vérifier qu’une session arrivée à expiration bloque le parcours et demande une nouvelle authentification.
+    examples:
+      - Une session inactive redirige le client vers la connexion.
+    suggested_test_types: [acceptance, regression, security]
+    required_information:
+      - key: objective
+        label: Expiration
+        question: Quel comportement métier précis doit suivre l’expiration ?
+        utility: L’objectif distingue redirection, message et perte d’autorisation.
+        target: objective
+      - key: actor
+        label: Session concernée
+        question: Quel profil d’acteur possède la session à faire expirer ?
+        utility: Le profil prépare un contexte reproductible.
+        target: actor_name
+      - key: preconditions
+        label: Condition d’expiration
+        question: Quelle durée ou quel état provoque l’expiration de la session ?
+        utility: Une condition explicite évite une attente arbitraire dans le test.
+        target: setup-lines
+      - key: observable-result
+        label: Refus observable
+        question: Quel message, formulaire ou changement d’URL prouve l’expiration ?
+        utility: Une preuve visible confirme que l’ancienne session n’est plus utilisable.
+        target: workflow-steps
+    enabled: true
+
+  - id: manage-business-data
+    version: 1
+    label: Créer, consulter, modifier ou supprimer une donnée
+    category: Données métier
+    description: Vérifier le cycle de vie d’une donnée métier et ses effets observables.
+    examples:
+      - Un gestionnaire crée puis consulte une fiche client.
+    suggested_test_types: [acceptance, regression, e2e]
+    required_information:
+      - key: objective
+        label: Opération métier
+        question: Quelle donnée et quelle opération doivent être vérifiées ?
+        utility: L’objectif fixe une seule transition de cycle de vie.
+        target: objective
+      - key: actor
+        label: Acteur
+        question: Quel rôle est autorisé à réaliser cette opération ?
+        utility: Les droits attendus dépendent du rôle métier.
+        target: actor_name
+      - key: test-data
+        label: Données
+        question: Quel jeu de données fournit les valeurs à créer ou modifier ?
+        utility: Un jeu de données explicite rend le résultat reproductible.
+        target: fixture-refs
+      - key: observable-result
+        label: Résultat
+        question: Quel état affiché confirme que la donnée a été enregistrée ?
+        utility: Le test doit observer l’effet métier, pas seulement un clic réussi.
+        target: workflow-steps
+      - key: cleanup
+        label: Nettoyage
+        question: Faut-il supprimer ou restaurer la donnée après le test ?
+        utility: Le nettoyage permet de rejouer le cas sans collision.
+        target: cleanup-lines
+    enabled: true
+
+  - id: search-filter-sort-page
+    version: 1
+    label: Rechercher, filtrer, trier ou paginer
+    category: Consultation
+    description: Vérifier qu’une collection présente les résultats attendus selon les critères choisis.
+    examples:
+      - Un conseiller filtre les dossiers ouverts et les trie par date.
+    suggested_test_types: [acceptance, regression]
+    required_information:
+      - key: objective
+        label: Résultat recherché
+        question: Quel résultat la recherche ou le filtre doit-il isoler ?
+        utility: Le résultat attendu donne un sens métier aux critères saisis.
+        target: objective
+      - key: test-data
+        label: Données de référence
+        question: Quel jeu de données garantit des résultats connus ?
+        utility: Des données maîtrisées évitent un test dépendant du hasard.
+        target: fixture-refs
+      - key: filters
+        label: Critères
+        question: Quels champs, valeurs, tris ou pages doivent être manipulés ?
+        utility: Les champs analysés indiquent les actions fill ou select disponibles.
+        target: workflow-steps
+      - key: observable-result
+        label: Résultat observable
+        question: Quelle ligne, valeur ou absence de résultat doit être vérifiée ?
+        utility: L’assertion doit porter sur le contenu réellement affiché.
+        target: workflow-steps
+    enabled: true
+
+  - id: submit-form
+    version: 1
+    label: Saisir, valider, réinitialiser ou abandonner un formulaire
+    category: Formulaires
+    description: Vérifier le comportement d’un formulaire et les validations de ses champs.
+    examples:
+      - Un utilisateur renseigne puis valide son adresse de livraison.
+    suggested_test_types: [acceptance, regression]
+    required_information:
+      - key: objective
+        label: Finalité du formulaire
+        question: Quelle opération le formulaire doit-il permettre ?
+        utility: La finalité détermine les champs essentiels et l’état final attendu.
+        target: objective
+      - key: test-data
+        label: Valeurs saisies
+        question: Quelles données valides ou invalides doivent être utilisées ?
+        utility: Les valeurs doivent provenir d’un jeu maîtrisé ou d’une fixture.
+        target: fixture-refs
+      - key: steps
+        label: Champs et commande
+        question: Quels champs faut-il saisir et quel bouton termine l’opération ?
+        utility: L’analyse HTML propose les actions compatibles pour chaque champ.
+        target: workflow-steps
+      - key: observable-result
+        label: Validation
+        question: Quel message ou état confirme la validation ou l’abandon ?
+        utility: Une assertion observable distingue succès, erreur et annulation.
+        target: workflow-steps
+    enabled: true
+
+  - id: decide-operation
+    version: 1
+    label: Accepter, refuser ou modifier une opération
+    category: Décision
+    description: Vérifier une décision métier et la conséquence de chaque choix autorisé.
+    examples:
+      - Un responsable refuse une demande avec un motif obligatoire.
+    suggested_test_types: [acceptance, regression]
+    required_information:
+      - key: objective
+        label: Décision
+        question: Quelle opération doit être acceptée, refusée ou modifiée ?
+        utility: Une décision précise évite de confondre plusieurs branches métier.
+        target: objective
+      - key: actor
+        label: Décideur
+        question: Quel rôle prend la décision ?
+        utility: Le rôle détermine la permission et la responsabilité attendues.
+        target: actor_name
+      - key: preconditions
+        label: État initial
+        question: Dans quel état l’opération doit-elle se trouver avant la décision ?
+        utility: Une décision n’est valide que depuis un état métier autorisé.
+        target: setup-lines
+      - key: observable-result
+        label: Conséquence
+        question: Quel nouvel état ou message confirme la décision ?
+        utility: Le test vérifie la conséquence, pas seulement le bouton pressé.
+        target: workflow-steps
+    enabled: true
+
+  - id: verify-message-state
+    version: 1
+    label: Vérifier un message, une notification ou un état
+    category: Observation
+    description: Vérifier une information visible produite par une action ou un événement.
+    examples:
+      - Une bannière confirme l’enregistrement du dossier.
+    suggested_test_types: [smoke, acceptance, regression]
+    required_information:
+      - key: objective
+        label: Information attendue
+        question: Quel message, notification ou état doit être observé ?
+        utility: Le texte ou l’état attendu devient une assertion explicite.
+        target: objective
+      - key: preconditions
+        label: Événement déclencheur
+        question: Quel état ou événement doit précéder cette information ?
+        utility: Le contexte explique pourquoi l’information doit apparaître.
+        target: setup-lines
+      - key: observable-result
+        label: Élément observable
+        question: Quel élément analysé porte le message ou l’état ?
+        utility: La référence de page évite une recherche textuelle globale fragile.
+        target: workflow-steps
+    enabled: true
+
+  - id: verify-permission-role
+    version: 1
+    label: Vérifier une permission ou un rôle
+    category: Autorisation
+    description: Vérifier qu’un rôle peut ou ne peut pas réaliser une opération.
+    examples:
+      - Un lecteur ne voit pas le bouton de suppression.
+    suggested_test_types: [acceptance, regression, security]
+    required_information:
+      - key: objective
+        label: Permission
+        question: Quelle opération doit être autorisée ou interdite ?
+        utility: La permission doit porter sur une capacité métier précise.
+        target: objective
+      - key: actor
+        label: Rôle
+        question: Quel rôle ou profil d’acteur est contrôlé ?
+        utility: Le rôle est la donnée centrale du scénario d’autorisation.
+        target: actor_name
+      - key: permission
+        label: Profil explicite
+        question: Le nom de l’acteur indique-t-il clairement le rôle testé ?
+        utility: Un rôle explicite rend le rapport compréhensible et traçable.
+        target: actor_name
+      - key: observable-result
+        label: Effet observable
+        question: L’élément doit-il être absent, masqué, désactivé ou produire une erreur ?
+        utility: La permission doit être vérifiée par un comportement visible.
+        target: workflow-steps
+    enabled: true
+
+  - id: handle-error-invalid-empty
+    version: 1
+    label: Gérer une erreur, une donnée invalide ou une absence de résultat
+    category: Erreurs
+    description: Vérifier qu’une situation incorrecte est refusée et expliquée sans faux succès.
+    examples:
+      - Une adresse électronique invalide affiche une erreur ciblée.
+    suggested_test_types: [acceptance, regression]
+    required_information:
+      - key: objective
+        label: Erreur vérifiée
+        question: Quelle erreur ou absence de résultat doit être couverte ?
+        utility: Le cas doit viser une cause d’échec identifiable.
+        target: objective
+      - key: test-data
+        label: Donnée déclenchante
+        question: Quelle donnée invalide ou absente déclenche le comportement ?
+        utility: La valeur déclenchante doit être reproductible et non ambiguë.
+        target: fixture-refs
+      - key: error-variant
+        label: Hypothèse d’erreur
+        question: Quelle variante d’erreur reste à confirmer avec le métier ?
+        utility: Les ambiguïtés sont visibles avant toute confirmation du cas.
+        target: assumptions
+      - key: observable-result
+        label: Diagnostic visible
+        question: Quel message, champ ou état prouve que l’erreur est correctement gérée ?
+        utility: Un refus sans diagnostic observable ne suffit pas.
+        target: workflow-steps
+    enabled: true
+
+  - id: transfer-file
+    version: 1
+    label: Importer, exporter ou télécharger
+    category: Fichiers
+    description: Vérifier un transfert de fichier, son déclenchement et son résultat.
+    examples:
+      - Un gestionnaire importe un CSV valide puis voit le compte rendu.
+    suggested_test_types: [acceptance, regression, e2e]
+    required_information:
+      - key: objective
+        label: Transfert
+        question: Quel fichier doit être importé, exporté ou téléchargé ?
+        utility: Le format et la finalité déterminent les validations nécessaires.
+        target: objective
+      - key: file
+        label: Fichier de test
+        question: Quelle fixture fournit le fichier et quelle action le manipule ?
+        utility: Le fichier doit être maîtrisé et référencé sans chemin local éphémère.
+        target: workflow-steps
+      - key: observable-result
+        label: Résultat du transfert
+        question: Quel nom, contenu, message ou état confirme le transfert ?
+        utility: Le déclenchement seul ne prouve pas la réussite du transfert.
+        target: workflow-steps
+      - key: cleanup
+        label: Nettoyage
+        question: Quels fichiers ou données importées doivent être supprimés après le test ?
+        utility: Le nettoyage évite les effets persistants entre exécutions.
+        target: cleanup-lines
+    enabled: true
+
+  - id: checkout-payment-refund
+    version: 1
+    label: Commander, payer ou rembourser
+    category: Transaction
+    description: Vérifier un parcours transactionnel et ses effets métier observables.
+    examples:
+      - Un client paie une commande et obtient une confirmation.
+    suggested_test_types: [acceptance, regression, e2e]
+    required_information:
+      - key: objective
+        label: Transaction
+        question: Quelle transaction et quel résultat métier doivent être vérifiés ?
+        utility: Le périmètre transactionnel doit être explicite et borné.
+        target: objective
+      - key: actor
+        label: Acteur
+        question: Quel client, opérateur ou gestionnaire réalise l’opération ?
+        utility: Le rôle conditionne le parcours et les autorisations.
+        target: actor_name
+      - key: test-data
+        label: Données transactionnelles
+        question: Quelles références fournissent le panier, le paiement ou le remboursement ?
+        utility: Les données réelles et secrets de paiement ne doivent jamais être saisis.
+        target: fixture-refs
+      - key: observable-result
+        label: Confirmation
+        question: Quel statut, montant ou identifiant confirme la transaction ?
+        utility: L’assertion doit vérifier l’effet métier final.
+        target: workflow-steps
+      - key: cleanup
+        label: Réversibilité
+        question: Quelle remise en état ou annulation est nécessaire après le test ?
+        utility: Le scénario doit pouvoir être rejoué sans dette de données.
+        target: cleanup-lines
+    enabled: true
+
+  - id: verify-state-transition
+    version: 1
+    label: Vérifier une transition d’état métier
+    category: Cycle de vie
+    description: Vérifier qu’un objet passe d’un état connu à un autre selon les règles métier.
+    examples:
+      - Une demande validée passe de « en attente » à « acceptée ».
+    suggested_test_types: [acceptance, regression]
+    required_information:
+      - key: objective
+        label: Transition
+        question: Quel état initial et quel état final doivent être vérifiés ?
+        utility: La transition constitue le cœur du comportement métier.
+        target: objective
+      - key: preconditions
+        label: État initial
+        question: Comment préparer et reconnaître l’état initial ?
+        utility: La transition n’est démontrable que depuis un état confirmé.
+        target: setup-lines
+      - key: state-transition
+        label: État final et nettoyage
+        question: Quelle conséquence et quelle remise en état suivent la transition ?
+        utility: L’état final et la réversibilité rendent le cas reproductible.
+        target: cleanup-lines
+      - key: observable-result
+        label: Observation
+        question: Quel élément affiche le nouvel état ?
+        utility: Une référence analysée permet une assertion stable.
+        target: workflow-steps
+    enabled: true
+
+  - id: verify-performance-threshold
+    version: 1
+    label: Vérifier un seuil de durée
+    category: Performance
+    description: Vérifier qu’un parcours fonctionnel respecte une durée maximale déclarée.
+    examples:
+      - La recherche affiche ses résultats en moins de deux secondes.
+    suggested_test_types: [performance]
+    required_information:
+      - key: objective
+        label: Opération mesurée
+        question: Quelle opération fonctionnelle doit respecter un seuil ?
+        utility: La mesure doit porter sur un parcours métier identifiable.
+        target: objective
+      - key: performance-threshold
+        label: Seuil
+        question: Quelle durée maximale et quelle unité sont attendues ?
+        utility: Un seuil chiffré permet une décision déterministe.
+        target: objective
+      - key: preconditions
+        label: Conditions de mesure
+        question: Quelles données et conditions doivent être stables avant la mesure ?
+        utility: Les conditions rendent les mesures comparables.
+        target: setup-lines
+      - key: observable-result
+        label: Résultat fonctionnel
+        question: Quel résultat visible marque la fin de l’opération mesurée ?
+        utility: Le point de fin doit être observable pour mesurer correctement.
+        target: workflow-steps
+    enabled: true

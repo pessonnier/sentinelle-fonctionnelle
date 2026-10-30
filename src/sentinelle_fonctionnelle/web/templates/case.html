@@ -1,12 +1,13 @@
 {% extends "base.html" %}
+{% from "help.html" import field_label, form_help %}
 {% block title %}{{ case.name }} · Sentinelle Fonctionnelle{% endblock %}
 {% block content %}
   <nav class="breadcrumb" aria-label="Fil d’Ariane">
     <a href="/">Projets</a><span>/</span>
     <a href="/projects/{{ project.id }}">{{ project.name }}</a><span>/</span>
-    <a href="/projects/{{ project.id }}/test-plans/{{ plan.id }}">{{ plan.name }}</a><span>/</span>
+    <a href="/projects/{{ project.id }}#plan-{{ plan.id }}">{{ plan.name }}</a><span>/</span>
     {% for container in container_path %}
-      <a href="/projects/{{ project.id }}/test-plans/{{ plan.id }}#node-{{ container.id }}">{{ container.name }}</a><span>/</span>
+      <a href="/projects/{{ project.id }}#node-{{ container.id }}">{{ container.name }}</a><span>/</span>
     {% endfor %}
     <span aria-current="page">{{ case.name }}</span>
   </nav>
@@ -31,7 +32,12 @@
   </nav>
 
   {% set specification = case.specification %}
-  <form class="case-form" action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/specification" method="post">
+  <form class="case-form" action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/specification" method="post" aria-label="Définir le cas de test">
+    {{ form_help(
+      "Définir le cas de test",
+      "Enregistre ensemble le contexte, les étapes, les données référencées et les résultats attendus.",
+      "test-case"
+    ) }}
     <section id="context" class="editor-section">
       <header>
         <span class="section-number">1</span>
@@ -39,25 +45,37 @@
       </header>
       <div class="form-grid">
         <label class="wide">
-          Objectif du cas
+          {{ field_label("Objectif du cas", "Objectif du cas", "Comportement métier précis que ce cas doit démontrer.", "Vérifier qu’un client authentifié peut payer par carte", "test-case") }}
           <textarea name="objective" rows="2" required>{{ specification.objective if specification else "" }}</textarea>
         </label>
         <label>
-          Acteur
+          {{ field_label("Acteur", "Acteur", "Rôle fonctionnel ou système qui réalise les actions du scénario.", "Client authentifié", "test-case") }}
           <input name="actor_name" required value="{{ specification.actor if specification else '' }}" placeholder="Client authentifié">
         </label>
         <label>
-          Environnement
+          {{ field_label("Environnement", "Environnement", "Cible précise ou contexte technique utilisé pour ce cas.", "recette-eu", "test-case") }}
           <input name="environment" value="{{ specification.environment if specification else plan.target }}">
         </label>
         <label>
-          Type de test
+          {{ field_label("Type de test", "Type de test", "Catégorie héritée lors de la création du cas. Ce champ est informatif dans cet écran.", "acceptance", "test-case") }}
           <input value="{{ case.test_type }}" readonly aria-readonly="true">
         </label>
-        <label class="wide">Préconditions<textarea name="preconditions" rows="3">{{ specification.preconditions|join("\n") if specification else case.preconditions|join("\n") }}</textarea></label>
-        <label>Exigences<textarea name="requirements" rows="3">{{ specification.requirements|join("\n") if specification else "" }}</textarea></label>
-        <label>Règles métier<textarea name="business_rules" rows="3">{{ specification.business_rules|join("\n") if specification else "" }}</textarea></label>
-        <label class="wide">Postconditions<textarea name="postconditions" rows="2">{{ specification.postconditions|join("\n") if specification else case.postconditions|join("\n") }}</textarea></label>
+        <label class="wide">
+          {{ field_label("Préconditions", "Préconditions", "Conditions qui doivent être vraies avant la première étape, une par ligne.", "Le client est authentifié", "test-case") }}
+          <textarea name="preconditions" rows="3">{{ specification.preconditions|join("\n") if specification else case.preconditions|join("\n") }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Exigences", "Exigences", "Identifiants ou formulations des exigences couvertes, une par ligne.", "REQ-CMD-042", "test-case") }}
+          <textarea name="requirements" rows="3">{{ specification.requirements|join("\n") if specification else "" }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Règles métier", "Règles métier", "Contraintes fonctionnelles que les étapes et résultats doivent vérifier, une par ligne.", "Le montant doit être supérieur à zéro", "test-case") }}
+          <textarea name="business_rules" rows="3">{{ specification.business_rules|join("\n") if specification else "" }}</textarea>
+        </label>
+        <label class="wide">
+          {{ field_label("Postconditions", "Postconditions", "État du système attendu après le cas, une condition par ligne.", "La commande est enregistrée", "test-case") }}
+          <textarea name="postconditions" rows="2">{{ specification.postconditions|join("\n") if specification else case.postconditions|join("\n") }}</textarea>
+        </label>
       </div>
     </section>
 
@@ -68,7 +86,7 @@
       </header>
       <div class="form-grid">
         <label>
-          Mode de saisie
+          {{ field_label("Mode de saisie", "Mode de saisie des étapes", "Détermine la syntaxe utilisée pour interpréter et documenter le scénario.", "Pas-à-pas", "test-case") }}
           <select name="style">
             {% for style in specification_styles %}
               <option value="{{ style.value }}" {% if specification and specification.style == style %}selected{% endif %}>{{ style.label }}</option>
@@ -76,17 +94,17 @@
           </select>
         </label>
         <label>
-          Déclaration CI
+          {{ field_label("Déclaration CI", "Déclaration CI", "Indications d’exécution utilisées lors de la génération de la documentation CI/CD.", "manual, on_merge_request", "ci") }}
           <input name="execution_declaration" value="{{ specification.execution_declaration|join('\n') if specification else (case.execution_declaration|join('\n') or 'manual') }}">
         </label>
         <label class="wide">
-          Actions pas-à-pas
+          {{ field_label("Actions pas-à-pas", "Actions pas-à-pas", "Une action observable par ligne. Chaque ligne doit correspondre au résultat de même rang.", "Cliquer sur « Valider la commande »", "test-case") }}
           <textarea name="step_actions" rows="6" placeholder="Ouvrir la page de connexion&#10;Saisir les identifiants&#10;Valider le formulaire">{% if specification and specification.style.value == "steps" %}{% for clause in specification.clauses %}{{ clause.text }}{% if not loop.last %}
 {% endif %}{% endfor %}{% endif %}</textarea>
           <small>Utilisé avec le mode Pas-à-pas. L’ordre des lignes est conservé.</small>
         </label>
         <label class="wide">
-          Scénario structuré pour les autres modes
+          {{ field_label("Scénario structuré pour les autres modes", "Scénario structuré", "Texte interprété selon le mode choisi : Given/When/Then, exemples ou checklist.", "Étant donné un panier valide", "test-case") }}
           <textarea name="source_text" rows="6" placeholder="Étant donné…&#10;Quand…&#10;Alors…">{{ specification.source_text if specification and specification.style.value != "steps" else "" }}</textarea>
           <small>Given/When/Then, tableau d’exemples ou checklist.</small>
         </label>
@@ -99,7 +117,7 @@
         <div><h2>Données de test</h2><p>Références non secrètes nécessaires au cas.</p></div>
       </header>
       <label>
-        Jeux de données référencés
+        {{ field_label("Jeux de données référencés", "Jeux de données référencés", "Noms non secrets des profils ou ensembles de données nécessaires, un par ligne.", "client-standard", "test-data") }}
         <textarea name="data_sets" rows="4" placeholder="client-standard&#10;panier-un-produit">{{ specification.data_sets|join("\n") if specification else "" }}</textarea>
       </label>
       {% if case.data_binding %}
@@ -141,7 +159,7 @@
         <div><h2>Résultats attendus</h2><p>Chaque étape pas-à-pas doit avoir un résultat observable.</p></div>
       </header>
       <label>
-        Résultats, dans le même ordre que les étapes
+        {{ field_label("Résultats, dans le même ordre que les étapes", "Résultats attendus", "Une conséquence observable par ligne, alignée avec l’action de même rang.", "Le tableau de bord apparaît", "test-case") }}
         <textarea name="expected_results" rows="6" placeholder="Le formulaire est visible&#10;Les champs contiennent les valeurs&#10;Le tableau de bord apparaît">{% for result in expected_results %}{{ result }}{% if not loop.last %}
 {% endif %}{% endfor %}</textarea>
       </label>
@@ -153,7 +171,7 @@
     </section>
 
     <div class="form-actions">
-      <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}">Retour au plan</a>
+      <a class="secondary-button" href="/projects/{{ project.id }}#plan-{{ plan.id }}">Retour à l’arborescence</a>
       <button type="submit">Enregistrer le cas de test</button>
     </div>
   </form>
@@ -161,20 +179,38 @@
   <section class="editor-section data-upload">
     <header>
       <span class="section-number">+</span>
-      <div><h2>Fichier de données</h2><p>CSV UTF-8 ou XLSX, analysé sans exécuter de formule.</p></div>
+      <div>
+        {{ form_help(
+          "Fichier de données",
+          "Analyse un CSV ou un XLSX sans exécuter de formule et prépare les variations d’exécution de ce cas.",
+          "test-data"
+        ) }}
+      </div>
     </header>
-    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/data-binding" method="post" enctype="multipart/form-data">
+    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/data-binding" method="post" enctype="multipart/form-data" aria-label="Associer un fichier de données">
       <div class="form-grid">
-        <label class="wide">Fichier<input name="data_file" type="file" accept=".csv,.xlsx" required></label>
+        <label class="wide">
+          {{ field_label("Fichier", "Fichier de données", "Fichier CSV UTF-8 ou XLSX contenant une ligne par variation. Les formules ne sont pas exécutées.", "commandes.csv", "test-data") }}
+          <input name="data_file" type="file" accept=".csv,.xlsx" required>
+        </label>
         <label>
-          Itération
+          {{ field_label("Itération", "Mode d’itération", "Détermine l’ordre de sélection et de préparation des lignes du fichier.", "Séquentiel", "test-data") }}
           <select name="mode">
             {% for mode in data_iteration_modes %}<option value="{{ mode.value }}">{{ mode.label }}</option>{% endfor %}
           </select>
         </label>
-        <label>Concurrence maximale<input name="max_parallelism" type="number" min="1" max="20" value="1"></label>
-        <label>Graine aléatoire<input name="random_seed" type="number" value="0"></label>
-        <label>Nombre de cas<input name="sample_count" type="number" min="1" placeholder="toutes les lignes"></label>
+        <label>
+          {{ field_label("Concurrence maximale", "Concurrence maximale", "Nombre maximal de variations prévues simultanément, entre 1 et 20.", "4", "test-data") }}
+          <input name="max_parallelism" type="number" min="1" max="20" value="1">
+        </label>
+        <label>
+          {{ field_label("Graine aléatoire", "Graine aléatoire", "Entier permettant de reproduire la même sélection en mode aléatoire.", "42", "test-data") }}
+          <input name="random_seed" type="number" value="0">
+        </label>
+        <label>
+          {{ field_label("Nombre de cas", "Nombre de cas", "Limite le nombre de lignes utilisées. Vide utilise toutes les lignes.", "10", "test-data") }}
+          <input name="sample_count" type="number" min="1" placeholder="toutes les lignes">
+        </label>
       </div>
       <button type="submit">Analyser et associer</button>
     </form>

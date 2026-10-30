@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,26 @@ from sentinelle_fonctionnelle.web.settings import ServerSettings
 
 
 class LocalWebAcceptanceTests(unittest.TestCase):
+    def test_first_project_form_has_unambiguous_accessible_names(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            settings = ServerSettings(
+                database=Path(temporary_directory) / "state" / "sentinel.db"
+            )
+
+            with TestClient(create_web_app(settings)) as client:
+                home = client.get("/")
+
+            self.assertEqual(200, home.status_code)
+            self.assertEqual(1, home.text.count('aria-controls="new-project"'))
+            self.assertIn("Créer mon premier projet", home.text)
+            for accessible_name in (
+                "Nom du projet",
+                "Description du projet",
+                "Cible web du projet",
+                "Politique de sécurité du projet",
+            ):
+                self.assertIn(f'aria-label="{accessible_name}"', home.text)
+
     def test_web_workflow_creates_projects_tree_and_restores_them(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             database = Path(temporary_directory) / "state" / "sentinel.db"
@@ -23,12 +44,60 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                 health = client.get("/health")
                 self.assertEqual(200, health.status_code)
                 self.assertEqual(
-                    {"status": "ok", "mode": "local", "schema_version": 5},
+                    {"status": "ok", "mode": "local", "schema_version": 8},
                     health.json(),
                 )
                 home = client.get("/")
                 self.assertEqual(200, home.status_code)
                 self.assertIn("Nouveau projet", home.text)
+                self.assertIn('<html lang="fr" data-theme="forest">', home.text)
+                self.assertIn('data-theme-selector', home.text)
+                self.assertIn('<option value="ocean">Océan</option>', home.text)
+                self.assertIn(
+                    '<option value="high-contrast">Contraste élevé</option>',
+                    home.text,
+                )
+                self.assertIn(
+                    '<option value="defense">Défense — ministère des Armées</option>',
+                    home.text,
+                )
+                self.assertIn("Ministère<br>", home.text)
+                self.assertIn("des Armées<br>", home.text)
+                self.assertIn("et des Anciens<br>", home.text)
+                self.assertIn("combattants", home.text)
+                self.assertIn('aria-controls="new-project"', home.text)
+                self.assertIn(
+                    'id="new-project" class="panel form-panel entity-create-panel" hidden',
+                    home.text,
+                )
+                self.assertIn('/static/theme-init.js', home.text)
+                self.assertIn('/static/dsfr-logo.min.css', home.text)
+                self.assertIn('/static/app.js', home.text)
+                self.assertIn(
+                    'href="https://github.com/pessonnier/sentinelle-fonctionnelle"',
+                    home.text,
+                )
+
+                theme_script = client.get("/static/theme-init.js")
+                self.assertEqual(200, theme_script.status_code)
+                self.assertIn('"defense"', theme_script.text)
+
+                stylesheet = client.get("/static/app.css")
+                self.assertEqual(200, stylesheet.status_code)
+                self.assertIn('html[data-theme="defense"]', stylesheet.text)
+                self.assertIn('#000091', stylesheet.text)
+                self.assertIn('#e1000f', stylesheet.text)
+                self.assertIn('/static/defense-rafale.svg', stylesheet.text)
+
+                logo_stylesheet = client.get("/static/dsfr-logo.min.css")
+                self.assertEqual(200, logo_stylesheet.status_code)
+                self.assertIn("DSFR v1.15.0", logo_stylesheet.text)
+                self.assertIn(".fr-logo:before", logo_stylesheet.text)
+
+                defense_symbol = client.get("/static/defense-rafale.svg")
+                self.assertEqual(200, defense_symbol.status_code)
+                self.assertIn("#000091", defense_symbol.text)
+                self.assertIn("#E1000F", defense_symbol.text)
 
                 first_project_id = self._create_project(
                     client,
@@ -71,6 +140,19 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                 project_page = client.get(f"/projects/{first_project_id}")
                 self.assertEqual(200, project_page.status_code)
                 self.assertIn("Parcours critiques", project_page.text)
+                self.assertIn("Plans, dossiers, suites et cas", project_page.text)
+                self.assertIn('class="kind-icon plan-kind-icon"', project_page.text)
+                for expected in (
+                    "Régression",
+                    "Authentification",
+                    "Connexion valide",
+                ):
+                    self.assertIn(expected, project_page.text)
+                self.assertIn('aria-controls="new-test-plan"', project_page.text)
+                self.assertIn(
+                    'id="new-test-plan" class="form-panel entity-create-panel" hidden',
+                    project_page.text,
+                )
                 plan_page = client.get(
                     f"/projects/{first_project_id}/test-plans/{test_plan_id}"
                 )
@@ -81,6 +163,12 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                     "Connexion valide",
                 ):
                     self.assertIn(expected, plan_page.text)
+                filter_tag = re.search(
+                    r'<details class="filter-disclosure"[^>]*>',
+                    plan_page.text,
+                )
+                self.assertIsNotNone(filter_tag)
+                self.assertNotIn(" open", filter_tag.group(0))
 
             with TestClient(create_web_app(settings)) as restarted:
                 home = restarted.get("/")
@@ -94,6 +182,79 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                 self.assertIn(str(test_id), restored_plan.text)
                 self.assertNotEqual(first_project_id, second_project_id)
                 self.assertTrue(database.is_file())
+
+    def test_project_details_can_be_edited_and_restored_without_rewriting_plans(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary_directory:
+            database = Path(temporary_directory) / "sentinel.db"
+            settings = ServerSettings(database=database)
+
+            with TestClient(create_web_app(settings)) as client:
+                project_id = self._create_project(
+                    client,
+                    name="Ancien portail",
+                    target="https://ancien.demo.invalid",
+                )
+                plan_id = self._create_test_plan(client, project_id=project_id)
+
+                page = client.get("/")
+                self.assertIn("Modifier le projet", page.text)
+                self.assertIn(
+                    f'action="/projects/{project_id}/details"',
+                    page.text,
+                )
+                self.assertIn('value="Ancien portail"', page.text)
+
+                updated = client.post(
+                    f"/projects/{project_id}/details",
+                    data={
+                        "name": "Nouveau portail RH",
+                        "description": "Gestion des talents intersidéraux",
+                        "web_target": "https://nouveau.demo.invalid",
+                        "security_policy": "rh-local-only",
+                    },
+                    follow_redirects=False,
+                )
+                self.assertEqual(303, updated.status_code)
+                self.assertEqual(
+                    f"/#project-{project_id}",
+                    updated.headers["location"],
+                )
+                project_page = client.get(f"/projects/{project_id}")
+                self.assertNotIn("Modifier le projet", project_page.text)
+                project = client.app.state.project_application.get_project(
+                    None,
+                    project_id,
+                )
+                self.assertEqual("Nouveau portail RH", project.name)
+                self.assertEqual("https://nouveau.demo.invalid", project.web_target)
+                self.assertEqual("rh-local-only", project.security_policy)
+                self.assertEqual("demo", project.test_plan(plan_id).target)
+
+                invalid = client.post(
+                    f"/projects/{project_id}/details",
+                    data={
+                        "name": "Ne doit pas être conservé",
+                        "description": "Invalide",
+                        "web_target": "",
+                        "security_policy": "rh-local-only",
+                    },
+                )
+                self.assertEqual(422, invalid.status_code)
+                unchanged = client.app.state.project_application.get_project(
+                    None,
+                    project_id,
+                )
+                self.assertEqual("Nouveau portail RH", unchanged.name)
+
+            with TestClient(create_web_app(settings)) as restarted:
+                restored = restarted.get("/")
+                for expected in (
+                    "Nouveau portail RH",
+                    "Gestion des talents intersidéraux",
+                    "https://nouveau.demo.invalid",
+                    "rh-local-only",
+                ):
+                    self.assertIn(expected, restored.text)
 
     def test_web_rename_move_order_and_recursive_archive_keep_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
@@ -235,10 +396,11 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                 section_positions = tuple(
                     editor.text.index(label)
                     for label in (
-                        "Contexte",
-                        "Étapes de test",
-                        "Données de test",
-                        "Résultats attendus",
+                        "Contexte et exécution",
+                        "Pages et champs utilisables",
+                        "Étapes du test",
+                        "Données, secrets et hypothèses",
+                        "Structure envoyée au générateur",
                     )
                 )
                 self.assertEqual(tuple(sorted(section_positions)), section_positions)
@@ -312,7 +474,7 @@ class LocalWebAcceptanceTests(unittest.TestCase):
                 "name": "Parcours critiques",
                 "objective": "Sécuriser les fonctions importantes",
                 "scope": "Authentification et parcours critiques",
-                "approach": "Tests fonctionnels guidés par les risques",
+                "test_approach": "functional-risk-based@1",
                 "test_type": "acceptance",
                 "target": "demo",
                 "tags": "critique, web",

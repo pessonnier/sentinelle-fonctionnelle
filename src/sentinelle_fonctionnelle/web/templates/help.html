@@ -1,0 +1,71 @@
+{% macro information(title, description, example="", anchor="", class_name="") -%}
+  <details class="information-disclosure {{ class_name }}">
+    <summary aria-label="Informations : {{ title }}" title="Afficher les informations">
+      <span class="information-symbol" aria-hidden="true">ℹ</span>
+      <span class="information-title">{{ title }}</span>
+    </summary>
+    <div class="information-content" role="note">
+      <p>{{ description }}</p>
+      {% if example %}
+        <p class="information-example">
+          <strong>Exemple</strong>
+          <code>{{ example }}</code>
+        </p>
+      {% endif %}
+      {% if anchor %}
+        <a href="/documentation#{{ anchor }}">Ouvrir la documentation</a>
+      {% endif %}
+    </div>
+  </details>
+{%- endmacro %}
+
+{% macro field_label(label, title, description, example="", anchor="") -%}
+  <span class="field-label">
+    <span class="information-symbol" aria-hidden="true">ℹ</span>
+    <span class="information-title">{{ label }}</span>
+  </span>
+  <small class="field-help" data-field-help aria-hidden="true">
+    {{ description }}
+    {% if example %}<span class="field-example">Exemple : {{ example }}</span>{% endif %}
+    {% if anchor %}<span class="field-documentation">Documentation : {{ anchor }}</span>{% endif %}
+  </small>
+{%- endmacro %}
+
+{% macro form_help(title, description, anchor="") -%}
+  {{ information(title, description, "", anchor, "form-help") }}
+{%- endmacro %}
+
+{% macro create_toggle(panel_id, label, close_label="Masquer le formulaire", expanded=false) -%}
+  <button
+    type="button"
+    class="add-entity-button"
+    data-create-toggle
+    data-create-open-label="{{ label }}"
+    data-create-close-label="{{ close_label }}"
+    aria-expanded="{{ 'true' if expanded else 'false' }}"
+    aria-controls="{{ panel_id }}"
+  >
+    <span class="add-entity-icon" aria-hidden="true">+</span>
+    <span data-create-label>{{ label }}</span>
+  </button>
+{%- endmacro %}
+
+{% macro journey_progress(step, project_url="", plan_url="", case_url="") -%}
+  <nav class="journey-progress" aria-label="Progression : Projet → Plan → Cas → Validation">
+    <span class="journey-caption">Projet → Plan → Cas → Validation</span>
+    <ol>
+      <li class="{{ 'current' if step == 'project' else ('done' if step in ('plan', 'case', 'validation') else '') }}">
+        {% if project_url and step != 'project' %}<a href="{{ project_url }}">Projet</a>{% else %}<span {% if step == 'project' %}aria-current="step"{% endif %}>Projet</span>{% endif %}
+      </li>
+      <li class="{{ 'current' if step == 'plan' else ('done' if step in ('case', 'validation') else '') }}">
+        {% if plan_url and step != 'plan' %}<a href="{{ plan_url }}">Plan</a>{% else %}<span {% if step == 'plan' %}aria-current="step"{% endif %}>Plan</span>{% endif %}
+      </li>
+      <li class="{{ 'current' if step == 'case' else ('done' if step == 'validation' else '') }}">
+        {% if case_url and step != 'case' %}<a href="{{ case_url }}">Cas</a>{% else %}<span {% if step == 'case' %}aria-current="step"{% endif %}>Cas</span>{% endif %}
+      </li>
+      <li class="{{ 'current' if step == 'validation' else '' }}">
+        <span {% if step == 'validation' %}aria-current="step"{% endif %}>Validation</span>
+      </li>
+    </ol>
+  </nav>
+{%- endmacro %}

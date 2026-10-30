@@ -1,0 +1,12 @@
+{% extends "orders_demo_base.html" %}
+{% block title %}Liste · Comptoir des commandes{% endblock %}
+{% block content %}
+  <header class="demo-title"><p>Vue tabulaire</p><h1>Commandes enregistrées</h1><span>Cette page permet de tester la lecture et le comptage de lignes.</span></header>
+  <section class="demo-panel">
+    {% if orders %}
+      <div class="table-wrap"><table><thead><tr><th>Référence</th><th>Client</th><th>Priorité</th><th>Statut</th><th>Total</th><th></th></tr></thead><tbody>
+        {% for order in orders %}<tr><td>{{ order.order_id }}</td><td>{{ order.customer_name }}</td><td>{{ order.priority }}</td><td>{{ order.status }}</td><td>{{ order.total }}</td><td><a href="/demo/commandes/suivi/{{ order.order_id }}">Consulter</a></td></tr>{% endfor %}
+      </tbody></table></div>
+    {% else %}<p>Aucune commande enregistrée.</p>{% endif %}
+  </section>
+{% endblock %}

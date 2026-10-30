@@ -1,0 +1,22 @@
+{
+  "model": "qwen3.6-35b-a3b-q4_K_M_128k:latest",
+  "stream": false,
+  "think": false,
+  "keep_alive": 0,
+  "format": "json",
+  "options": {
+    "num_ctx": 4096,
+    "num_predict": 1200,
+    "temperature": 0.1
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "Tu développes un cas de test fonctionnel. Réponds uniquement avec un objet JSON conforme au contrat. N’invente aucun secret ni résultat exécuté."
+    },
+    {
+      "role": "user",
+      "content": "{\"mission\":\"Développer un cas complet et transformable en code à partir du brouillon et des champs HTML analysés.\",\"current_draft\":{\"objective\":\"Vérifier qu’un client autorisé accède à son espace personnel\",\"actor\":\"client\",\"preconditions\":[\"Le compte client standard est actif\"],\"postconditions\":[],\"workflow\":{\"actor_profile\":\"client-standard\",\"fixture_refs\":[\"client-email\"],\"secret_refs\":[\"client-password\"],\"setup\":[],\"cleanup\":[],\"assumptions\":[],\"steps\":[]}},\"pages\":[{\"reference\":\"page:login\",\"url\":\"https://recette.example.test/login\"},{\"reference\":\"page:account\",\"url\":\"https://recette.example.test/account\"}],\"known_transition\":\"Après le clic sur Se connecter, l’application redirige vers page:account ; le test doit observer ce résultat et ne doit pas naviguer lui-même vers cette page.\",\"html_fields\":[{\"reference\":\"page:login#email\",\"page_url\":\"https://recette.example.test/login\",\"role\":\"textbox\",\"label\":\"Adresse e-mail\",\"actions\":[\"fill\"],\"validations\":[\"visible\",\"value\"]},{\"reference\":\"page:login#password\",\"page_url\":\"https://recette.example.test/login\",\"role\":\"textbox\",\"label\":\"Mot de passe\",\"actions\":[\"fill\"],\"validations\":[\"visible\"]},{\"reference\":\"page:login#submit\",\"page_url\":\"https://recette.example.test/login\",\"role\":\"button\",\"label\":\"Se connecter\",\"actions\":[\"click\"],\"validations\":[\"visible\",\"enabled\"]},{\"reference\":\"page:account#title\",\"page_url\":\"https://recette.example.test/account\",\"role\":\"heading\",\"label\":\"Mon espace\",\"actions\":[],\"validations\":[\"visible\",\"text\"]}],\"rules\":[\"questions doit être une liste vide : tous les faits nécessaires sont présents.\",\"Les références client-email et client-password sont résolues par le runner : ne demande jamais leurs valeurs.\",\"Ne propose pas d’ajouter ces références déjà présentes.\",\"Une référence secret utilise {{secret.nom}}.\",\"Une donnée utilise {{fixture.nom}}.\",\"Chaque action HTML utilise une référence connue.\",\"Au moins une validation observable.\",\"Ne fabrique aucune URL ou référence.\",\"Ne transforme jamais une redirection attendue en action navigate.\",\"Toute ambiguïté doit devenir une question sans opération dépendante.\"],\"response_contract\":{\"root\":{\"exact_fields\":[\"schema_version\",\"questions\",\"operations\"],\"schema_version\":1,\"questions\":\"liste de chaînes\",\"operations\":\"liste d’objets\"},\"operation\":{\"exact_fields\":[\"id\",\"operation\",\"path\",\"value\",\"label\",\"reason\"],\"operation\":\"add\",\"allowed_paths\":[\"/preconditions/-\",\"/postconditions/-\",\"/workflow/secret_refs/-\",\"/workflow/setup/-\",\"/workflow/cleanup/-\",\"/workflow/assumptions/-\",\"/workflow/steps/-\"]},\"new_step_value\":{\"exact_fields\":[\"id\",\"name\",\"page_url\",\"precondition\",\"action\",\"target\",\"value\",\"assertion\",\"assertion_target\",\"expected\",\"evidence\"],\"action_enum\":[\"none\",\"navigate\",\"click\",\"fill\",\"select\",\"check\",\"uncheck\",\"upload\"],\"assertion_enum\":[\"none\",\"visible\",\"hidden\",\"text\",\"value\",\"checked\",\"enabled\",\"url\",\"count\"],\"constraints\":[\"navigate exige une URL HTTP absolue dans page_url\",\"fill exige target et value\",\"text exige assertion_target et expected\"]},\"valid_response_example\":{\"schema_version\":1,\"questions\":[],\"operations\":[{\"id\":\"ajouter-saisie\",\"operation\":\"add\",\"path\":\"/workflow/steps/-\",\"value\":{\"id\":\"step-proposee\",\"name\":\"Saisir la donnée\",\"page_url\":\"\",\"precondition\":\"\",\"action\":\"fill\",\"target\":\"page:login#email\",\"value\":\"{{fixture.client-email}}\",\"assertion\":\"value\",\"assertion_target\":\"page:login#email\",\"expected\":\"{{fixture.client-email}}\",\"evidence\":false},\"label\":\"Ajouter la saisie\",\"reason\":\"Le champ analysé accepte une saisie observable.\"}]}}}"
+    }
+  ]
+}
