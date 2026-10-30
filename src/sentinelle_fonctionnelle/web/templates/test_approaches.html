@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+{% from "help.html" import create_toggle, field_label, form_help %}
+{% block title %}Approches de test · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span><span aria-current="page">Configuration</span>
+  </nav>
+
+  <header class="page-heading">
+    <div>
+      <p class="eyebrow">Configuration administrable</p>
+      <h1>Approches de test</h1>
+      <p class="lead">
+        Ces profils versionnés déterminent comment les cas de test sont
+        sélectionnés, conçus et préparés pour la génération.
+      </p>
+    </div>
+    <dl class="project-meta">
+      <div><dt>Format</dt><dd>YAML</dd></div>
+      <div><dt>Profils</dt><dd>{{ profiles|length }}</dd></div>
+    </dl>
+  </header>
+
+  <div class="entity-catalogue">
+    <section class="configuration-list" aria-labelledby="configured-title">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Catalogue actif</p>
+          <h2 id="configured-title">Profils configurés</h2>
+        </div>
+      </div>
+
+      {% for profile in profiles %}
+        <details
+          id="approach-{{ profile.id }}"
+          class="approach-card"
+          {% if loop.first %}open{% endif %}
+        >
+          <summary>
+            <span>
+              <strong>{{ profile.name }}</strong>
+              <small>{{ profile.id }} · version {{ profile.version }}</small>
+            </span>
+            <span class="{{ 'status-enabled' if profile.enabled else 'status-disabled' }}">
+              {{ "Actif" if profile.enabled else "Désactivé" }}
+            </span>
+          </summary>
+          <form
+            action="/configuration/test-approaches/{{ profile.id }}"
+            method="post"
+            aria-label="Modifier l’approche {{ profile.name }}"
+          >
+            {{ form_help(
+              "Modifier un profil d’approche de test",
+              "L’enregistrement crée une nouvelle version. Les plans existants restent liés à leur version antérieure.",
+              "test-approach"
+            ) }}
+            <p class="immutable-field">
+              <strong>Identifiant stable :</strong> <code>{{ profile.id }}</code>
+            </p>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Libellé", "Libellé du profil", "Nom présenté aux auteurs de plans de test.", "Tests orientés risques", "test-approach") }}
+                <input name="name" value="{{ profile.name }}" required>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="enabled" value="true" {% if profile.enabled %}checked{% endif %}>
+                Profil sélectionnable
+              </label>
+            </div>
+            <label>
+              {{ field_label("Description", "Description métier", "Explique la finalité et les situations dans lesquelles choisir cette approche.", "Prioriser les parcours critiques", "test-approach") }}
+              <textarea name="description" rows="3" required>{{ profile.description }}</textarea>
+            </label>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Niveaux de test", "Niveaux de test", "Niveaux concernés, un par ligne.", "test système", "test-approach") }}
+                <textarea name="test_levels" rows="3" required>{{ profile.test_levels|join("\n") }}</textarea>
+              </label>
+              <label>
+                {{ field_label("Types de test", "Types de test", "Types fonctionnels retenus, un par ligne.", "test de régression", "test-approach") }}
+                <textarea name="test_types" rows="3" required>{{ profile.test_types|join("\n") }}</textarea>
+              </label>
+            </div>
+            <label>
+              {{ field_label("Techniques de conception", "Techniques de conception de tests", "Techniques à appliquer pour dériver les cas, une par ligne.", "tables de décision", "test-approach") }}
+              <textarea name="test_design_techniques" rows="3" required>{{ profile.test_design_techniques|join("\n") }}</textarea>
+            </label>
+            <label class="checkbox-label">
+              <input type="checkbox" name="risk_based" value="true" {% if profile.risk_based %}checked{% endif %}>
+              Approche fondée sur les risques
+            </label>
+            <label>
+              {{ field_label("Stratégie d’automatisation", "Stratégie d’automatisation", "Règle qui guide la sélection des cas à automatiser.", "Automatiser les parcours stables et critiques", "test-approach") }}
+              <textarea name="automation_strategy" rows="2" required>{{ profile.automation_strategy }}</textarea>
+            </label>
+            <div class="two-columns">
+              <label>
+                {{ field_label("Éléments de preuve", "Exigences relatives aux éléments de preuve", "Preuves à produire ou conserver, une par ligne.", "capture en cas d’échec", "test-approach") }}
+                <textarea name="evidence_requirements" rows="3">{{ profile.evidence_requirements|join("\n") }}</textarea>
+              </label>
+              <label>
+                {{ field_label("Instructions de génération", "Instructions de génération", "Contraintes opérationnelles transmises au générateur, une par ligne.", "relier chaque cas à un risque", "test-approach") }}
+                <textarea name="generation_instructions" rows="3" required>{{ profile.generation_instructions|join("\n") }}</textarea>
+              </label>
+            </div>
+            <button type="submit">Enregistrer une nouvelle version</button>
+          </form>
+        </details>
+      {% endfor %}
+    </section>
+
+    <div class="entity-create-control">
+      {{ create_toggle("new-test-approach", "Ajouter une approche de test") }}
+      <section id="new-test-approach" class="form-panel entity-create-panel" hidden>
+      <p class="eyebrow">Nouveau profil</p>
+      <h2>Créer une approche</h2>
+      {{ form_help(
+        "Créer un profil d’approche de test",
+        "Le profil est validé puis enregistré dans le catalogue YAML de l’application.",
+        "test-approach"
+      ) }}
+      <form action="/configuration/test-approaches" method="post" aria-label="Créer une approche de test">
+        <label>
+          {{ field_label("Identifiant", "Identifiant stable", "Clé technique immuable en minuscules avec des tirets.", "security-boundaries", "test-approach") }}
+          <input name="profile_id" pattern="[a-z0-9]+(?:-[a-z0-9]+)*" required placeholder="security-boundaries">
+        </label>
+        <label>
+          {{ field_label("Libellé", "Libellé du profil", "Nom présenté dans les formulaires de plan de test.", "Sécurité et limites", "test-approach") }}
+          <input name="name" required placeholder="Sécurité et limites">
+        </label>
+        <label>
+          {{ field_label("Description", "Description métier", "Finalité et conditions d’utilisation de l’approche.", "Couvrir les contrôles d’accès et les limites", "test-approach") }}
+          <textarea name="description" rows="3" required></textarea>
+        </label>
+        <label>
+          {{ field_label("Niveaux de test", "Niveaux de test", "Un niveau par ligne.", "test système", "test-approach") }}
+          <textarea name="test_levels" rows="2" required placeholder="test système"></textarea>
+        </label>
+        <label>
+          {{ field_label("Types de test", "Types de test", "Un type par ligne.", "test fonctionnel", "test-approach") }}
+          <textarea name="test_types" rows="2" required placeholder="test fonctionnel"></textarea>
+        </label>
+        <label>
+          {{ field_label("Techniques de conception", "Techniques de conception de tests", "Une technique normalisée par ligne.", "analyse des valeurs limites", "test-approach") }}
+          <textarea name="test_design_techniques" rows="3" required></textarea>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" name="risk_based" value="true">
+          Approche fondée sur les risques
+        </label>
+        <label>
+          {{ field_label("Stratégie d’automatisation", "Stratégie d’automatisation", "Règle de sélection et de mise en œuvre de l’automatisation.", "Automatiser les contrôles répétables", "test-approach") }}
+          <textarea name="automation_strategy" rows="2" required></textarea>
+        </label>
+        <label>
+          {{ field_label("Éléments de preuve", "Exigences relatives aux éléments de preuve", "Une preuve attendue par ligne.", "rapport d’exécution", "test-approach") }}
+          <textarea name="evidence_requirements" rows="2"></textarea>
+        </label>
+        <label>
+          {{ field_label("Instructions de génération", "Instructions de génération", "Une contrainte explicite par ligne.", "tester chaque limite", "test-approach") }}
+          <textarea name="generation_instructions" rows="3" required></textarea>
+        </label>
+        <label class="checkbox-label">
+          <input type="checkbox" name="enabled" value="true" checked>
+          Profil sélectionnable
+        </label>
+        <button type="submit">Créer et enregistrer</button>
+      </form>
+      </section>
+    </div>
+  </div>
+
+  <p class="configuration-storage">
+    Catalogue enregistré dans <code>{{ catalog_path }}</code>. Le fichier YAML
+    contient toutes les versions nécessaires à la traçabilité des plans.
+  </p>
+{% endblock %}

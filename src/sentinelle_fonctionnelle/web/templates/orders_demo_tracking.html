@@ -1,0 +1,37 @@
+{% extends "orders_demo_base.html" %}
+{% block title %}Suivi {{ order.order_id }} · Comptoir des commandes{% endblock %}
+{% block content %}
+  <header class="demo-title success-title">
+    <p>Écran 4 · lecture structurée</p>
+    <h1>Commande {{ order.order_id }}</h1>
+    <span id="order-status" class="status-pill">{{ order.status }}</span>
+  </header>
+  <section class="summary-grid">
+    <article class="demo-panel">
+      <h2>Informations enregistrées</h2>
+      <dl class="read-list">
+        <div><dt>Client</dt><dd>{{ order.customer_name }}</dd></div>
+        <div><dt>Type</dt><dd>{{ order.customer_type }}</dd></div>
+        <div><dt>Priorité</dt><dd>{{ order.priority }}</dd></div>
+        <div><dt>Paiement</dt><dd>{{ order.payment_method }}</dd></div>
+        <div><dt>Livraison</dt><dd>{{ order.delivery_mode }}</dd></div>
+      </dl>
+    </article>
+    <article class="demo-panel total-panel">
+      <h2>Montants</h2>
+      <dl class="read-list">
+        <div><dt>Sous-total</dt><dd>{{ order.subtotal }}</dd></div>
+        <div><dt>Remise</dt><dd>{{ order.discount }}</dd></div>
+        <div><dt>TVA</dt><dd>{{ order.tax }}</dd></div>
+        <div class="grand-total"><dt>Total TTC</dt><dd>{{ order.total }}</dd></div>
+      </dl>
+    </article>
+  </section>
+  <section class="demo-panel">
+    <h2>Détail des articles</h2>
+    <div class="table-wrap"><table id="tracking-table"><thead><tr><th>Référence</th><th>Article</th><th>Quantité</th><th>Total</th></tr></thead><tbody>
+      {% for line in order.lines %}<tr><td>{{ line.code }}</td><td>{{ line.name }}</td><td>{{ line.quantity }}</td><td>{{ line.line_total }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% if not parser_preview %}<div class="actions"><a class="button-link" href="/demo/commandes/client">Créer une autre commande</a><a href="/demo/commandes/liste">Voir toutes les commandes</a></div>{% endif %}
+  </section>
+{% endblock %}

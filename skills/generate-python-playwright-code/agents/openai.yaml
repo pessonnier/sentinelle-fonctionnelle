@@ -1,0 +1,4 @@
+interface:
+  display_name: "Générer un test Playwright Python"
+  short_description: "Convertit un workflow confirmé en code Playwright"
+  default_prompt: "Use $generate-python-playwright-code to produce a secure Python Playwright test from this confirmed workflow."

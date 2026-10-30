@@ -31,7 +31,8 @@ class FunctionalSpecificationAcceptanceTests(unittest.TestCase):
             name="Parcours métier",
             objective="Comparer les formes de spécification",
             scope="Parcours métier critiques",
-            approach="Spécification fonctionnelle guidée",
+            test_approach_id="functional-risk-based",
+            test_approach_version=1,
             test_type="acceptance",
             target="demo",
         )

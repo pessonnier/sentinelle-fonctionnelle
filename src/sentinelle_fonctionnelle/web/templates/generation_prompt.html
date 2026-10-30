@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Prompt · {{ case.name }} · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span>
+    <a href="/projects/{{ project.id }}">{{ project.name }}</a><span>/</span>
+    <a href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}">{{ case.name }}</a><span>/</span>
+    <span aria-current="page">Prompt de génération</span>
+  </nav>
+
+  <header class="page-heading prompt-heading">
+    <div>
+      <p class="eyebrow">Artefact de génération · lecture seule</p>
+      <h1>Prompt de génération du code</h1>
+      <p class="lead">Demande exacte préparée pour le LLM à partir du cas confirmé.</p>
+    </div>
+    <div class="inline-actions">
+      <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/llm-generated-code" method="post">
+        <button type="submit">Générer avec le LLM local</button>
+      </form>
+      <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/generation-prompt" download>Télécharger le JSON</a>
+    </div>
+  </header>
+
+  <dl class="prompt-metadata" aria-label="Traçabilité du prompt">
+    <div><dt>Cas</dt><dd>{{ case.name }}</dd></div>
+    <div><dt>Accès LLM</dt><dd><code>{{ artifact.llm_access_profile }}</code></dd></div>
+    <div><dt>Modèle</dt><dd><code>{{ artifact.model }}</code></dd></div>
+    <div><dt>Profil de génération</dt><dd><code>{{ artifact.code_generation_profile }}</code></dd></div>
+    <div><dt>Empreinte SHA-256</dt><dd><code>{{ artifact.sha256 }}</code></dd></div>
+  </dl>
+
+  <p class="section-note" role="note">
+    La génération appelle le profil affiché ci-dessus. La réponse JSON, les chemins et la syntaxe sont contrôlés avant le téléchargement ; aucun fichier n’est écrit automatiquement dans le projet.
+  </p>
+
+  <section class="prompt-panel" aria-labelledby="prompt-skills-title">
+    <p class="eyebrow">Règles appliquées</p>
+    <h2 id="prompt-skills-title">Skills de génération</h2>
+    <div class="prompt-skill-grid">
+      {% for skill in artifact.skills %}
+        <article>
+          <strong>{{ skill.name }}</strong>
+          <code>{{ skill.reference }}</code>
+          <small>{{ skill.source }}</small>
+          <ul>
+            {% for instruction in skill.instructions %}<li>{{ instruction }}</li>{% endfor %}
+          </ul>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="prompt-panel" aria-labelledby="system-message-title">
+    <p class="eyebrow">Message 1 · system</p>
+    <h2 id="system-message-title">Cadre imposé au générateur</h2>
+    <pre>{{ system_message }}</pre>
+  </section>
+
+  <section class="prompt-panel" aria-labelledby="user-message-title">
+    <p class="eyebrow">Message 2 · user</p>
+    <h2 id="user-message-title">Demande de production du code</h2>
+    <pre>{{ user_message }}</pre>
+  </section>
+
+  <details class="prompt-panel">
+    <summary>Voir l’artefact JSON complet</summary>
+    <pre>{{ artifact_json }}</pre>
+  </details>
+
+  <p class="inline-actions">
+    <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}#generation">Retour au cas de test</a>
+    <a class="secondary-button" href="/tutorials/test-case#structure">Comprendre la génération</a>
+  </p>
+{% endblock %}

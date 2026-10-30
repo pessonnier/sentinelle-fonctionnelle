@@ -21,7 +21,8 @@ def build_hierarchy_demo() -> dict[str, Any]:
         name="Parcours critiques",
         objective="Valider les principaux parcours client",
         scope="Commande et paiement",
-        approach="Tests d'acceptation orientés risques",
+        test_approach_id="functional-risk-based",
+        test_approach_version=1,
         test_type="acceptance",
         target="demo",
     )

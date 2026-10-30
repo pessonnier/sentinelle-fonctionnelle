@@ -16,7 +16,8 @@ Le produit sépare explicitement deux activités :
 - isolation des projets et autorisations évaluées côté serveur ;
 - types de tests configurables, dont les tests fonctionnels de performance ;
 - saisie guidée adaptée aux fonctionnels métier, sans YAML obligatoire ;
-- modèles de tests, phrases d’intention et tags administrables ;
+- profils versionnés d’approche de test, modèles de tests, phrases d’intention
+  et tags administrables ;
 - description synthétique et factuelle mise à jour lors de l’édition d’un cas de test ;
 - validation individuelle des tests pendant leur conception ;
 - profils LLM de conception et d’exécution distincts ;
@@ -38,8 +39,20 @@ La spécification fonctionnelle, le MVP et l’architecture logicielle sont déc
   29119, glossaire ISTQB et correspondance terminologique du projet ;
 - [`docs/tutorial-local.html`](docs/tutorial-local.html), tutoriel HTML autonome
   du mode local actuellement disponible ;
+- [`docs/llm/ollama.md`](docs/llm/ollama.md), installation, configuration,
+  test réel et diagnostic du profil Qwen3.6 local ;
+- [`docs/hr-demo.md`](docs/hr-demo.md), cible RH de démonstration, classeurs
+  XLSX, génération et exécution du scénario Playwright complet ;
+- [`docs/firefox-test-authoring-plugin-specifications.md`](docs/firefox-test-authoring-plugin-specifications.md),
+  spécifications priorisées du futur plugin Firefox de capture et de conception ;
+- [`docs/design/iteration-012-2-introspection.md`](docs/design/iteration-012-2-introspection.md),
+  bénéfices, alternatives écartées, frontières et prochains choix ;
 - [`docs/IMPLEMENTATION_STATUS.md`](docs/IMPLEMENTATION_STATUS.md), tableau de
   bord et liens vers les preuves.
+- [`docs/DEVELOPMENT_PLAN.md`](docs/DEVELOPMENT_PLAN.md), audit du socle,
+  décisions de cadrage et feuille de route priorisée.
+- [`docs/operations-lot4.md`](docs/operations-lot4.md), export approuvé,
+  runner autonome/OCI, modèles CI, PostgreSQL, concurrence et rétention.
 
 ## État du projet
 
@@ -57,12 +70,38 @@ les suites, dossiers et cas, puis de renommer, déplacer, ordonner et archiver
 les nœuds avec restauration après redémarrage (`ACC-060` à `ACC-062`,
 `ACC-069` à `ACC-072`).
 
-Chaque cas de test peut désormais être spécifié sous quatre formes adaptées aux
-métiers — pas-à-pas, Given/When/Then, tableau d’exemples ou checklist — tout en
-alimentant un même modèle canonique versionné. L’arbre reste l’organisation
-primaire et des vues calculées par tag, exigence, règle métier ou mode, avec
-recherche textuelle, facilitent les revues transversales (`ACC-063` à
-`ACC-065`).
+L’approche d’un plan n’est plus un texte libre : elle est choisie parmi des
+profils versionnés décrits en YAML. L’écran **Configuration** permet de créer
+un profil ou d’enregistrer une nouvelle version d’un profil existant, tandis
+que les plans conservent exactement l’identifiant et la version sélectionnés
+(`ACC-073`).
+
+Chaque cas de test se rédige désormais dans un workflow pas-à-pas composé de
+cartes action/validation. L’éditeur peut analyser une page HTML autorisée,
+présenter ses champs, boutons, liens et titres, puis insérer leurs références
+dans les étapes. Les profils, fixtures, références de secrets, politiques,
+limites, pages et étapes forment une structure JSON versionnée affichable à tout
+moment (`ACC-074` à `ACC-077`). Les quatre anciens formats restent lisibles et
+doivent être requalifiés avant une nouvelle confirmation.
+
+L’assistant de conception charge un catalogue YAML d’intentions fonctionnelles,
+repère les informations encore manquantes et explique l’utilité de chaque
+question. Après l’analyse d’une page, il indique également les actions et
+validations compatibles avec chaque élément HTML. L’utilisateur peut ensuite
+dialoguer avec le LLM configuré : la réponse est limitée à des propositions
+structurées, acceptées une par une, puis une description factuelle est
+reconstruite depuis les seuls changements retenus. Le dialogue et les décisions
+sont restaurés depuis SQLite.
+
+Les écrans **Accès aux LLM** (`/configuration/llm-access`) et **Génération de
+code** (`/configuration/code-generation`) permettent respectivement de
+versionner les connexions aux fournisseurs et les profils de production. Une
+configuration d’accès conserve l’endpoint, le modèle et le nom de la variable
+d’environnement portant la clé, jamais sa valeur. Une configuration de
+génération fixe le langage, le framework, les chemins relatifs, les motifs de
+fichiers, les preuves, validations et limites.
+Les cas conservent les deux références `identifiant@version` dans leur JSON
+(`ACC-078` à `ACC-080`).
 
 Un fichier CSV UTF-8 ou Excel `.xlsx` peut également être associé à un cas de
 test.
@@ -71,14 +110,115 @@ série, en lots parallèles bornés ou dans un ordre aléatoire reproductible. L
 fichier est analysé sans exécuter de formule et la liaison est restaurée depuis
 SQLite (`ACC-066` à `ACC-068`).
 
-Lancer l’interface locale après installation éditable :
+## Démarrage local
+
+Créer un environnement avec Python 3.12 ou ultérieur, installer le produit et
+ses outils de test, puis lancer l’interface :
 
 ```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -c requirements/constraints-py312.txt -e ".[test,quality]"
 .\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli serve
 ```
 
-Le déploiement partagé PostgreSQL avec authentification, les fonctions LLM, la
-génération Playwright et les déploiements conteneurisés restent à réaliser.
+La vérification rapide exclut volontairement les scripts Playwright générés,
+qui exigent un navigateur installé et une cible locale active :
+
+```powershell
+.\.venv\Scripts\python.exe -m pytest
+```
+
+Pour préparer les scénarios navigateur, installer Chromium puis suivre le
+parcours reproductible de [`docs/hr-demo.md`](docs/hr-demo.md) :
+
+```powershell
+.\.venv\Scripts\python.exe -m playwright install chromium
+.\.venv\Scripts\python.exe -m pytest tests/generated --browser chromium
+```
+
+Le contrôle complet du socle regroupe les erreurs Python critiques, le formatage
+et le typage de la base progressive, les liens documentaires et la suite rapide :
+
+```powershell
+.\.venv\Scripts\python.exe tools/check_quality.py
+```
+
+Le fichier `requirements/constraints-py312.txt` fige l’environnement de
+référence testé. Les plages de `pyproject.toml` restent le contrat de
+compatibilité ; l’instantané ne doit être régénéré qu’après réussite de cette
+commande.
+
+Les catalogues utilisent le même geste de création : la liste occupe la largeur,
+puis un bouton `+ Ajouter…` déplie le formulaire sous celle-ci sans perdre la
+saisie lorsqu’il est replié. Le sélecteur **Thème** de l’en-tête propose sept
+palettes (Forêt, Océan, Prune, Coucher de soleil, Graphite, Contraste élevé et
+Défense — ministère des Armées) et
+mémorise le choix dans le navigateur. Ces préférences de présentation ne sont ni
+stockées dans SQLite, ni intégrées aux prompts ou aux exports.
+
+Le catalogue est placé par défaut dans
+`data/generation-profiles.yaml`. Son chemin peut être remplacé avec
+`SENTINELLE_FONCTIONNELLE_GENERATION_PROFILES`. Les variables de clé API
+référencées par les profils doivent être injectées dans l’environnement de
+l’application ou du futur worker.
+
+Le catalogue des intentions est placé par défaut dans
+`data/test-intents.yaml`. Son chemin peut être remplacé avec
+`SENTINELLE_FONCTIONNELLE_TEST_INTENTS`. Chaque intention versionnée décrit ses
+exemples, les types de tests conseillés et les questions nécessaires ; le
+catalogue peut être enrichi sans modifier le code.
+
+L'adaptateur PostgreSQL transactionnel, les rôles et les révisions optimistes
+sont disponibles dans l'extra `online`. Le branchement OIDC et la qualification
+sur une instance PostgreSQL restent propres à l'environnement. Les images et le
+Compose isolé sont versionnés sous `deployment/`. Une première verticale déterministe de génération Playwright est
+désormais exécutable depuis un workflow confirmé et des données XLSX. Depuis la
+page du prompt final, le profil Qwen3.6 128K local sur le port `11436` peut aussi
+produire un candidat réel : sa réponse JSON, ses chemins et sa syntaxe sont
+validés avant persistance. Le candidat, son manifeste, son prompt assaini et ses
+empreintes rejoignent alors le même historique que la génération déterministe.
+Deux niveaux d’analyse coexistent désormais. L’éditeur analyse sans secret le
+HTML statique autorisé ; la commande `analyze-rendered-page` exécute un plan
+Playwright local, authentifié et borné, puis catalogue le DOM réellement rendu.
+Sur la cible RH, elle distingue automatiquement le code portail JavaScript, les
+quatre champs dynamiques communs et le champ dynamique réservé au manager. Le
+guide reproductible est [`docs/hr-demo.md`](docs/hr-demo.md).
+
+Pour alimenter la base locale avec le projet d’exemple complet :
+
+```powershell
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli seed-hr-demo-project
+```
+
+Une seconde cible illustre un test de commande sur quatre écrans, avec listes
+déroulantes, tableau de saisie, tableaux de restitution et calculs de remise,
+frais et TVA :
+
+```powershell
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli seed-orders-demo-project
+```
+
+Le parcours et la personnalisation protégée du code généré sont détaillés dans
+[`docs/orders-demo.md`](docs/orders-demo.md). Depuis l'historique d'un candidat,
+seul le contenu des blocs `sentinelle:custom` est modifiable ; ces blocs peuvent
+ensuite être réappliqués lors d'une nouvelle génération avec détection des
+conflits de contrat.
+
+Le **Catalogue** contient ensuite le projet **Exemple — Bureau des Talents
+Intersidéraux** et ses deux cas confirmés. Depuis un cas, la section **Candidats,
+validation et décision** permet de générer, comparer, télécharger, exécuter puis
+approuver ou rejeter chaque version.
+
+La verticale de génération utilise une matrice explicite de sources et de
+lignes, des jetons qualifiés par source et un manifeste reproductible. La
+commande `run-playwright` valide le candidat sur une cible locale, refuse une
+empreinte modifiée et produit JUnit avec `execution.json`. Elle constitue une
+validation individuelle locale. Une réussite ne vaut jamais approbation : la
+décision humaine distincte lie la définition structurée, le fichier réellement
+exécuté et son empreinte. Un candidat approuvé expose **Exporter le bundle CI**.
+Le ZIP stable inclut les empreintes, la documentation et les modèles CI.
+`sentinelle-run` le vérifie puis l'exécute hors du service ; le profil OCI est
+décrit dans le [guide d'exploitation du lot 4](docs/operations-lot4.md).
 
 Le skill
 [`write-implementation-html-docs`](skills/write-implementation-html-docs/SKILL.md)

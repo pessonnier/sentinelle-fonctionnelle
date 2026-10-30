@@ -1,0 +1,16 @@
+sentinelle-functional-tests:
+  image:
+    name: sentinelle-fonctionnelle-runner:0.1.0
+    entrypoint: [""]
+  variables:
+    SENTINELLE_FONCTIONNELLE_DECLARATION: on_merge_request
+  script:
+    - mkdir -p artifacts
+    - sentinelle-run --bundle ./sentinelle-bundle --artifacts ./artifacts --base-url "$TARGET_BASE_URL" --allow-origin "$TARGET_BASE_URL" --declaration "$SENTINELLE_FONCTIONNELLE_DECLARATION"
+  artifacts:
+    when: always
+    reports:
+      junit: artifacts/junit.xml
+    paths: [artifacts/]
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'

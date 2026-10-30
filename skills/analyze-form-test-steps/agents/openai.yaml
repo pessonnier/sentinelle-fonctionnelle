@@ -1,0 +1,4 @@
+interface:
+  display_name: "Analyse formulaires étapes"
+  short_description: "Normalise actions et contrôles structurés"
+  default_prompt: "Use $analyze-form-test-steps to validate form-based test steps and return the canonical workflow."

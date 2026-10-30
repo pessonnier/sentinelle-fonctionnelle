@@ -1,0 +1,19 @@
+{
+  "model": "qwen3.6-35b-a3b-q4_K_M_128k:latest",
+  "stream": false,
+  "temperature": 0.1,
+  "max_tokens": 256,
+  "response_format": {
+    "type": "json_object"
+  },
+  "messages": [
+    {
+      "role": "system",
+      "content": "Réponds uniquement avec un objet JSON conforme au contrat demandé."
+    },
+    {
+      "role": "user",
+      "content": "{\"schema_version\":1,\"prompt_version\":\"connectivity-v1\",\"response_contract\":{\"schema_version\":1,\"questions\":[],\"operations\":[]}}"
+    }
+  ]
+}

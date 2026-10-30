@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Consultation {{ record.record_id }} · Bureau des Talents Intersidéraux</title>
+    <link rel="stylesheet" href="/static/hr-demo.css">
+  </head>
+  <body class="hr-demo hr-view-page" data-page="consultation" data-role="{{ persona.role }}">
+    <header class="demo-header">
+      <a href="/demo/hr/saisie" class="brand">🪩 BTI-RH</a>
+      <div>
+        <strong>{{ persona.display_name }}</strong>
+        <span class="role-pill">{{ persona.role }}</span>
+      </div>
+      {% if not parser_preview %}
+        <a class="ghost-button" href="/demo/hr/saisie">Nouveau dossier</a>
+      {% endif %}
+    </header>
+
+    <main class="view-shell">
+      {% if parser_preview %}
+        <aside class="preview-banner">Aperçu statique de consultation pour le parseur.</aside>
+      {% endif %}
+      <section class="result-hero">
+        <div>
+          <p class="kicker">Dossier enregistré sans explosion</p>
+          <h1 id="record-title">{{ record.first_name }} {{ record.last_name }}</h1>
+          <p id="record-id">{{ record.record_id }}</p>
+        </div>
+        <div class="success-seal" aria-label="Dossier validé">✓<small>tampon<br>cosmique</small></div>
+      </section>
+
+      <section class="view-grid">
+        <article class="result-card">
+          <h2>Valeurs rendues par le serveur</h2>
+          <dl class="record-list">
+            <div><dt>Matricule</dt><dd data-field="employee_number">{{ record.employee_number }}</dd></div>
+            <div><dt>E-mail</dt><dd data-field="work_email">{{ record.work_email }}</dd></div>
+            <div><dt>Arrivée</dt><dd data-field="hire_date">{{ record.hire_date }}</dd></div>
+            <div><dt>Constellation</dt><dd data-field="department">{{ record.department }}</dd></div>
+            <div><dt>Contrat</dt><dd data-field="contract_type">{{ record.contract_type }}</dd></div>
+            <div><dt>Animal totem</dt><dd data-field="animal_totem">{{ record.animal_totem }}</dd></div>
+          </dl>
+        </article>
+
+        <article class="result-card runtime-result">
+          <h2>Valeurs dépendant de {{ persona.role }}</h2>
+          {% if persona.role == "manager" %}
+            <p>Budget autorisé : <strong data-field="manager_budget">{{ record.manager_budget }}</strong> crédits-lamas</p>
+            <p data-field="manager_comment">{{ record.manager_comment }}</p>
+          {% else %}
+            <p>Les informations budgétaires ne sont pas visibles pour ce profil.</p>
+          {% endif %}
+        </article>
+      </section>
+
+      <section class="result-card js-results">
+        <h2>Synthèse assemblée par JavaScript</h2>
+        <div id="js-result-cards" class="data-cards" aria-live="polite">
+          <span class="loading-squiggle">Calcul du niveau de panache…</span>
+        </div>
+      </section>
+
+      <script id="record-data" type="application/json">{{ record | tojson }}</script>
+    </main>
+    <footer class="demo-source-footer">
+      <a href="https://github.com/pessonnier/sentinelle-fonctionnelle" target="_blank" rel="noopener noreferrer">Projet sur GitHub</a>
+    </footer>
+    <script src="/static/hr-demo.js" defer></script>
+  </body>
+</html>

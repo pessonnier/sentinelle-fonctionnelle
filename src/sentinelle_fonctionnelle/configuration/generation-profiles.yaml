@@ -1,0 +1,85 @@
+schema_version: 1
+llm_access_profiles:
+- id: ollama-qwen36-128k
+  versions:
+  - version: 1
+    name: Ollama local 11434 - Qwen3.6 35B 128K
+    provider: ollama
+    base_url: http://127.0.0.1:11434/v1
+    model: qwen3.6-35b-a3b-q4_K_M_128k:latest
+    api_key_environment: ''
+    organization_environment: ''
+    request_timeout_seconds: 600
+    max_retries: 0
+    enabled: true
+- id: ollama-qwen36-128k-11436
+  versions:
+  - version: 1
+    name: Ollama local 11436 - Qwen3.6 35B 128K
+    provider: ollama
+    base_url: http://127.0.0.1:11436/v1
+    model: qwen3.6-35b-a3b-q4_K_M_128k:latest
+    api_key_environment: ''
+    organization_environment: ''
+    request_timeout_seconds: 600
+    max_retries: 0
+    enabled: true
+code_generation_profiles:
+- id: python-playwright-qwen36
+  versions:
+  - version: 1
+    name: Python Playwright avec Qwen3.6 local 11434
+    llm_profile: ollama-qwen36-128k@1
+    language: python
+    framework: pytest-playwright
+    output_root: tests/generated
+    test_file_pattern: test_{case_slug}.py
+    page_object_pattern: '{page_slug}_page.py'
+    use_page_objects: true
+    include_comments: true
+    evidence_mode: on-failure
+    overwrite_policy: proposal-only
+    validation_steps:
+    - syntax
+    - format
+    - lint
+    - targeted-test
+    generation_instructions:
+    - Utiliser en priorité les rôles et noms accessibles des éléments analysés.
+    - Produire une assertion Playwright pour chaque résultat observable accepté.
+    - Ne jamais inclure de valeur de secret dans le code ou les commentaires.
+    - Conserver une seule intention métier par cas de test.
+    generation_skills:
+    - functional-test-generation@1
+    - generate-python-playwright-code@1
+    max_generated_files: 12
+    enabled: true
+- id: python-playwright-qwen36-11436
+  versions:
+  - version: 1
+    name: Python Playwright avec Qwen3.6 local 11436
+    llm_profile: ollama-qwen36-128k-11436@1
+    language: python
+    framework: pytest-playwright
+    output_root: tests/generated
+    test_file_pattern: test_{case_slug}.py
+    page_object_pattern: '{page_slug}_page.py'
+    use_page_objects: true
+    include_comments: true
+    evidence_mode: on-failure
+    overwrite_policy: proposal-only
+    validation_steps:
+    - syntax
+    - format
+    - lint
+    - targeted-test
+    generation_instructions:
+    - Utiliser en priorité les rôles et noms accessibles des éléments analysés.
+    - Produire une assertion Playwright pour chaque résultat observable accepté.
+    - Ne jamais inclure de valeur de secret dans le code ou les commentaires.
+    - Conserver une seule intention métier par cas de test.
+    generation_skills:
+    - functional-test-generation@1
+    - generate-python-playwright-code@1
+    max_generated_files: 12
+    enabled: true

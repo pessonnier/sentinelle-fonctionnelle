@@ -1,0 +1,103 @@
+schema_version: 1
+approaches:
+  - id: legacy-free-text
+    versions:
+      - version: 1
+        name: Approche historique à requalifier
+        description: >-
+          Profil réservé aux plans migrés depuis une ancienne description
+          libre. Une approche active doit être choisie avant leur modification.
+        test_levels:
+          - non déterminé
+        test_types:
+          - non déterminé
+        test_design_techniques:
+          - non déterminé
+        risk_based: false
+        automation_strategy: Requalification obligatoire avant génération.
+        evidence_requirements: []
+        generation_instructions:
+          - ne produire aucun cas avant la sélection d'une approche active
+        enabled: false
+  - id: functional-risk-based
+    versions:
+      - version: 1
+        name: Tests fonctionnels orientés risques
+        description: >-
+          Priorise les parcours métier selon la probabilité et l'impact des
+          défaillances, puis couvre les risques majeurs par des cas observables.
+        test_levels:
+          - test système
+          - test d'acceptation
+        test_types:
+          - test fonctionnel
+          - test de régression
+        test_design_techniques:
+          - partitionnement en classes d'équivalence
+          - analyse des valeurs limites
+          - tables de décision
+        risk_based: true
+        automation_strategy: >-
+          Automatiser en priorité les parcours critiques, stables et répétables.
+        evidence_requirements:
+          - résultat de chaque assertion
+          - capture en cas d'échec
+        generation_instructions:
+          - relier chaque cas à un risque identifié
+          - proposer au moins un cas nominal et un cas d'erreur par risque majeur
+          - expliciter des résultats attendus observables
+        enabled: true
+  - id: automated-regression
+    versions:
+      - version: 1
+        name: Régression fonctionnelle automatisée
+        description: >-
+          Recherche une couverture déterministe des comportements déjà acceptés
+          afin de détecter rapidement les régressions à chaque modification.
+        test_levels:
+          - test système
+        test_types:
+          - test de régression
+          - test fonctionnel
+        test_design_techniques:
+          - tests fondés sur des cas d'utilisation
+          - transition d'états
+          - partitionnement en classes d'équivalence
+        risk_based: false
+        automation_strategy: >-
+          Générer des scripts indépendants, répétables et adaptés à l'exécution CI.
+        evidence_requirements:
+          - rapport d'exécution
+          - trace des étapes en échec
+        generation_instructions:
+          - privilégier les cas déterministes et réexécutables
+          - isoler les données de test et remettre l'environnement en état
+          - éviter toute dépendance à un LLM pendant l'exécution nominale
+        enabled: true
+  - id: decision-and-boundary
+    versions:
+      - version: 1
+        name: Règles métier et valeurs limites
+        description: >-
+          Dérive les cas à partir des règles de décision, des partitions de
+          données et des limites où les erreurs fonctionnelles sont fréquentes.
+        test_levels:
+          - test système
+          - test d'acceptation
+        test_types:
+          - test fonctionnel
+        test_design_techniques:
+          - tables de décision
+          - partitionnement en classes d'équivalence
+          - analyse des valeurs limites
+        risk_based: false
+        automation_strategy: >-
+          Automatiser les combinaisons représentatives sans produire de doublons.
+        evidence_requirements:
+          - combinaison de règles couverte
+          - résultat attendu associé
+        generation_instructions:
+          - identifier les partitions valides et invalides
+          - tester les valeurs sur et autour de chaque limite
+          - couvrir chaque règle de décision réalisable
+        enabled: true

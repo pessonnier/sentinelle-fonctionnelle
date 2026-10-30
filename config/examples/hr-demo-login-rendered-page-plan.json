@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "catalog_url": "http://127.0.0.1:8000/demo/hr/login",
+  "start_url": "http://127.0.0.1:8000/demo/hr/login",
+  "timeout_seconds": 15,
+  "data_sources": [],
+  "actions": [
+    {
+      "action": "wait_visible",
+      "locator": {
+        "strategy": "label",
+        "value": "Code du portail astral"
+      }
+    }
+  ]
+}

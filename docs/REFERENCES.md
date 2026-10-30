@@ -1,5 +1,21 @@
 # Références normatives et terminologiques
 
+## Références techniques conservées
+
+Un instantané daté des pages Playwright Python indispensables au workflow de
+génération est conservé dans
+[`docs/vendor/playwright`](vendor/playwright/SOURCES.md). Il couvre les
+localisateurs, assertions, fixtures pytest, profils d’authentification et
+préparation/nettoyage par API. Les fichiers sources, URLs officielles,
+empreintes SHA-256 et règles d’actualisation sont inventoriés dans
+[`SOURCES.md`](vendor/playwright/SOURCES.md).
+
+La procédure locale Ollama, sa configuration reproductible, ses trois niveaux
+de contrôle et le résultat matériel réellement observé sont documentés dans
+[`docs/llm/ollama.md`](llm/ollama.md). Les quatre pages officielles
+indispensables sont conservées avec leurs empreintes dans
+[`docs/vendor/ollama`](vendor/ollama/SOURCES.md).
+
 - **Projet :** SentinelleFonctionnelle
 - **Dernière vérification :** 26 juillet 2026
 - **Portée :** vocabulaire, processus et documentation du test logiciel
@@ -70,11 +86,29 @@ Le glossaire doit être consulté dans sa version courante lors de toute introdu
 
 Le syllabus et le glossaire ISTQB complètent les normes ISO/IEC/IEEE pour l’usage professionnel courant. En cas de divergence portant sur une exigence normative, la norme ISO/IEC/IEEE applicable prévaut.
 
-## 4. Correspondance terminologique du projet
+## 4. Identité visuelle du thème Défense
+
+Le thème institutionnel s’appuie sur les sources officielles suivantes, vérifiées
+le 2 août 2026 :
+
+- [site du ministère des Armées et des Anciens combattants](https://www.defense.gouv.fr/) pour l’intitulé du bloc-marque et le pictogramme Rafale ;
+- [Système de Design de l’État](https://www.systeme-de-design.gouv.fr/version-courante/fr) pour le périmètre du DSFR ;
+- [composant bloc-marque](https://www.systeme-de-design.gouv.fr/version-courante/fr/composants/bloc-marque/code-du-bloc-marque) pour sa structure et ses variantes ;
+- [palette de couleurs](https://www.systeme-de-design.gouv.fr/version-courante/fr/fondamentaux/couleurs) pour le Bleu France et le Rouge Marianne ;
+- [typographie](https://www.systeme-de-design.gouv.fr/version-courante/fr/fondamentaux/typographie) pour Marianne et sa substitution Arial ;
+- [conditions générales d’utilisation](https://www.systeme-de-design.gouv.fr/version-courante/fr/a-propos/conditions-generales-d-utilisation) pour le périmètre d’usage de la marque de l’État.
+
+Les ressources locales, leurs empreintes et leur licence sont inventoriées dans
+[`docs/vendor/dsfr/SOURCES.md`](vendor/dsfr/SOURCES.md). Leur présence dans le
+produit ne vaut ni affiliation ni habilitation à employer la marque de l’État.
+
+## 5. Correspondance terminologique du projet
 
 | Terme français retenu | Terme anglais de référence | Usage dans SentinelleFonctionnelle |
 |---|---|---|
 | plan de test | test plan | objectifs, périmètre, approche, ressources, risques et critères ; non exécutable |
+| approche de test | test approach | mise en œuvre de la stratégie de test pour un projet ou un plan déterminé |
+| profil d’approche de test | test approach profile | terme propre au produit pour une configuration YAML versionnée de l’approche de test |
 | base de test | test basis | sources utilisées pour l’analyse et la conception |
 | condition de test | test condition | aspect testable servant de fondement à la conception |
 | type de test | test type | objectif ou caractéristique de qualité visés |
@@ -89,7 +123,7 @@ Le syllabus et le glossaire ISTQB complètent les normes ISO/IEC/IEEE pour l’u
 
 Les termes **jeu de tests** et **test** employé seul pour désigner un cas de test sont interdits dans les spécifications métier. Un **jeu de données de test** reste admis lorsqu’il désigne explicitement un ensemble de données et non une collection de cas de test.
 
-## 5. Règles de maintenance
+## 6. Règles de maintenance
 
 Toute modification du vocabulaire spécialisé doit :
 

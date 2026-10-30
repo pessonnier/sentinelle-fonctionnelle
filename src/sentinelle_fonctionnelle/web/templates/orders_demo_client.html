@@ -1,0 +1,38 @@
+{% extends "orders_demo_base.html" %}
+{% block title %}Client · Comptoir des commandes{% endblock %}
+{% block content %}
+  <header class="demo-title">
+    <p>Écran 1 · données client</p>
+    <h1>Identifier le demandeur</h1>
+    <span>Texte, e-mail, liste déroulante, date, boutons radio et texte long.</span>
+  </header>
+  <form class="demo-panel form-grid" action="/demo/commandes/client" method="post">
+    <label>Nom ou raison sociale
+      <input name="customer_name" value="{{ values.get('customer_name', '') }}" required>
+    </label>
+    <label>Adresse e-mail
+      <input name="email" type="email" value="{{ values.get('email', '') }}" required>
+    </label>
+    <label>Type de client
+      <select name="customer_type" required>
+        <option value="">Sélectionner</option>
+        {% for option in ["Particulier", "Association", "Entreprise", "Administration"] %}
+          <option {% if values.get('customer_type') == option %}selected{% endif %}>{{ option }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Date de livraison souhaitée
+      <input name="requested_date" type="date" value="{{ values.get('requested_date', '') }}" required>
+    </label>
+    <fieldset class="wide">
+      <legend>Priorité</legend>
+      {% for option in ["Normale", "Haute", "Critique"] %}
+        <label class="inline"><input type="radio" name="priority" value="{{ option }}" {% if values.get('priority', 'Normale') == option %}checked{% endif %}> {{ option }}</label>
+      {% endfor %}
+    </fieldset>
+    <label class="wide">Instructions de livraison
+      <textarea name="notes" rows="3">{{ values.get('notes', '') }}</textarea>
+    </label>
+    <div class="wide actions"><button type="submit">Continuer vers les articles</button></div>
+  </form>
+{% endblock %}

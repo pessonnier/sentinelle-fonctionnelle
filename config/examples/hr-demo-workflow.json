@@ -1,0 +1,598 @@
+{
+  "schema_version": 1,
+  "case_slug": "hr_demo_manager_onboarding",
+  "test_name": "test_manager_creates_employee_from_xlsx",
+  "data_sources": [
+    {
+      "id": "login",
+      "path": "outputs/hr-demo/connexion-rh.xlsx",
+      "key_column": "case_id"
+    },
+    {
+      "id": "employee",
+      "path": "outputs/hr-demo/saisie-collaborateurs.xlsx",
+      "key_column": "case_id"
+    }
+  ],
+  "data_cases": [
+    {
+      "id": "manager-zoe-nebuleuse",
+      "rows": {
+        "login": "LOGIN-MANAGER-OK",
+        "employee": "EMPLOYEE-MANAGER-01"
+      }
+    },
+    {
+      "id": "manager-iris-comete",
+      "rows": {
+        "login": "LOGIN-MANAGER-OK",
+        "employee": "EMPLOYEE-MANAGER-02"
+      }
+    }
+  ],
+  "workflow": {
+    "schema_version": 1,
+    "start_url": "http://127.0.0.1:8000/demo/hr/login",
+    "environment_profile": "hr-demo-local",
+    "actor_profile": "manager-cactus",
+    "functional_intent": "create-employee@1",
+    "fixture_refs": [
+      "connexion-rh",
+      "saisie-collaborateurs"
+    ],
+    "secret_refs": [],
+    "setup": [
+      "Démarrer SentinelleFonctionnelle sur la boucle locale"
+    ],
+    "cleanup": [
+      "Les dossiers de démonstration sont perdus à l’arrêt du processus"
+    ],
+    "evidence_policy": "on_failure",
+    "llm_policy": "design_only",
+    "llm_access_profile": "ollama-qwen36-128k-11436@1",
+    "code_generation_profile": "python-playwright-qwen36-11436@1",
+    "timeout_seconds": 30,
+    "assumptions": [],
+    "confirmed": true,
+    "pages": [
+      {
+        "url": "http://127.0.0.1:8000/demo/hr/login",
+        "title": "Connexion · Bureau des Talents Intersidéraux",
+        "fingerprint": "hr-demo-login-v1",
+        "elements": [
+          {
+            "reference": "page:login#email",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Adresse professionnelle",
+            "input_type": "email",
+            "locator": {"strategy": "label", "value": "Adresse professionnelle"},
+            "options": []
+          },
+          {
+            "reference": "page:login#password",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Mot de passe de démonstration",
+            "input_type": "password",
+            "locator": {"strategy": "label", "value": "Mot de passe de démonstration"},
+            "options": []
+          },
+          {
+            "reference": "page:login#portal-code",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Code du portail astral",
+            "input_type": "text",
+            "locator": {"strategy": "label", "value": "Code du portail astral"},
+            "options": []
+          },
+          {
+            "reference": "page:login#cosmic-charter",
+            "kind": "input",
+            "role": "checkbox",
+            "label": "J’accepte que mon dossier soit relu par un lama syndiqué.",
+            "input_type": "checkbox",
+            "locator": {"strategy": "label", "value": "J’accepte que mon dossier soit relu par un lama syndiqué."},
+            "options": []
+          },
+          {
+            "reference": "page:login#submit",
+            "kind": "button",
+            "role": "button",
+            "label": "Ouvrir le sas RH",
+            "input_type": "submit",
+            "locator": {"strategy": "role", "value": "button|Ouvrir le sas RH"},
+            "options": []
+          }
+        ]
+      },
+      {
+        "url": "http://127.0.0.1:8000/demo/hr/saisie",
+        "title": "Saisie collaborateur · Bureau des Talents Intersidéraux",
+        "fingerprint": "hr-demo-form-manager-v1",
+        "elements": [
+          {
+            "reference": "page:saisie#heading",
+            "kind": "h1",
+            "role": "heading",
+            "label": "Déclarer un nouveau talent",
+            "input_type": "heading",
+            "locator": {"strategy": "role", "value": "heading|Déclarer un nouveau talent"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#employee-number",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Matricule",
+            "input_type": "text",
+            "locator": {"strategy": "label", "value": "Matricule"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#first-name",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Prénom",
+            "input_type": "text",
+            "locator": {"strategy": "label", "value": "Prénom"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#last-name",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Nom",
+            "input_type": "text",
+            "locator": {"strategy": "label", "value": "Nom"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#work-email",
+            "kind": "input",
+            "role": "textbox",
+            "label": "E-mail professionnel",
+            "input_type": "email",
+            "locator": {"strategy": "label", "value": "E-mail professionnel"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#hire-date",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Date d’arrivée",
+            "input_type": "date",
+            "locator": {"strategy": "label", "value": "Date d’arrivée"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#department",
+            "kind": "select",
+            "role": "combobox",
+            "label": "Constellation de rattachement",
+            "input_type": "select",
+            "locator": {"strategy": "label", "value": "Constellation de rattachement"},
+            "options": ["Astrologie salariale", "Paie quantique", "Recrutement de licornes"]
+          },
+          {
+            "reference": "page:saisie#contract-cdi",
+            "kind": "input",
+            "role": "radio",
+            "label": "CDI intersidéral",
+            "input_type": "radio",
+            "locator": {"strategy": "label", "value": "CDI intersidéral"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#animal-totem",
+            "kind": "input",
+            "role": "textbox",
+            "label": "ex. Poulpe comptable",
+            "input_type": "text",
+            "locator": {"strategy": "test_id", "value": "animal-totem"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#manager-budget",
+            "kind": "input",
+            "role": "spinbutton",
+            "label": "Budget d’accueil autorisé",
+            "input_type": "number",
+            "locator": {"strategy": "label", "value": "Budget d’accueil autorisé"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#manager-comment",
+            "kind": "textarea",
+            "role": "textbox",
+            "label": "Directive secrètement non secrète du manager",
+            "input_type": "textarea",
+            "locator": {"strategy": "label", "value": "Directive secrètement non secrète du manager"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#favorite-color",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Couleur d’aura préférée",
+            "input_type": "color",
+            "locator": {"strategy": "label", "value": "Couleur d’aura préférée"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#energy-level",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Niveau de panache",
+            "input_type": "range",
+            "locator": {"strategy": "label", "value": "Niveau de panache"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#remote-days",
+            "kind": "input",
+            "role": "spinbutton",
+            "label": "Jours de téléportation par semaine",
+            "input_type": "number",
+            "locator": {"strategy": "label", "value": "Jours de téléportation par semaine"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#skills",
+            "kind": "input",
+            "role": "textbox",
+            "label": "Compétences séparées par une virgule",
+            "input_type": "text",
+            "locator": {"strategy": "label", "value": "Compétences séparées par une virgule"},
+            "options": []
+          },
+          {
+            "reference": "page:saisie#submit",
+            "kind": "button",
+            "role": "button",
+            "label": "Propulser le dossier",
+            "input_type": "submit",
+            "locator": {"strategy": "role", "value": "button|Propulser le dossier"},
+            "options": []
+          }
+        ]
+      },
+      {
+        "url": "http://127.0.0.1:8000/demo/hr/parser/consultation",
+        "title": "Consultation · Bureau des Talents Intersidéraux",
+        "fingerprint": "hr-demo-consultation-v1",
+        "elements": [
+          {
+            "reference": "page:consultation#title",
+            "kind": "h1",
+            "role": "heading",
+            "label": "Nom du collaborateur",
+            "input_type": "heading",
+            "locator": {"strategy": "css", "value": "#record-title"},
+            "options": []
+          },
+          {
+            "reference": "page:consultation#employee-number",
+            "kind": "dd",
+            "role": "generic",
+            "label": "Matricule enregistré",
+            "input_type": "text",
+            "locator": {"strategy": "css", "value": "[data-field=\"employee_number\"]"},
+            "options": []
+          },
+          {
+            "reference": "page:consultation#js-results",
+            "kind": "div",
+            "role": "generic",
+            "label": "Synthèse JavaScript",
+            "input_type": "text",
+            "locator": {"strategy": "css", "value": "#js-result-cards"},
+            "options": []
+          }
+        ]
+      }
+    ],
+    "steps": [
+      {
+        "id": "open-login",
+        "name": "Ouvrir la connexion RH",
+        "page_url": "http://127.0.0.1:8000/demo/hr/login",
+        "precondition": "",
+        "action": "navigate",
+        "target": "",
+        "value": "",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-login-email",
+        "name": "Saisir l’adresse du manager",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:login#email",
+        "value": "{{data.login.email}}",
+        "assertion": "value",
+        "assertion_target": "page:login#email",
+        "expected": "{{data.login.email}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-login-password",
+        "name": "Saisir le mot de passe synthétique",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:login#password",
+        "value": "{{data.login.password}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-portal-code",
+        "name": "Attendre et saisir le code JavaScript",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:login#portal-code",
+        "value": "{{data.login.portal_code}}",
+        "assertion": "value",
+        "assertion_target": "page:login#portal-code",
+        "expected": "{{data.login.portal_code}}",
+        "evidence": false
+      },
+      {
+        "id": "check-charter",
+        "name": "Accepter la charte cosmique",
+        "page_url": "",
+        "precondition": "",
+        "action": "check",
+        "target": "page:login#cosmic-charter",
+        "value": "",
+        "assertion": "checked",
+        "assertion_target": "page:login#cosmic-charter",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "submit-login",
+        "name": "Ouvrir le sas RH",
+        "page_url": "",
+        "precondition": "",
+        "action": "click",
+        "target": "page:login#submit",
+        "value": "",
+        "assertion": "visible",
+        "assertion_target": "page:saisie#heading",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-employee-number",
+        "name": "Saisir le matricule",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#employee-number",
+        "value": "{{data.employee.employee_number}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#employee-number",
+        "expected": "{{data.employee.employee_number}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-first-name",
+        "name": "Saisir le prénom",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#first-name",
+        "value": "{{data.employee.first_name}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-last-name",
+        "name": "Saisir le nom",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#last-name",
+        "value": "{{data.employee.last_name}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-work-email",
+        "name": "Saisir l’e-mail professionnel",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#work-email",
+        "value": "{{data.employee.work_email}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-hire-date",
+        "name": "Saisir la date d’arrivée",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#hire-date",
+        "value": "{{data.employee.hire_date}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "select-department",
+        "name": "Choisir la constellation",
+        "page_url": "",
+        "precondition": "",
+        "action": "select",
+        "target": "page:saisie#department",
+        "value": "{{data.employee.department}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#department",
+        "expected": "{{data.employee.department}}",
+        "evidence": false
+      },
+      {
+        "id": "check-contract",
+        "name": "Choisir le contrat",
+        "page_url": "",
+        "precondition": "",
+        "action": "check",
+        "target": "page:saisie#contract-cdi",
+        "value": "",
+        "assertion": "checked",
+        "assertion_target": "page:saisie#contract-cdi",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-totem",
+        "name": "Saisir le champ HTML médiocre",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#animal-totem",
+        "value": "{{data.employee.animal_totem}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#animal-totem",
+        "expected": "{{data.employee.animal_totem}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-budget",
+        "name": "Saisir le champ réservé au manager",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#manager-budget",
+        "value": "{{data.employee.manager_budget}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-manager-comment",
+        "name": "Saisir la directive du manager",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#manager-comment",
+        "value": "{{data.employee.manager_comment}}",
+        "assertion": "none",
+        "assertion_target": "",
+        "expected": "",
+        "evidence": false
+      },
+      {
+        "id": "fill-color",
+        "name": "Saisir la couleur générée par JavaScript",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#favorite-color",
+        "value": "{{data.employee.favorite_color}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#favorite-color",
+        "expected": "{{data.employee.favorite_color}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-energy",
+        "name": "Saisir le niveau de panache JavaScript",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#energy-level",
+        "value": "{{data.employee.energy_level}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#energy-level",
+        "expected": "{{data.employee.energy_level}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-remote-days",
+        "name": "Saisir les jours de téléportation",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#remote-days",
+        "value": "{{data.employee.remote_days}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#remote-days",
+        "expected": "{{data.employee.remote_days}}",
+        "evidence": false
+      },
+      {
+        "id": "fill-skills",
+        "name": "Saisir le composant personnalisé",
+        "page_url": "",
+        "precondition": "",
+        "action": "fill",
+        "target": "page:saisie#skills",
+        "value": "{{data.employee.skills}}",
+        "assertion": "value",
+        "assertion_target": "page:saisie#skills",
+        "expected": "{{data.employee.skills}}",
+        "evidence": false
+      },
+      {
+        "id": "submit-employee",
+        "name": "Enregistrer le collaborateur",
+        "page_url": "",
+        "precondition": "",
+        "action": "click",
+        "target": "page:saisie#submit",
+        "value": "",
+        "assertion": "text",
+        "assertion_target": "page:consultation#title",
+        "expected": "{{data.employee.expected_title}}",
+        "evidence": true
+      },
+      {
+        "id": "verify-employee-number",
+        "name": "Contrôler le matricule affiché",
+        "page_url": "",
+        "precondition": "",
+        "action": "none",
+        "target": "",
+        "value": "",
+        "assertion": "text",
+        "assertion_target": "page:consultation#employee-number",
+        "expected": "{{data.employee.employee_number}}",
+        "evidence": false
+      },
+      {
+        "id": "verify-js-summary",
+        "name": "Contrôler la synthèse JavaScript",
+        "page_url": "",
+        "precondition": "",
+        "action": "none",
+        "target": "",
+        "value": "",
+        "assertion": "text",
+        "assertion_target": "page:consultation#js-results",
+        "expected": "{{data.employee.energy_level}} / 100",
+        "evidence": true
+      }
+    ]
+  }
+}

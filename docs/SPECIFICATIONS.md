@@ -27,6 +27,7 @@ Le vocabulaire de ce document est aligné sur l’**ISO/IEC/IEEE 29119-1:2022** 
 Les termes suivants sont normatifs dans cette spécification :
 
 - **plan de test** : document ou objet de gestion qui décrit les objectifs de test, le périmètre, les ressources, l’approche, les contraintes, les risques, les critères d’entrée et de sortie, ainsi que l’ordonnancement prévu ; un plan de test n’est pas lui-même une unité exécutable ;
+- **profil d’approche de test** : configuration versionnée qui précise les niveaux et types de test, les techniques de conception de tests, l’usage de l’analyse des risques, la stratégie d’automatisation, les éléments de preuve attendus et les instructions applicables à la génération ; un plan de test référence exactement un profil et une version ;
 - **base de test** : ensemble des connaissances et sources utilisées comme fondement de l’analyse et de la conception des tests ;
 - **condition de test** : aspect testable d’un composant ou d’un système identifié comme fondement des tests ;
 - **type de test** : groupe d’activités de test visant des caractéristiques de qualité ou des objectifs de test déterminés ;
@@ -37,6 +38,7 @@ Les termes suivants sont normatifs dans cette spécification :
 - **données de test** : données nécessaires à l’exécution des cas de test ;
 - **exécution de test** : activité consistant à exécuter une suite, une procédure ou un cas de test sur une version déterminée de l’objet de test ;
 - **résultat de test** : conséquence ou résultat observé d’une exécution, comparé au résultat attendu ;
+- **trace d’exécution** : artefact technique horodaté qui permet de reconstituer le déroulement d’une exécution ; dans ce document, une trace désigne soit une trace Playwright contenant les actions, états du navigateur, journaux et échanges réseau, soit une archive HAR décrivant les échanges HTTP ;
 - **objet de test** : composant ou système soumis aux activités de test.
 
 Le mot **test**, employé seul, désigne l’activité générale de test ou qualifie un concept consacré, comme « type de test » ou « environnement de test ». Il ne désigne jamais l’unité élémentaire spécifiée par l’utilisateur, appelée exclusivement **cas de test**. Le terme ambigu **jeu de tests** n’est pas utilisé : il ne faut le confondre ni avec une suite de tests ni avec un jeu de données de test. Le terme **campagne de test**, non nécessaire au MVP et susceptible de recevoir des définitions différentes selon les organisations, n’est pas introduit.
@@ -113,7 +115,7 @@ Pendant cette phase :
 1. un runner charge une version approuvée du code généré ou personnalisé ;
 2. il prépare les données et secrets fournis par l’environnement ;
 3. il exécute Playwright ;
-4. il produit un code de sortie, des journaux, un rapport JUnit et des preuves ;
+4. il produit un code de sortie, des journaux, un rapport JUnit, des preuves et, lorsque la politique de capture l’exige, des traces Playwright et HAR ;
 5. il ne modifie jamais silencieusement le cas de test ou le script approuvé.
 
 Le code exécuté peut être :
@@ -211,7 +213,12 @@ brouillon → en_conception → candidat → validé_individuellement → approu
 
 Les transitions autorisées sont : `brouillon → en_conception`, `en_conception → candidat`, `candidat → validé_individuellement`, `validé_individuellement → approuvé`, `approuvé → actif`, `actif → retiré` et `retiré → archivé`. Une modification d’un cas de test approuvé ou actif crée un nouveau brouillon. Les retours en arrière implicites et les transitions qui sautent une validation sont refusés.
 
-Un cas de test en brouillon, en conception, candidat ou retiré n’est pas sélectionnable par une CI. Un cas de test candidat peut être lancé individuellement. Un cas de test actif est autorisé dans les suites de tests automatisées. Les transitions sont enregistrées dans un journal d’audit distinct de l’historique synthétique des résultats.
+Un cas de test en brouillon, en conception, candidat ou retiré n’est pas
+sélectionnable par une CI. Un cas de test candidat peut être lancé
+individuellement. Un cas approuvé peut être inclus dans une vérification locale
+et une sélection de publication ; un cas actif est en plus autorisé dans les
+suites automatisées de la CI. Les transitions sont enregistrées dans un journal
+d’audit distinct de l’historique synthétique des résultats.
 
 Les transitions et leurs conditions doivent être visibles dans l’interface. L’utilisateur ne doit pas avoir à connaître les valeurs internes pour comprendre ce qui lui reste à faire.
 
@@ -244,9 +251,11 @@ Tous les champs affichés doivent être documentés dans l’interface avec un l
 | Politique de sécurité du projet | oui | choix administré | politique existante | aucune |
 | Nom du plan de test | oui | texte court, ex. « Validation de la commande » | non vide, longueur limitée | suggestion facultative |
 | Objectifs et périmètre du plan | oui | texte libre décrivant ce qui est testé et ce qui est exclu | non vide | reformulation et questions de périmètre |
-| Approche de test du plan | oui | niveaux, types, techniques et priorités | valeurs administrées ou description validée | proposition justifiée |
+| Profil d’approche de test du plan | oui | choix dans la liste des profils YAML actifs, ex. « Tests fonctionnels orientés risques » | identifiant et version existants ; aucune saisie libre | recommandation justifiée parmi les profils actifs |
 | Risques, critères d’entrée et critères de sortie | oui | listes structurées | au moins un critère de sortie mesurable | proposition soumise à confirmation |
 | Ressources, contraintes et ordonnancement du plan | non | textes courts ou listes | valeurs cohérentes | proposition facultative |
+| Politique de traces par défaut du plan | non | formats `playwright` et/ou `har`, avec `off`, `on`, `on-failure` ou `on-first-retry` | formats et politique autorisés | aucune |
+| Cible de développement par défaut du plan | non | liste des cibles GitLab ou GitHub administrées | cible active et autorisée pour le projet | aucune |
 | Nom de la suite de tests | oui | texte court, ex. « Parcours nominal de commande » | non vide, unique dans son parent | suggestion facultative |
 | Objectif d’exécution de la suite | oui | texte décrivant la finalité de l’exécution groupée | non vide | reformulation facultative |
 | Préconditions et postconditions communes de la suite | non | listes structurées | dépendances cohérentes | proposition facultative |
@@ -266,6 +275,7 @@ Tous les champs affichés doivent être documentés dans l’interface avec un l
 | Postconditions | non | texte métier | dépendances nettoyables | proposition de nettoyage |
 | Tags | non | choix dans une liste contrôlée | tag administré | suggestions |
 | Déclaration d’exécution CI | oui | choix `on_commit`, `nightly`, etc. | valeur autorisée | proposition selon le type |
+| Politique de traces du cas | non | héritage du plan ou sélection des formats et du mode de capture | formats et politique autorisés | aucune |
 | Seuils de performance | obligatoire pour `performance` | durée ou budget | unité et seuil valides | proposition contextualisée |
 | Profil de charge | obligatoire pour `load` | liste administrable | profil disponible | suggestion selon l’objectif |
 | Opérations ou parcours ciblés | obligatoire pour `load` | choix guidé des opérations autorisées | opération disponible dans l’environnement | proposition selon le scénario |
@@ -289,7 +299,7 @@ Le LLM ne peut pas approuver seul une proposition. Toute valeur proposée doit �
 L’interface respecte le même ordre que le modèle métier :
 
 1. la page d’accueil permet de créer ou ouvrir un **projet** ;
-2. la page du projet liste ses **plans de test** et fournit un formulaire de plan distinct couvrant son objectif, son périmètre, son approche, sa cible, ses risques, ses critères, ses ressources, ses contraintes et son ordonnancement ;
+2. la page du projet liste ses **plans de test** et fournit un formulaire de plan distinct couvrant son objectif, son périmètre, le choix d’un profil d’approche de test, sa cible, ses risques, ses critères, ses ressources, ses contraintes et son ordonnancement ;
 3. la page du plan affiche l’arborescence et deux actions distinctes : créer une **suite ou un dossier**, puis créer un **cas de test** sous l’un de ces parents ;
 4. la page du cas de test sépare visuellement le contexte, les **étapes de test**, les **données de test** et les **résultats attendus** ;
 5. un fil d’Ariane rappelle en permanence `Projet / Plan / Suite ou dossier / Cas` et permet de revenir au niveau précédent sans perdre les données enregistrées.
@@ -303,12 +313,14 @@ L’éditeur du cas de test présente les quatre sections dans un ordre stable. 
 Les administrateurs de l’outillage peuvent adapter le vocabulaire et les guides sans modifier le code de l’application. Les fichiers de configuration peuvent définir :
 
 - les types de test disponibles ;
+- les profils d’approche de test et leurs versions ;
 - les modèles de cas de test ;
 - les phrases décrivant les intentions fonctionnelles ;
 - les valeurs de tags autorisées ;
 - les environnements et profils de données disponibles ;
 - les profils LLM de conception et d’exécution ;
-- les cibles GitLab d’entreprise autorisées pour la publication manuelle ;
+- les cibles GitLab et GitHub autorisées pour la publication manuelle vers un
+  environnement de développement ;
 - les aides, exemples et champs obligatoires par contexte.
 
 Chaque entrée de configuration possède un identifiant stable, un libellé visible, une description destinée au métier et, lorsque nécessaire, une représentation technique non visible dans le formulaire.
@@ -317,6 +329,7 @@ Le MVP prévoit au minimum les fichiers administrables suivants :
 
 ```text
 config/test-types.yaml          # types de test, libellés et aides
+config/test-approaches.yaml     # profils versionnés d’approche de test
 config/test-models.yaml         # modèles de cas de test et questions LLM
 config/test-intents.yaml         # phrases d’intention fonctionnelle
 config/tags.yaml                 # tags sélectionnables
@@ -324,8 +337,53 @@ config/environments.yaml         # environnements, URLs et origines autorisées
 config/data-profiles.yaml        # profils de données et fixtures
 config/load-profiles.yaml        # profils de charge paramétrés
 config/llm-profiles.yaml         # fournisseurs, endpoints, modèles et paramètres LLM
-config/git-targets.yaml          # instances et dépôts GitLab autorisés
+config/git-targets.yaml          # dépôts GitLab et GitHub autorisés
 ```
+
+Un profil d’approche de test est décrit en YAML et contient au minimum :
+
+```yaml
+id: functional-risk-based
+versions:
+  - version: 1
+    name: Tests fonctionnels orientés risques
+    description: Priorise les parcours selon la probabilité et l’impact.
+    test_levels: [test système, test d’acceptation]
+    test_types: [test fonctionnel, test de régression]
+    test_design_techniques:
+      - partitionnement en classes d’équivalence
+      - analyse des valeurs limites
+      - tables de décision
+    risk_based: true
+    automation_strategy: Automatiser les parcours critiques et répétables.
+    evidence_requirements: [résultat de chaque assertion, capture en cas d’échec]
+    generation_instructions:
+      - relier chaque cas à un risque identifié
+      - expliciter des résultats attendus observables
+    enabled: true
+```
+
+L’écran de configuration des approches de test doit permettre de consulter les
+profils existants, de créer un profil et d’enregistrer la modification d’un
+profil. Une création utilise un identifiant stable unique et commence à la
+version `1`. Une modification conserve cet identifiant et ajoute une nouvelle
+version au fichier YAML ; elle ne réécrit ni ne supprime les versions déjà
+référencées par des plans. La désactivation rend uniquement la dernière version
+indisponible pour de nouveaux choix.
+
+Les formulaires de création et de modification d’un plan présentent une liste
+des dernières versions actives. Ils n’acceptent aucune description libre de
+l’approche. Le plan conserve l’identifiant et la version sélectionnés afin que
+sa génération et ses exports restent reproductibles après une évolution du
+catalogue. Un profil absent, une version inconnue, une structure YAML invalide
+ou une sélection désactivée bloque l’enregistrement avec un diagnostic
+explicite.
+
+Lors de la migration d’une version antérieure, une description libre existante
+est conservée comme donnée historique et le plan référence le profil désactivé
+`legacy-free-text` (« Approche historique à requalifier »). Le système ne
+déduit jamais silencieusement un profil actif à partir de ce texte. La prochaine
+modification du plan exige la sélection explicite d’un profil actif.
 
 Un modèle de cas de test peut par exemple déclarer :
 
@@ -434,11 +492,13 @@ thresholds:
 
 Les valeurs de `workload` ne peuvent pas dépasser les limites administratives du profil ou de l’environnement.
 
-Une cible GitLab d’entreprise peut par exemple déclarer :
+Une cible Git de développement peut par exemple déclarer :
 
 ```yaml
 id: enterprise-quality
 label: GitLab entreprise - Qualité
+provider: gitlab
+environment: development
 base_url: https://gitlab.example.internal
 project: quality/web-functional-tests
 default_branch: main
@@ -454,6 +514,11 @@ timeouts:
   connect_seconds: 10
   request_seconds: 30
 ```
+
+Une cible GitHub utilise le même contrat avec `provider: github`, un dépôt
+`owner/repository` et un mode `pull_request`. La cible désigne le dépôt, la
+branche et le chemin qui alimentent l’environnement de développement ; elle
+n’autorise pas à publier vers une autre branche ou un autre environnement.
 
 Les valeurs `secret_ref` et `ca_bundle_ref` sont des références résolues par l’application et ne contiennent ni jeton ni certificat privé dans le fichier de configuration.
 
@@ -486,7 +551,7 @@ Le produit doit être développé en TDD :
 
 ### 4.1 Testeur fonctionnel ou responsable QA
 
-Il décrit les parcours métier, fournit des exemples visuels, organise les cas de test, examine les scénarios proposés et valide chaque cas de test sans devoir écrire l’intégralité du script.
+Il décrit les parcours métier, fournit des exemples visuels, organise les cas de test, examine les scénarios proposés et valide chaque cas de test sans devoir écrire l’intégralité du script. Il peut résoudre un plan en une sélection de cas, la lancer depuis son poste, examiner ses résultats puis publier la sélection vérifiée vers l’environnement de développement autorisé.
 
 ### 4.2 Développeur
 
@@ -509,14 +574,24 @@ Il déploie l’outil, configure les secrets, fournit les runners et intègre le
 3. Il crée un cas de test et renseigne l’URL ou l’environnement cible.
 4. Il sélectionne un profil LLM de conception.
 5. Il décrit l’objectif métier et ajoute éventuellement des captures d’écran.
-6. Le LLM pose les questions nécessaires pour lever les ambiguïtés.
-7. Le système met à jour la représentation structurée et la description synthétique.
-8. L’utilisateur examine puis corrige les préconditions, étapes, données et résultats attendus.
-9. Le générateur produit un artefact candidat Playwright et calcule son empreinte.
-10. L’utilisateur lance individuellement cet artefact candidat en mode validation.
-11. Le runner isolé exécute exactement le code candidat et conserve les preuves.
-12. L’utilisateur corrige le cas de test ou personnalise le script si nécessaire, ce qui invalide la validation précédente, puis le relance.
-13. Il approuve une version immuable liant le cas de test structuré, le script validé et son empreinte.
+6. Il analyse les pages nécessaires ; le système lui présente les champs, boutons,
+   liens et éléments vérifiables pouvant être référencés dans les étapes.
+7. Il ajoute et ordonne des cartes pas-à-pas contenant chacune un prérequis local,
+   une action typée et une validation observable.
+8. Le LLM de conception reçoit la structure courante, les observations de page et
+   les règles applicables. Il pose les questions nécessaires, signale les cibles ou
+   données manquantes et propose uniquement des modifications structurées.
+9. L’utilisateur accepte, corrige ou refuse chaque proposition. Le système met à
+   jour la représentation structurée et la description synthétique.
+10. L’utilisateur examine la structure de génération complète, résout les
+    hypothèses restantes puis la confirme explicitement.
+11. Le générateur produit un artefact candidat Playwright et calcule son empreinte.
+12. L’utilisateur lance individuellement cet artefact candidat en mode validation.
+13. Le runner isolé exécute exactement le code candidat et conserve les preuves.
+14. L’utilisateur corrige le cas de test ou personnalise le script si nécessaire,
+    ce qui invalide la validation précédente, puis le relance.
+15. Il approuve une version immuable liant le cas de test structuré, le script
+    validé et son empreinte.
 
 ### 5.2 Exécuter une suite dans une CI
 
@@ -528,6 +603,31 @@ Il déploie l’outil, configure les secrets, fournit les runners et intègre le
 6. Il utilise le profil LLM d’exécution uniquement si un cas de test l’autorise explicitement.
 7. Il publie un code de sortie standard, un rapport JUnit et les artefacts configurés.
 8. GitHub Actions, GitLab CI ou l’autre orchestrateur décide du succès du pipeline à partir du code de sortie.
+
+### 5.3 Vérifier localement, sélectionner et publier un plan
+
+1. Depuis la page d’un plan, l’utilisateur ouvre le mode **Sélection et
+   publication**.
+2. Le système résout la version du plan en suites et cas de test approuvés, puis
+   affiche l’arbre avec les versions, dépendances, tags et derniers résultats.
+3. L’utilisateur inclut ou exclut des suites et cas de test, choisit
+   l’environnement logique de vérification et la politique de traces.
+4. Le système affiche la procédure de test résultante et signale les
+   dépendances manquantes, versions non publiables ou exclusions incohérentes.
+5. L’utilisateur lance manuellement la sélection depuis son poste au moyen du
+   runner local, installé ou conteneurisé.
+6. Le runner exécute les cas sélectionnés, sans considérer le plan comme une
+   unité exécutable, et produit les résultats, journaux et traces configurés.
+7. L’utilisateur examine le résultat de chaque cas. Il corrige et relance les
+   échecs, ou les exclut explicitement de la sélection à publier.
+8. Lorsque tous les cas retenus ont réussi sur leurs versions exactes, le
+   système fige une sélection de publication et l’empreinte du bundle associé.
+9. L’utilisateur choisit une cible de développement GitLab ou GitHub
+   administrée, consulte le dépôt, la branche, le chemin, la liste des fichiers
+   et le diff.
+10. Après confirmation explicite, le système publie exactement le bundle
+    vérifié sur une branche autorisée et retourne le commit ainsi que, selon la
+    cible, la merge request ou la pull request.
 
 ## 6. Exigences fonctionnelles
 
@@ -543,7 +643,7 @@ Un plan de test doit contenir au minimum :
 
 - un nom, des objectifs et un périmètre explicite ;
 - une base de test et les éléments de l’objet de test concernés ;
-- une approche de test comprenant les niveaux, types, techniques et priorités retenus ;
+- la référence et la version d’un profil d’approche de test actif comprenant les niveaux, types, techniques et priorités retenus ;
 - les risques produit et projet pris en compte ;
 - les rôles, responsabilités, ressources et contraintes ;
 - les critères d’entrée et de sortie ;
@@ -574,6 +674,8 @@ web servie par le même paquet applicatif. L’utilisateur doit pouvoir, sans é
 code ni de YAML :
 
 - créer et retrouver plusieurs projets ;
+- modifier le nom, la description, la cible web et la politique de sécurité
+  depuis le catalogue, sans réécrire les cibles propres aux plans existants ;
 - créer plusieurs plans de test dans un projet ;
 - créer des suites de tests, sous-suites, dossiers de classement et cas de test ;
 - renommer, déplacer, ordonner et archiver les nœuds ;
@@ -585,6 +687,66 @@ l’adresse et le port. Une demande de démarrage en mode `online` doit être re
 tant que l’adaptateur d’authentification et la persistance partagée ne sont pas
 composés ; le serveur ne doit jamais transformer silencieusement ce mode en accès
 local implicite.
+
+### EF-001.3 — Présentation cohérente, ajout progressif et thèmes
+
+Les pages qui présentent un catalogue d’objets suivent un patron commun. La liste
+occupe d’abord toute la largeur disponible. Le formulaire de création n’est pas
+affiché dans une colonne latérale permanente : un bouton `+`, placé immédiatement
+sous la liste, le déplie sur toute la largeur. Le libellé du bouton nomme l’objet
+créé, par exemple **Ajouter un projet** ou **Ajouter un profil de génération**.
+
+Le formulaire est replié par défaut. Son ouverture place le focus sur son premier
+champ utilisable. Le même bouton et la touche Échap permettent de le replier sans
+réinitialiser les valeurs déjà saisies. Les formulaires de modification restent
+associés à l’objet concerné dans la liste. Dans une arborescence, un ajout enfant
+reste placé auprès de son parent ; il applique les mêmes principes de bouton `+`,
+de dévoilement progressif et de conservation de la saisie. Le comportement et
+l’ordre de lecture doivent rester identiques sur ordinateur et sur mobile.
+
+L’en-tête de toutes les pages de Sentinelle propose un choix de thème parmi une
+liste fermée et diversifiée : **Forêt**, **Océan**, **Prune**, **Coucher de soleil**,
+**Graphite**, **Contraste élevé** et **Défense — ministère des Armées**. Le choix
+modifie les couleurs par des variables
+de présentation communes, conserve les états de focus visibles et un contraste
+lisible, puis est mémorisé dans le stockage local du navigateur. Il n’est pas une
+donnée métier, n’est pas enregistré en base, ne modifie ni les prompts ni les
+exports et revient à **Forêt** lorsque le stockage est indisponible ou invalide.
+La cible RH de démonstration conserve volontairement son thème indépendant et son
+HTML hétérogène, car elle est une application testée et non une page de Sentinelle.
+
+Chaque thème possède un identifiant technique stable, un libellé, une palette de
+jetons sémantiques, une pile typographique, des règles de contraste et, s’il est
+institutionnel, des ressources de marque locales et leur provenance :
+
+| Identifiant | Libellé | Intention visuelle |
+|---|---|---|
+| `forest` | Forêt | palette sobre verte, thème de repli |
+| `ocean` | Océan | bleus lisibles sur fonds clairs |
+| `plum` | Prune | violets doux et contrastés |
+| `sunset` | Coucher de soleil | tons chauds rouge-orangé |
+| `graphite` | Graphite | neutres gris et faible saturation |
+| `high-contrast` | Contraste élevé | séparateurs, textes et focus renforcés |
+| `defense` | Défense — ministère des Armées | identité de l’État et symbolique du ministère |
+
+Le thème `defense` reprend le [bloc-marque du DSFR](https://www.systeme-de-design.gouv.fr/version-courante/fr/composants/bloc-marque/code-du-bloc-marque)
+avec l’intitulé officiel **Ministère des Armées et des Anciens combattants** observé
+sur [defense.gouv.fr](https://www.defense.gouv.fr/). Il utilise le Bleu France
+`#000091`, le Rouge Marianne `#e1000f`, les neutres clairs du
+[Système de Design de l’État](https://www.systeme-de-design.gouv.fr/version-courante/fr/fondamentaux/couleurs),
+la police Arial comme substitution autorisée lorsque Marianne n’est pas distribuée,
+ainsi que le pictogramme Rafale filaire bleu et rouge publié par le ministère. Le
+bloc-marque et le pictogramme sont livrés localement, sans appel réseau au chargement,
+conservent leurs proportions et leurs couleurs, et ne doivent pas être redessinés,
+recolorés, déformés ou employés comme indication d’un résultat de test.
+
+La marque de l’État et le DSFR étant réservés aux services et sites autorisés de
+l’État, l’activation du thème `defense` en production relève de la configuration et
+de la responsabilité de l’entité habilitée. Le thème n’accorde aucune affiliation,
+ne modifie pas le contenu métier et ne doit pas être appliqué à l’application cible,
+aux captures de celle-ci ou aux artefacts exportés. Toute mise à jour du bloc-marque,
+de l’intitulé ministériel ou du pictogramme doit conserver la source, la version et
+la date de vérification.
 
 ### EF-002 — Arborescence des suites et cas de test
 
@@ -604,9 +766,20 @@ Les tags doivent pouvoir être ajoutés, retirés et filtrés depuis l’interfa
 
 ### EF-002.1 — Navigation et formulaires hiérarchiques
 
-L’interface web doit fournir des pages distinctes pour le catalogue des projets, le détail d’un projet, le détail d’un plan de test et l’éditeur d’un cas de test. Une URL stable identifie chaque projet, plan et cas ; un rechargement ou un redémarrage doit restaurer le même contexte.
+L’interface web fournit une page de catalogue des projets, une page d’arborescence
+complète par projet et un éditeur détaillé par cas de test. Une URL stable identifie
+chaque projet, plan et cas ; un rechargement ou un redémarrage doit restaurer le
+même contexte. Les anciennes URL d’un plan peuvent rester disponibles pour les
+vues calculées et les favoris, mais le parcours principal ne doit plus imposer une
+page intermédiaire séparée.
 
-La page d’un projet ne mélange pas l’édition détaillée des cas avec la création des plans. La page d’un plan affiche ses suites, dossiers et cas dans l’ordre hiérarchique, différencie visuellement leurs natures et interdit à l’interface de proposer un cas sans parent compatible. La page d’un cas affiche séparément :
+Le catalogue porte l’édition du projet à côté de chaque projet. La page du projet
+affiche et permet d’éditer dans une même arborescence les quatre niveaux **Plan de
+test → Dossier → Suite → Cas de test**. Le plan est une racine visible ; son bouton
+`+` crée un dossier, celui du dossier crée une suite et celui de la suite crée un
+cas. Chaque ligne différencie sa nature, expose ses actions au même emplacement et
+conserve son identifiant. L’édition détaillée du contenu d’un cas reste dans la page
+du cas, qui affiche séparément :
 
 - son contexte, son objectif, son acteur, ses préconditions et postconditions ;
 - ses étapes ordonnées ;
@@ -614,6 +787,33 @@ La page d’un projet ne mélange pas l’édition détaillée des cas avec la c
 - ses résultats attendus, alignés avec les étapes lorsque le mode le permet.
 
 La navigation arrière, le fil d’Ariane et les liens de l’arbre doivent conserver les identifiants métier plutôt que reconstruire le contexte à partir des noms. Les commandes de renommage, déplacement et archivage restent disponibles au niveau du plan sans encombrer le formulaire principal du cas.
+
+### EF-002.2 — Profils d’approche de test
+
+L’application doit fournir un catalogue administrable de profils d’approche de
+test initialisé à partir de descriptions YAML livrées avec le produit. Chaque
+version de profil possède un identifiant stable, un numéro de version, un
+libellé, une description métier, un état actif ou désactivé, des niveaux et
+types de test, des techniques de conception de tests, un indicateur d’approche
+fondée sur les risques, une stratégie d’automatisation, des exigences relatives
+aux éléments de preuve et des instructions de génération.
+
+Dans les formulaires d’un plan de test, l’approche de test est obligatoirement
+choisie dans la liste des dernières versions actives. Le plan persiste
+l’identifiant et la version du profil sélectionné. Une modification ultérieure
+du profil ne modifie pas silencieusement les plans existants.
+
+L’écran de configuration doit permettre à un administrateur :
+
+- de consulter les profils et leur état ;
+- de créer et enregistrer un nouveau profil à la version `1` ;
+- de modifier un profil existant en créant la version suivante ;
+- d’activer ou de désactiver la nouvelle version ;
+- de conserver dans le YAML toutes les versions encore référencées.
+
+La validation doit refuser les identifiants dupliqués, les numéros de version
+dupliqués, les champs obligatoires vides, les listes de nature incorrecte et les
+documents YAML dont la version de schéma n’est pas prise en charge.
 
 ### EF-003 — Configuration des LLM
 
@@ -639,6 +839,18 @@ Chaque profil doit définir indépendamment :
 Le système doit appliquer un schéma propre au fournisseur : un paramètre non pris en charge est refusé avec un message explicite, et non ignoré silencieusement. La configuration effective, l’identifiant du profil et sa version doivent être traçables pour chaque appel sans journaliser de secret.
 
 La connectivité de chaque profil doit être vérifiable séparément avant son activation. Le contrôle vérifie au minimum l’accès à l’endpoint, l’authentification lorsqu’elle est requise, la disponibilité du modèle et la compatibilité des capacités déclarées. Il retourne un résultat structuré et compréhensible sans envoyer de contenu métier ni persister de secret. Une configuration valide de conception n’implique pas une configuration valide d’exécution, et inversement.
+
+Pour Ollama, le diagnostic distingue explicitement :
+
+1. la disponibilité du service sur l’origine configurée ;
+2. la présence du nom exact du modèle ;
+3. une inférence réelle avec le contexte et le contrat de sortie du profil.
+
+Un succès obtenu avec un contexte réduit constitue seulement un diagnostic
+matériel. Il ne valide pas un profil déclarant un contexte supérieur. Le bouton
+de contrôle reste utilisable avant activation ; un délai de chargement, une
+sortie non JSON ou un contrat invalide laisse le profil désactivé et indique
+l’étape en échec.
 
 ### EF-003.1 — Fournisseurs LLM obligatoires
 
@@ -690,6 +902,69 @@ Le système doit conserver un dialogue contextualisé permettant au LLM de deman
 
 Une proposition du LLM ne doit jamais être présentée comme une exigence confirmée sans validation humaine.
 
+Avant tout appel au LLM, l’application calcule de manière déterministe les
+informations manquantes à partir de l’intention fonctionnelle sélectionnée et de
+la structure courante. Chaque question affiche son utilité et la zone structurée
+qui recevra la réponse. Une information déjà présente ne doit pas être demandée
+de nouveau.
+
+Les pages HTML analysées sont transmises sous forme d’un inventaire borné et
+normalisé. Pour chaque élément, l’assistant distingue les actions compatibles,
+les validations observables et les exemples de valeurs autorisés. Le HTML brut
+ne constitue ni une instruction pour le LLM ni une autorisation de modifier le
+cas. L’utilisateur peut utiliser une référence proposée sans exposer ni
+fabriquer directement un sélecteur CSS.
+
+Le dialogue est attaché au cas et restauré après redémarrage. Un échange
+explicite transmet au LLM uniquement :
+
+- le brouillon structuré courant ;
+- l’intention fonctionnelle versionnée ;
+- le diagnostic déterministe des informations manquantes ;
+- l’inventaire minimisé des champs HTML, sans HTML brut ni localisateur ;
+- les huit derniers messages au maximum ;
+- un contrat fermé de réponse.
+
+La réponse comporte une version de schéma, au plus huit questions et au plus
+douze opérations `add` ou `replace`. Chaque opération possède un identifiant,
+un chemin autorisé, une valeur, un libellé et une justification. Les chemins
+modifiables sont limités à l’objectif, l’acteur, les listes métier, le profil
+d’acteur, les références de fixtures ou de secrets, la préparation, le
+nettoyage, les hypothèses et les champs éditables des étapes. Les pages
+analysées, les profils LLM et de génération et le marqueur `confirmed` ne sont
+jamais modifiables par une réponse LLM.
+
+Le système conserve l’empreinte du brouillon qui a produit chaque proposition.
+Si le brouillon change avant la décision, l’acceptation est refusée et
+l’utilisateur doit relancer le dialogue. Une sortie inconnue, mal typée, trop
+longue ou visant un chemin interdit est refusée avant la persistance du message
+utilisateur.
+
+Le dialogue est attaché au cas et restauré après redémarrage. Un échange
+explicite transmet au LLM uniquement :
+
+- le brouillon structuré courant ;
+- l’intention fonctionnelle versionnée ;
+- le diagnostic déterministe des informations manquantes ;
+- l’inventaire minimisé des champs HTML, sans HTML brut ni localisateur ;
+- les huit derniers messages au maximum ;
+- un contrat fermé de réponse.
+
+La réponse comporte une version de schéma, au plus huit questions et au plus
+douze opérations `add` ou `replace`. Chaque opération possède un identifiant,
+un chemin autorisé, une valeur, un libellé et une justification. Les chemins
+modifiables sont limités à l’objectif, l’acteur, les listes métier, le profil
+d’acteur, les références de fixtures ou de secrets, la préparation, le
+nettoyage, les hypothèses et les champs éditables des étapes. Les pages
+analysées, les profils LLM et de génération et le marqueur `confirmed` ne sont
+jamais modifiables par une réponse LLM.
+
+Le système conserve l’empreinte du brouillon qui a produit chaque proposition.
+Si le brouillon change avant la décision, l’acceptation est refusée et
+l’utilisateur doit relancer le dialogue. Une sortie inconnue, mal typée, trop
+longue ou visant un chemin interdit est refusée avant la persistance du message
+utilisateur.
+
 ### EF-005 — Mise à jour de la description
 
 Après chaque échange accepté ou modification structurée d’un cas de test, le système doit proposer une nouvelle description synthétique et factuelle.
@@ -702,6 +977,20 @@ La mise à jour doit :
 - éviter les formulations spéculatives ;
 - être visible avant l’enregistrement de la nouvelle version ;
 - rester modifiable par l’utilisateur.
+
+La synthèse n’est pas copiée depuis la prose du LLM. Après une décision, elle
+est reconstruite par une fonction déterministe depuis l’objectif, l’acteur, les
+préconditions et le dernier résultat attendu observable du brouillon accepté.
+Une opération refusée et une question sans réponse ne peuvent donc pas apparaître
+dans la description. L’utilisateur peut ensuite corriger cette description ;
+une nouvelle proposition porte sur l’empreinte comprenant cette correction.
+
+La synthèse n’est pas copiée depuis la prose du LLM. Après une décision, elle
+est reconstruite par une fonction déterministe depuis l’objectif, l’acteur, les
+préconditions et le dernier résultat attendu observable du brouillon accepté.
+Une opération refusée et une question sans réponse ne peuvent donc pas apparaître
+dans la description. L’utilisateur peut ensuite corriger cette description ;
+une nouvelle proposition porte sur l’empreinte comprenant cette correction.
 
 ### EF-006 — Gestion des captures d’écran
 
@@ -767,6 +1056,25 @@ Les vérifications système suivantes restent obligatoires avant l’exécution 
 
 Le LLM peut expliquer une erreur, proposer une formulation ou suggérer une correction de la définition. Il ne peut pas déclarer une vérification système réussie et ne peut pas contourner un contrôle échoué.
 
+À partir de la version 2 du workflow de génération, chaque traduction de
+précondition est conservée dans `precondition_dependencies` avec un identifiant,
+la phrase métier source, un type fermé (`verification`, `fixture`,
+`technical_dependency`, `setup` ou `cleanup`), une description exécutable, une
+référence technique facultative et un statut de confirmation humaine. Une
+fixture ou une dépendance technique exige une référence non secrète. La
+confirmation du workflow est refusée tant qu’une précondition ne possède pas de
+traduction ou qu’une traduction reste non confirmée.
+
+L’éditeur doit permettre de resynchroniser les cartes de traduction après une
+modification des phrases sources sans confirmer automatiquement une nouvelle
+carte. Toute modification du type, de la description ou de la référence invalide
+la confirmation de la carte. Le contrôle de préparation restitue séparément le
+profil d’environnement, l’origine de la destination, les traductions, les
+fixtures, la présence des références de secrets et le runtime Playwright. Il ne
+retourne aucune valeur de secret. Pour un workflow de version 2, un échec
+bloquant interdit la production du candidat ; un workflow historique de version
+1 reste lisible et signale la revue à effectuer lors de sa prochaine édition.
+
 ### EF-007.2 — Jeux de données et profils d’environnement
 
 Un cas de test peut référencer plusieurs jeux de données de test et profils d’environnement sans contenir de secret. L’utilisateur les sélectionne par des libellés métier et non par un chemin de fichier.
@@ -788,26 +1096,41 @@ L’application doit proposer une liste de modèles de cas de test configurable 
 
 Le LLM de conception peut utiliser le modèle sélectionné pour poser les questions pertinentes et ne doit pas demander les informations déjà renseignées. L’utilisateur peut changer de modèle avant validation, avec affichage des champs qui seront ajoutés ou perdus.
 
-### EF-007.4 — Modes de spécification et vues d’organisation
+### EF-007.4 — Workflow pas-à-pas et vues d’organisation
 
-Un utilisateur métier peut choisir plusieurs modes de saisie sans écrire de
-YAML. Le MVP propose au minimum :
+L’éditeur expose trois représentations d’un même workflow canonique. Le passage
+d’un mode à l’autre ne crée ni une seconde spécification ni une autre source de
+vérité :
 
-- **pas-à-pas** : une action et son résultat observable par ligne ;
-- **Given/When/Then** : préconditions, événement et résultat exprimés avec un
-  vocabulaire BDD ;
-- **tableau d’exemples** : colonnes de données et résultats séparées par des
-  points-virgules, avec plusieurs cas ;
-- **checklist** : liste de contrôles observables indépendants.
+1. des formulaires pas-à-pas séparant l’action et le contrôle ;
+2. une liste extensible contenant un texte autonome par étape ;
+3. un texte unique décrivant l’ensemble du parcours.
 
-Ces modes sont des aides de rédaction et non quatre modèles métier concurrents.
-Ils produisent une même définition canonique contenant l’objectif, l’acteur,
-l’environnement, les préconditions, données, postconditions, exigences, règles
-métier, déclaration d’exécution, clauses ordonnées et exemples. Le texte saisi
-est conservé pour l’édition ; toute modification crée une nouvelle version de
-la définition.
+Le premier mode utilise des cartes ajoutables, supprimables, duplicables et
+réordonnables. Un contrôle peut être ajouté immédiatement après une action sous
+la forme d’une étape sans action. Une carte contient :
 
-L’arbre reste l’organisation primaire. L’interface fournit en complément des
+- un identifiant et un nom d’étape ;
+- la page courante et un éventuel prérequis local ;
+- une action choisie dans le vocabulaire supporté ;
+- une cible de page et une valeur ou référence de donnée lorsque l’action les
+  exige ;
+- une validation observable, sa cible et le résultat attendu ;
+- l’indication qu’une preuve doit être conservée pour cette étape.
+
+Dans les deux modes narratifs, le texte original est conservé dans le brouillon.
+Un petit LLM propose des opérations transformant ce texte en étapes canoniques ;
+il ne confirme jamais le workflow et n’invente ni cible HTML, ni donnée, ni
+résultat. Un brouillon narratif sans étape structurée peut être enregistré mais
+ne peut pas être confirmé ou généré.
+
+Les données de test sont saisies dans une liste de références extensible, une
+référence par ligne. Les résultats attendus ne forment plus une zone globale
+ambiguë : ils appartiennent au contrôle de l’étape concernée. Cette proximité
+doit permettre de lire successivement « contexte, action, donnée, contrôle ».
+
+L’arbre reste l’organisation primaire. Le filtre et les vues calculées sont
+masqués par défaut et s’ouvrent lorsqu’un filtre est actif. L’interface fournit en complément des
 vues calculées par tag, exigence, règle métier et mode de spécification, ainsi
 qu’une recherche textuelle. Ces vues ne déplacent pas les cas de test et ne créent
 aucune seconde taxonomie persistante.
@@ -844,6 +1167,127 @@ fichier canonique, la configuration et le plan.
 L’import de données prépare les futurs lancements du runner mais ne les
 déclenche pas depuis le processus web de conception. Les cellules sont des
 données, jamais des commandes, sélecteurs exécutables ou références de secrets.
+
+Lorsqu’un cas utilise plusieurs fichiers, la génération ne fusionne pas
+implicitement leurs premières lignes et ne produit pas leur produit cartésien.
+Chaque source possède un identifiant, un chemin relatif et une colonne clé.
+Une matrice de cas nommés sélectionne exactement une clé de ligne par source.
+Les valeurs utilisent alors une référence qualifiée
+`{{data.source.colonne}}`. Une association incomplète, une clé dupliquée ou une
+source inconnue est refusée avant génération.
+
+### EF-007.6 — Structure de génération et champs nécessaires
+
+Le cas de test conserve une structure `generation_workflow` de schéma versionné.
+Cette structure contient au minimum :
+
+- la page de départ ;
+- les profils d’environnement et d’acteur ;
+- la référence versionnée de l’intention fonctionnelle ;
+- les références de fixtures, jeux de données et secrets ;
+- la préparation et le nettoyage confirmés ;
+- la politique de preuve ;
+- la politique d’usage du LLM ;
+- la référence versionnée du profil d’accès LLM ;
+- la référence versionnée du profil de génération de code ;
+- le délai maximal ;
+- les hypothèses ou ambiguïtés ouvertes ;
+- le mode de saisie (`form`, `step_text` ou `scenario_text`) ;
+- les textes d’étapes et le récit complet, lorsqu’ils existent ;
+- l’état de confirmation ;
+- les pages analysées avec leur empreinte et leurs éléments ;
+- les étapes ordonnées décrites par `EF-007.4`.
+
+Trois skills locaux cadrent l’analyse par un petit LLM :
+`analyze-form-test-steps`, `analyze-step-test-narratives` et
+`analyze-full-test-narrative`. La requête de conception indique le skill du mode
+courant, ses instructions et le contrat de sortie fermé. Tous produisent des
+questions et des opérations JSON validables ; aucun ne produit directement du
+code.
+
+Depuis le mode de saisie actif, l’utilisateur doit pouvoir ouvrir un panneau de
+traçabilité affichant le nom du skill, la partie du workflow analysée, le prompt
+de cadrage exact et les règles principales. Ce panneau ne révèle ni secret ni
+valeur résolue par le runner.
+
+Depuis le mode de saisie actif, l’utilisateur doit pouvoir ouvrir un panneau de
+traçabilité affichant le nom du skill, la partie du workflow analysée, le prompt
+de cadrage exact et les règles principales. Ce panneau ne révèle ni secret ni
+valeur résolue par le runner.
+
+Après confirmation, la page du cas expose un lien de téléchargement vers le
+candidat Python Playwright. Le code n’est pas injecté dans le HTML et n’est pas
+affiché sur la page. Une génération impossible doit produire une erreur
+explicite plutôt qu’un fichier partiel.
+
+Les valeurs variables utilisent les espaces de noms :
+
+```text
+{{data.nom_colonne}}
+{{data.source.nom_colonne}}
+{{fixture.reference}}
+{{secret.reference}}
+```
+
+Une valeur `secret` est toujours une référence ; sa valeur ne peut apparaître
+dans la structure. L’utilisateur peut afficher et copier la structure JSON à
+tout moment. La présence d’une hypothèse ouverte interdit de confirmer le
+workflow. Une structure sans étape ou sans validation observable est refusée.
+Lorsque plusieurs sources de données sont déclarées, la structure affichée
+contient également leurs colonnes clés et la matrice exacte des associations ;
+le nombre de cas qui seront collectés est visible avant génération.
+
+### EF-007.7 — Configuration des accès LLM et de la génération
+
+L’administration sépare deux catalogues logiques conservés dans un même fichier
+YAML versionné :
+
+1. un **profil d’accès LLM** décrit le fournisseur, l’URL de base, le modèle,
+   le délai, les nouvelles tentatives et les noms de variables d’environnement
+   portant l’authentification ;
+2. un **profil de génération de code** référence une version exacte du profil
+   LLM et fixe le langage, le framework, la racine relative de sortie, les
+   motifs de fichiers, l’usage des Page Objects, les preuves, la politique
+   d’écriture, les validations autorisées, les instructions et la limite de
+   fichiers.
+
+Ces responsabilités sont présentées sur deux pages distinctes. **Accès aux
+LLM** ne rend que les profils de connexion, leurs références de secrets et leurs
+diagnostics. **Génération de code** ne rend que les profils de production et
+référence un accès LLM versionné dans une liste. La navigation principale et
+l’éditeur de cas donnent un accès direct à chaque page. L’ancienne URL combinée
+reste une redirection de compatibilité vers **Accès aux LLM** et ne constitue
+plus un écran d’administration.
+
+Sur **Accès aux LLM**, les connexions existantes occupent la largeur disponible.
+La création est déclenchée par un bouton `+` placé immédiatement sous la liste ;
+le formulaire est masqué par défaut, se déplie sous ce bouton et peut être
+refermé sans effacer les valeurs déjà saisies.
+
+Le champ **Modèle** est une liste déroulante alimentée à la demande depuis
+l’**URL de base**, pour la création comme pour la modification d’un accès. Un
+bouton de rafraîchissement adjacent interroge le fournisseur sans enregistrer le
+formulaire. La liste est dédupliquée et triée. Lors d’une modification, le modèle
+courant est conservé et explicitement signalé s’il n’est plus retourné. Une
+erreur réseau ou d’authentification laisse la sélection intacte et produit un
+message contextualisé ; aucun secret ni valeur de clé ne transite dans la page.
+
+Les valeurs de clés API, jetons et identifiants secrets ne sont jamais saisies
+ni persistées. Seuls des noms de variables conformes à
+`[A-Z_][A-Z0-9_]*` peuvent être enregistrés. Une URL distante doit utiliser
+HTTPS ; HTTP est limité à une origine de boucle locale. Les URL contenant des
+identifiants, paramètres ou fragments sont refusées.
+
+Les chemins de sortie doivent être relatifs, sans remontée `..`, lettre de
+lecteur ni chemin absolu. Les motifs de tests et de Page Objects restent des
+noms de fichiers et contiennent respectivement `{case_slug}` et `{page_slug}`.
+La validation du code utilise un vocabulaire fermé ; aucune commande shell
+libre n’est enregistrée.
+
+Une modification crée une nouvelle version sans altérer les cas ou profils de
+génération liés à une version antérieure. Le workflow du cas conserve les
+références `identifiant@version`. Lorsqu’un profil de génération et un profil
+LLM sont tous deux sélectionnés, leur liaison doit être cohérente.
 
 ### EF-008 — Validation humaine et versionnement
 
@@ -888,6 +1332,45 @@ Le système doit pouvoir naviguer vers la cible et réaliser les actions autoris
 
 Les références temporaires issues d’un instantané de navigateur ou les coordonnées visuelles ne doivent pas être copiées telles quelles dans le code final. Elles servent à l’exploration, puis doivent être converties en localisateurs stables.
 
+Avant l’exploration interactive, l’application peut analyser une page HTML
+statique de la même origine que la cible du projet. L’analyse est bornée en
+taille, refuse une redirection vers une autre origine, n’utilise aucun secret et
+inventorie au minimum les champs de formulaire, listes, boutons, liens et
+titres. Pour chaque élément elle conserve une référence de rédaction, un rôle,
+un libellé, un type, les options éventuelles et un localisateur candidat. Une
+page nécessitant JavaScript ou une session doit être transmise à l’adaptateur
+d’exploration Playwright ; l’analyse statique ne doit pas inventer son contenu.
+
+L’exploration Playwright est décrite par un plan déclaratif versionné et non par
+du code libre. Sa première verticale locale impose :
+
+- une URL de départ et une URL de catalogue sur la même origine de boucle
+  locale, avec port explicite ;
+- une liste fermée d’actions (`fill`, `check`, `uncheck`, `click`, `select`,
+  `wait_visible`, `wait_hidden`) et de stratégies de localisation (`label`,
+  `role`, `test_id`, `placeholder`, `css`) ;
+- au plus vingt actions et un délai compris entre une et cent vingt secondes ;
+- des valeurs littérales synthétiques ou des jetons qualifiés
+  `{{data.<source>.<colonne>}}` résolus depuis une ligne XLSX explicitement
+  identifiée ;
+- un contrôle de l’origine après chaque action et le refus de toute évaluation
+  JavaScript, commande shell, URL portant des identifiants ou sortie du dépôt ;
+- un artefact ne contenant ni les valeurs résolues ni le HTML source, mais
+  l’empreinte du DOM rendu, les empreintes des données et les identifiants de
+  lignes utilisés.
+
+Après l’arrivée sur la page, l’adaptateur compare le HTML renvoyé par le serveur
+dans la session courante au DOM sérialisé après exécution de JavaScript. Le
+catalogue distingue ainsi les éléments déjà livrés par le serveur des références
+apparues seulement après rendu. Cette classification est informative : le
+générateur continue d’utiliser les rôles, libellés et localisateurs stables.
+
+L’application d’un catalogue rendu à un workflow ne remplace pas aveuglément
+les références de rédaction existantes. Un élément retrouvé par le même
+localisateur et le même rôle conserve sa référence ; les nouveaux éléments
+reçoivent une nouvelle référence. L’opération est refusée si une cible utilisée
+par une action ou une validation disparaît.
+
 ### EF-011 — Gestion des blocages
 
 L’exploration ou l’exécution doit s’arrêter proprement lorsque :
@@ -922,6 +1405,13 @@ Le code généré doit :
 - factoriser les comportements réellement partagés sans surarchitecture ;
 - rester lisible et modifiable manuellement ;
 - conserver les personnalisations identifiées lors d’une régénération ou signaler explicitement les conflits.
+
+Chaque candidat déterministe est accompagné d’un manifeste versionné contenant
+au minimum l’empreinte canonique de l’entrée, l’empreinte du code, la version du
+générateur, l’identité des sources de données et leurs empreintes. Le manifeste
+n’inclut pas d’horodatage afin que les mêmes entrées produisent le même
+artefact. Le runner refuse un code ou une source dont l’empreinte ne correspond
+plus au candidat généré.
 
 Pour un cas de test `performance`, le script doit mesurer uniquement les actions et seuils déclarés. Le MVP ne génère pas de trafic concurrent ni de test de charge.
 
@@ -981,7 +1471,8 @@ Il doit accepter sa configuration par arguments, variables d’environnement et 
 - un statut par cas de test et par étape de test ;
 - des journaux structurés ;
 - un rapport JUnit XML ;
-- des captures, vidéos ou traces selon la politique choisie ;
+- des captures et vidéos selon la politique choisie ;
+- des traces Playwright et des archives réseau HAR selon la politique de capture effective ;
 - la version exacte du cas de test et du script exécutés.
 
 Après chaque exécution, le runner doit produire un rapport détaillé et transmettre au service d’historisation un enregistrement de résultat contenant uniquement :
@@ -998,15 +1489,95 @@ Pour un cas de test de type `performance`, le rapport détaillé conserve les me
 
 Chaque cas de test possède une déclaration simple indiquant quand il peut être sélectionné par une CI, par exemple `on_commit`, `on_merge_request`, `nightly`, `release` ou `manual`. Cette déclaration est un attribut du cas de test, est visible dans le formulaire et peut être utilisée avec les tags pour construire une suite de tests destinée à une exécution donnée.
 
+### EF-015.2 — Enregistrement des traces Playwright et HAR
+
+Depuis l’éditeur d’un cas de test, la page d’un plan, la CLI ou la CI,
+l’utilisateur doit pouvoir demander l’enregistrement des traces pour une
+exécution ciblant :
+
+- un cas de test et une version déterminés ;
+- l’ensemble des suites et cas de test référencés par une version déterminée
+  d’un plan de test.
+
+Cette seconde possibilité est un **périmètre de sélection** : elle ne transforme
+pas le plan de test en unité exécutable. Le runner exécute les cas de test
+descendants et conserve une trace distincte pour chaque cas et chaque tentative.
+Un index de niveau plan relie la version du plan, l’exécution, les cas
+sélectionnés, leurs résultats et les chemins de leurs traces.
+
+Les deux formats de trace pris en charge sont :
+
+- `playwright` : archive `trace.zip` consultable avec Playwright Trace Viewer,
+  contenant au minimum les actions, chronologies, captures ou instantanés DOM,
+  journaux de console et informations réseau disponibles ;
+- `har` : archive `network.har.zip` conforme au format HTTP Archive, contenant
+  les requêtes, réponses, en-têtes, statuts, durées et corps autorisés par la
+  politique de sécurité.
+
+La liste des formats à produire est une combinaison de `playwright` et `har`.
+La politique de capture de chacun est configurable avec les valeurs `off`,
+`on`, `on-failure` et `on-first-retry`. Elle peut être définie par défaut dans
+le profil d’approche, spécialisée sur un cas de test et surchargée explicitement
+pour le lancement d’un cas ou la sélection d’un plan. Le runner calcule une
+politique effective déterministe, l’inscrit dans `execution.json` et ne la
+modifie pas pendant l’exécution.
+
+Pour une sélection par plan, l’activation de la capture s’applique à tous les
+cas descendants effectivement sélectionnés. L’index indique explicitement
+chaque trace absente, incomplète ou non finalisée et sa cause ; il ne présente
+jamais une collection partielle comme une trace complète du plan. Les traces de
+tentatives différentes ne sont ni fusionnées ni écrasées.
+
+Les en-têtes d’autorisation, cookies, jetons, mots de passe et données déclarées
+sensibles doivent être masqués ou omis avant persistance. La capture HAR peut
+être filtrée aux origines et motifs d’URL autorisés. L’interface et la CLI
+signalent que les corps HTTP et les instantanés Playwright peuvent contenir des
+données métier, et appliquent les règles d’accès, de téléchargement,
+d’expiration et de suppression du projet.
+
+### EF-015.3 — Lancement manuel d’une sélection de plan depuis le poste
+
+La page d’un plan et la CLI doivent permettre à l’utilisateur de lancer
+manuellement, depuis son poste, l’ensemble ou un sous-ensemble résolu des suites
+et cas de test du plan. Le lancement utilise le même bundle, le même moteur de
+sélection et le même contrat de runner que la CI/CD. Il doit fonctionner avec
+un environnement Python verrouillé ou une image OCI locale, sans nécessiter une
+publication préalable ni une connexion au service de conception après
+l’export du bundle.
+
+Avant le lancement, l’interface présente au minimum :
+
+- la version du plan utilisée comme périmètre de sélection ;
+- les suites et cas de test retenus, leurs versions et leur ordre ;
+- les dépendances ajoutées automatiquement et les exclusions demandées ;
+- l’environnement cible, les données et les références de secrets nécessaires ;
+- les commandes équivalentes prêtes à copier ;
+- la politique de traces et le répertoire local des artefacts.
+
+Le contrôle des préconditions, les restrictions réseau, l’isolation, le
+masquage des secrets et les codes de sortie sont identiques à ceux exigés en
+CI. Le résultat local conserve l’identifiant d’exécution, l’empreinte du bundle,
+la sélection résolue et un statut par cas. Un nouvel export, une modification
+de sélection ou une modification de version rend ce résultat non applicable au
+nouveau bundle et impose un nouveau lancement avant publication.
+
 ### EF-016 — Export et intégration Git
 
-L’export est une action manuelle et explicite. Le système doit guider l’utilisateur en lui faisant choisir un plan de test, une ou plusieurs suites de tests, un environnement, une sélection de tags et un format de sortie. Les commandes techniques sont affichées sous forme de commandes prêtes à copier, mais ne sont pas exigées pour définir un cas de test.
+L’export et la publication sont des actions manuelles et explicites. Le système
+doit guider l’utilisateur en lui faisant choisir un plan de test, une ou
+plusieurs suites de tests, des cas de test, un environnement, une sélection de
+tags et un format de sortie. Le mode **Sélection et publication** doit permettre
+de vérifier localement cette sélection avant de la figer et de la publier. Les
+commandes techniques sont affichées sous forme de commandes prêtes à copier,
+mais ne sont pas exigées pour définir un cas de test.
 
 Le système doit permettre de produire un paquet versionnable contenant :
 
 - les scripts de test Playwright ;
 - les spécifications structurées des cas de test ;
 - l’arborescence ;
+- la séquence assainie des prompts et réponses ayant contribué à la génération
+  de chaque version de script, avec leurs métadonnées de modèle et de décision ;
 - les données d’exemple non secrètes ;
 - un manifeste de versions ;
 - les commandes d’installation et d’exécution ;
@@ -1015,7 +1586,9 @@ Le système doit permettre de produire un paquet versionnable contenant :
 - une documentation de déploiement pour GitHub Actions ;
 - une documentation de déploiement pour GitLab CI.
 
-L’écriture directe dans un dépôt Git exige une autorisation dédiée et limitée au dépôt concerné. L’export local et l’exécution CLI doivent rester disponibles sans accès Git distant.
+L’écriture directe dans un dépôt Git exige une autorisation dédiée et limitée
+au dépôt concerné. L’export local, la sélection et l’exécution CLI doivent
+rester disponibles sans accès Git distant.
 
 ### EF-016.1 — Documentation fonctionnelle exportée
 
@@ -1052,31 +1625,84 @@ Chaque guide contient au minimum :
 
 Les guides ne doivent contenir aucune valeur secrète. Une incohérence entre un guide, le manifeste et le modèle de pipeline doit bloquer l’export.
 
-### EF-016.3 — Publication manuelle vers un GitLab d’entreprise
+### EF-016.3 — Sélection de publication
 
-Un administrateur doit pouvoir configurer une ou plusieurs cibles GitLab auto-hébergées ou d’entreprise. Une cible possède au minimum :
+Le mode **Sélection et publication** présente l’arborescence du plan avec des
+cases à cocher et permet de sélectionner une suite entière, une sous-suite ou
+des cas de test individuels. Il fournit des filtres par nom, tag, type, état,
+déclaration CI et dernier résultat local. La sélection d’un parent sélectionne
+par défaut ses descendants ; chaque exclusion reste visible et explicite.
+
+Le système résout les dépendances avant exécution et publication. Une dépendance
+requise peut être ajoutée automatiquement après confirmation ou bloquer la
+sélection ; elle ne peut jamais être omise silencieusement. Un dossier de
+classement n’est pas sélectionnable comme unité d’exécution, mais ses
+descendants peuvent l’être.
+
+Une **sélection de publication** figée contient au minimum :
+
+- l’identifiant et la version du plan servant de périmètre ;
+- les identifiants, versions et empreintes des suites et cas retenus ;
+- l’ordre d’exécution et les dépendances résolues ;
+- l’environnement logique de vérification et la cible de développement prévue ;
+- l’identifiant de l’exécution locale réussie et l’empreinte de son bundle ;
+- la date, l’auteur et les exclusions explicites ;
+- l’empreinte globale de la sélection.
+
+Seuls les cas de test dans l’état `approuvé` ou `actif` dont la version exacte a
+réussi dans l’exécution locale associée sont publiables. Un cas brouillon,
+candidat, retiré ou archivé, un échec, une absence de résultat, une version
+différente ou une empreinte modifiée bloque la publication. Une nouvelle
+sélection peut être préparée sans altérer la précédente.
+
+### EF-016.4 — Publication manuelle vers un environnement de développement Git
+
+Un administrateur doit pouvoir configurer une ou plusieurs cibles GitLab,
+GitLab auto-hébergées ou GitHub. Une cible possède au minimum :
 
 - un identifiant stable et un libellé ;
-- l’URL de base HTTPS de l’instance GitLab ;
-- un projet autorisé, identifié par son chemin ou son identifiant GitLab ;
+- le fournisseur `gitlab` ou `github` et l’environnement logique
+  `development` ;
+- l’URL de base HTTPS de l’instance ;
+- un projet ou dépôt autorisé, identifié par son chemin ou son identifiant ;
 - une branche par défaut, un préfixe de branche de publication et un chemin de destination dans le dépôt ;
-- un mode de publication autorisé : commit sur une branche dédiée ou création/mise à jour d’une merge request ;
+- un mode de publication autorisé : commit sur une branche dédiée,
+  création/mise à jour d’une merge request GitLab ou d’une pull request GitHub ;
 - une référence vers un secret d’authentification ;
 - les autorités de certification, délais et paramètres de proxy nécessaires, sans désactiver silencieusement la vérification TLS.
 
 La connectivité et les droits de lecture doivent pouvoir être vérifiés séparément sans effectuer d’écriture. Le secret doit être limité au projet et aux opérations nécessaires à la publication.
 
-Depuis l’écran d’export, un utilisateur autorisé doit pouvoir sélectionner une cible configurée puis déclencher manuellement la publication du bundle. Avant confirmation, le système affiche l’instance, le projet, la branche, le chemin, la liste des fichiers et le diff prévu. La publication doit :
+Depuis le mode **Sélection et publication**, un utilisateur autorisé doit
+pouvoir choisir une sélection figée et une cible configurée, puis déclencher
+manuellement la publication du bundle. Avant confirmation, le système affiche
+l’instance, le projet ou dépôt, l’environnement `development`, la branche, le
+chemin, la liste des cas, la liste des fichiers, le dernier résultat local et
+le diff prévu. La publication doit :
 
-- utiliser exactement le bundle prévisualisé et son empreinte ;
-- créer un commit traçable indiquant l’utilisateur, le plan de test, les suites exportées et leurs versions ;
+- utiliser exactement la sélection et le bundle vérifiés, sans régénération ;
+- créer un commit traçable indiquant l’utilisateur, le plan de test,
+  l’identifiant de sélection, l’exécution locale et les versions publiées ;
 - ne jamais effectuer de `force push` ni écraser silencieusement une modification distante ;
 - refuser un projet, une branche ou un chemin hors des valeurs autorisées ;
 - proposer une nouvelle branche ou signaler un conflit lorsque la branche distante a divergé ;
-- retourner l’identifiant du commit et, le cas échéant, l’URL de la merge request ;
+- retourner l’identifiant du commit et, le cas échéant, l’URL de la merge
+  request ou de la pull request ;
 - enregistrer l’opération et son résultat dans le journal d’audit sans enregistrer le secret.
 
-L’indisponibilité de GitLab ou un échec de publication ne doit pas invalider le bundle exporté localement. L’exécution du bundle reste indépendante de l’API GitLab.
+Dans cette spécification, publier vers l’environnement de développement
+signifie déposer le bundle dans le dépôt, la branche et le chemin administrés
+qui alimentent sa CI/CD. La publication peut déclencher le pipeline prévu par
+GitLab ou GitHub, mais ne déploie pas directement l’application cible et ne
+transforme pas un échec de pipeline en réussite.
+
+La publication ne change pas automatiquement l’état du cycle de vie. Un cas
+publié dans l’état `approuvé` reste exclu des sélections CI ordinaires jusqu’à
+son activation explicite ; un cas déjà `actif` conserve son état.
+
+L’indisponibilité de GitLab ou GitHub, ou un échec de publication, ne doit
+invalider ni la sélection figée ni le bundle exporté localement. L’exécution du
+bundle reste indépendante des API GitLab et GitHub.
 
 ### EF-017 — Catalogue de phrases d’intention fonctionnelle
 
@@ -1160,6 +1786,8 @@ Le runner d’exécution doit être installable et lançable indépendamment du 
 
 - depuis une image OCI versionnée ;
 - depuis un environnement Python verrouillé ;
+- manuellement depuis le poste de l’utilisateur avec les mêmes sélecteurs et
+  formats de résultats que dans la CI ;
 - sans accès à la base de données de conception ;
 - sans LLM lorsque les cas de test sélectionnés sont déterministes.
 
@@ -1180,7 +1808,12 @@ Les mots de passe, jetons et clés doivent être stockés dans un mécanisme de 
 
 En CI, les secrets proviennent des mécanismes protégés de GitHub, GitLab ou de l’orchestrateur choisi. Aucun secret ne doit être requis dans un fichier suivi par Git.
 
-Les jetons utilisés pour publier vers un GitLab d’entreprise sont référencés depuis le mécanisme de secrets de l’application. Ils doivent être limités au projet configuré et aux droits strictement nécessaires à la lecture du dépôt, à la création d’un commit et, si ce mode est autorisé, à la gestion d’une merge request. Leur rotation ou révocation ne doit pas nécessiter de modifier un bundle exporté.
+Les jetons utilisés pour publier vers GitLab ou GitHub sont référencés depuis
+le mécanisme de secrets de l’application. Ils doivent être limités au projet ou
+dépôt configuré et aux droits strictement nécessaires à sa lecture, à la
+création d’un commit et, si ce mode est autorisé, à la gestion d’une merge
+request ou pull request. Leur rotation ou révocation ne doit pas nécessiter de
+modifier un bundle exporté.
 
 ### ENF-005 — Isolation d’exécution
 
@@ -1240,7 +1873,10 @@ L’intégration ne doit pas dépendre d’une API propriétaire de GitHub ou Gi
 
 Les adaptateurs GitHub Actions et GitLab CI sont des modèles de commodité construits sur ce contrat portable.
 
-L’adaptateur de publication manuelle peut utiliser l’API d’une instance GitLab configurée. Cette dépendance concerne uniquement le transfert du bundle vers le dépôt ; elle ne doit jamais être nécessaire à l’exécution locale ou en CI d’un bundle déjà exporté.
+Les adaptateurs de publication manuelle peuvent utiliser les API d’une instance
+GitLab ou GitHub configurée. Cette dépendance concerne uniquement le transfert
+du bundle vérifié vers le dépôt ; elle ne doit jamais être nécessaire à sa
+sélection, à son exécution locale ou à son exécution en CI.
 
 ### ENF-012 — Vérifications système des préconditions
 
@@ -1274,15 +1910,33 @@ Regroupe des plans de test, une cible, des profils autorisés et une politique d
 
 ### Plan de test
 
-Décrit les objectifs, le périmètre, la base de test, l’approche de test, les risques, les ressources, les contraintes, les critères d’entrée et de sortie, les besoins d’environnement et de données, ainsi que l’ordonnancement prévisionnel. Il référence une ou plusieurs suites de tests et peut être versionné et exporté ; il n’est pas lui-même exécuté.
+Décrit les objectifs, le périmètre, la base de test, les risques, les ressources, les contraintes, les critères d’entrée et de sortie, les besoins d’environnement et de données, ainsi que l’ordonnancement prévisionnel. Il référence exactement un identifiant et une version de profil d’approche de test, ainsi qu’une ou plusieurs suites de tests. Il peut être versionné et exporté ; il n’est pas lui-même exécuté.
+
+### Profil d’approche de test
+
+Décrit de manière administrable et versionnée la façon dont les tests sont
+sélectionnés et conçus : niveaux, types, techniques de conception, analyse des
+risques, stratégie d’automatisation, éléments de preuve et instructions de
+génération. Sa description canonique est stockée en YAML. La dernière version
+active est proposée aux nouveaux plans ; les versions historiques restent
+résolubles pour les plans qui les référencent.
 
 ### Suite de tests
 
 Assemble une sélection ordonnée de cas de test ou de sous-suites en vue d’une exécution déterminée. La résolution de cet ordre et des dépendances produit une procédure de test. La suite possède un identifiant stable, un objectif d’exécution, des préconditions et postconditions communes facultatives, ainsi que des valeurs par défaut de type de test et de déclaration d’exécution. Elle peut être sélectionnée et exécutée indépendamment lorsque ses dépendances sont satisfaites.
 
-### Cible GitLab d’entreprise
+### Sélection de publication
 
-Décrit une instance GitLab autorisée, un projet, une stratégie de branche, un chemin de destination, un mode de publication et une référence de secret. Elle ne contient jamais le jeton d’accès lui-même.
+Fige un sous-ensemble résolu de suites et cas d’un plan, leurs versions,
+dépendances, ordre et empreintes, ainsi que l’exécution locale réussie qui les a
+vérifiés. Elle constitue l’entrée immuable d’une publication manuelle.
+
+### Cible Git de développement
+
+Décrit un fournisseur GitLab ou GitHub autorisé, une instance, un projet ou
+dépôt, l’environnement logique `development`, une stratégie de branche, un
+chemin de destination, un mode de publication et une référence de secret. Elle
+ne contient jamais le jeton d’accès lui-même.
 
 ### Nœud hiérarchique
 
@@ -1319,6 +1973,14 @@ Associe une version de cas de test à des instructions Playwright générées ou
 ### Exécution de test
 
 Associe une suite de tests ou un cas de test et son script immuable à une version de l’objet de test, un environnement, un déclencheur, un résultat de test, des journaux, des rapports et des preuves.
+
+### Trace d’exécution
+
+Associe une exécution, un cas de test, une tentative et un format
+`playwright` ou `har` à un fichier, une empreinte, un état de finalisation et
+une politique de conservation. Une sélection au niveau d’un plan de test
+possède un index de traces, mais chaque trace reste rattachée au cas de test et
+à la tentative qui l’ont produite.
 
 ### Historique des résultats de test
 
@@ -1371,9 +2033,9 @@ L’architecture doit optimiser en priorité :
                                                      Application cible
 
                          ARTEFACT VERSIONNÉ
-                            Tests Playwright
-                            + manifeste
-                            + arborescence
+                            Spécifications et tests Playwright
+                            + séquences de génération
+                            + données et manifeste
                             + configuration
 
                          PHASE D’EXÉCUTION
@@ -1382,7 +2044,7 @@ L’architecture doit optimiser en priorité :
 │ GitLab CI, CLI  │       │ ou paquet Python    │       │ cible         │
 └─────────────────┘       └──────┬───────────────┘       └───────────────┘
                                  │
-                                 ├── JUnit XML, traces, captures, code de sortie
+                                 ├── JUnit XML, traces Playwright/HAR, captures, code de sortie
                                  └── LLM d’exécution optionnel et borné
 ```
 
@@ -1415,7 +2077,8 @@ L’application de conception ne lance jamais de script de test dans son propre 
 - **Interface :** CLI non interactive.
 - **Distribution :** paquet Python verrouillé et image OCI incluant les navigateurs compatibles.
 - **Entrées :** bundle de scripts de test, sélecteur de suite de tests, de cas de test ou de tags, URL cible, configuration et références de secrets.
-- **Sorties :** code de sortie, JUnit XML, JSON structuré, journaux, captures et traces.
+- **Sorties :** code de sortie, JUnit XML, JSON structuré, journaux, captures,
+  traces Playwright et archives HAR.
 - **Dépendance au service web :** aucune pour exécuter un bundle déjà exporté.
 - **Dépendance à un LLM :** aucune par défaut.
 - **Isolation :** utilisateur non privilégié, racine en lecture seule, bundle en lecture seule, artefacts séparés, capacités supprimées, limites de ressources et réseau autorisé explicitement.
@@ -1432,7 +2095,7 @@ sentinelle_fonctionnelle/
 │   ├── artifacts/     # Volume local puis stockage objet
 │   ├── configuration/ # Modèles, phrases, tags, environnements et cibles Git
 │   ├── browser/       # Playwright pour la validation interactive
-│   └── git/           # Export local et publication manuelle vers GitLab
+│   └── git/           # Export local et publication manuelle vers GitLab/GitHub
 ├── web/               # API FastAPI, vues et ressources statiques
 ├── generation/        # Génération déterministe d’un candidat depuis le brouillon structuré
 └── security/          # Politiques de destination, secrets et autorisations
@@ -1479,16 +2142,35 @@ Les dépendances pointent vers le domaine et les ports applicatifs. Le domaine n
 
 ### 10.7 Contrats entre conception et exécution
 
-La frontière est un bundle versionné contenant au minimum :
+La frontière d’entrée est un bundle versionné et montable en lecture seule. Les
+résultats sont écrits dans une arborescence d’artefacts séparée. Les deux
+arborescences utilisent des identifiants ou slugs stables, portables et
+indépendants des libellés affichés à l’utilisateur :
 
 ```text
 sentinelle-bundle/
 ├── sentinelle-manifest.json
-├── hierarchy.yaml
+├── publication-selection.json
+├── specifications/
+│   ├── plan.yaml
+│   ├── hierarchy.yaml
+│   └── cases/
+│       └── <case-id>.yaml
+├── generation/
+│   └── cases/
+│       └── <case-id>/
+│           └── <case-version>/
+│               ├── sequence.jsonl
+│               └── metadata.json
 ├── tests/
-├── pages/
-├── fixtures/
-├── data/
+│   ├── cases/
+│   │   └── test_<case-slug>.py
+│   ├── pages/
+│   └── fixtures/
+├── test-data/
+│   ├── datasets/
+│   └── environments/
+├── config/            # Paramètres d’exécution versionnables, sans secret
 ├── load-profiles/     # Profils de charge versionnés, sans moteur embarqué dans le MVP
 ├── docs/
 │   ├── functional.md
@@ -1500,7 +2182,60 @@ sentinelle-bundle/
 ├── requirements.lock
 ├── pytest.ini
 └── README.md
+
+artifacts/
+└── executions/
+    └── <execution-id>/
+        ├── execution.json
+        ├── results/
+        │   ├── summary.json
+        │   ├── junit.xml
+        │   ├── cases/
+        │   │   └── <case-id>.json
+        │   └── logs/
+        └── traces/
+            ├── index.json
+            └── cases/
+                └── <case-id>/
+                    └── <attempt-id>/
+                        ├── playwright/
+                        │   └── trace.zip
+                        └── har/
+                            └── network.har.zip
 ```
+
+Cette organisation sépare clairement :
+
+- le **code des tests** dans `tests/` ;
+- la **séquence de prompts de génération** dans `generation/` ;
+- les **données de test** dans `test-data/` ;
+- les **résultats des tests** dans `results/` ;
+- les **traces des tests** dans `traces/`.
+
+`sequence.jsonl` conserve dans l’ordre les messages assainis ayant réellement
+contribué à la génération, le rôle de chaque message, l’identifiant et la
+version du modèle ou gabarit de prompt, les réponses structurées et la décision
+utilisateur associée. `metadata.json` conserve les empreintes, versions,
+paramètres non secrets et liens vers le cas et le script produits. La
+conversation exploratoire sans effet sur le script n’est pas recopiée. Toute
+valeur secrète est remplacée par une référence ou un marqueur de masquage.
+
+`execution.json` décrit le sélecteur utilisé (`case`, `suite`, `plan` ou tags),
+les versions résolues, l’environnement logique, la politique de capture
+effective et l’état de finalisation. `traces/index.json` inventorie les traces
+par cas et tentative, avec leur format, chemin relatif, empreinte, taille, état
+de finalisation et éventuelle cause d’absence. Pour une sélection par plan, cet
+index constitue le point d’entrée de la trace agrégée du plan.
+
+`publication-selection.json` est présent dans un bundle préparé pour
+publication. Il contient la sélection figée définie par `EF-016.3`, référence
+l’exécution locale qui l’a vérifiée et participe à l’empreinte globale du
+bundle. Un export destiné uniquement à une vérification locale peut l’omettre.
+
+Les répertoires `sentinelle-bundle/` et `artifacts/` ne doivent pas
+être imbriqués. Le premier est versionnable et immuable pendant une exécution ;
+le second est généré, soumis à une politique de conservation et ignoré par Git
+par défaut. Aucun résultat ou trace ne doit être réécrit dans le bundle.
 
 Le manifeste indique :
 
@@ -1515,6 +2250,10 @@ Le manifeste indique :
 - les tags et chemins hiérarchiques ;
 - la déclaration d’exécution de chaque cas de test ;
 - les politiques d’artefacts et d’usage du LLM d’exécution ;
+- les chemins des spécifications, scripts, séquences de génération et données
+  de test ;
+- l’éventuelle sélection de publication et l’exécution locale de vérification
+  associée ;
 - les fichiers de documentation et modèles CI associés ;
 - une empreinte de chaque fichier et une empreinte globale du bundle ;
 - l’état d’approbation et l’empreinte validée individuellement.
@@ -1665,22 +2404,38 @@ Le modèle utilise `on_merge_request` pour un pipeline de merge request. Les job
 
 Les variables sensibles utilisent les variables CI/CD masquées et protégées de GitLab et ne sont disponibles que sur les branches ou environnements protégés. Les pipelines de merge requests externes ou non approuvées n’accèdent à aucune variable protégée ni cible sensible. L’exécuteur GitLab doit lui-même être non privilégié, sans montage de socket de runtime, et appliquer les limites de ressources et la politique réseau définies par `ENF-005`.
 
-### 10.10.1 Publication vers un GitLab d’entreprise
+### 10.10.1 Publication vers un environnement de développement Git
 
-La publication manuelle utilise un port applicatif indépendant du générateur et un adaptateur GitLab remplaçable. La configuration versionnable contient uniquement les cibles et règles non secrètes ; le jeton est résolu au moment de l’action depuis le mécanisme de secrets.
+La publication manuelle utilise un port applicatif indépendant du générateur et
+des adaptateurs GitLab et GitHub remplaçables. La configuration versionnable
+contient uniquement les cibles et règles non secrètes ; le jeton est résolu au
+moment de l’action depuis le mécanisme de secrets.
 
 Le flux est le suivant :
 
-1. l’utilisateur prépare et prévisualise un export local complet ;
-2. il sélectionne une cible GitLab administrée ;
-3. l’application vérifie la cible, les droits, la branche distante et le chemin autorisé ;
-4. elle calcule le diff entre le bundle prévisualisé et le contenu distant ;
-5. l’utilisateur confirme explicitement la publication ;
-6. l’adaptateur crée ou met à jour une branche sans réécriture forcée de l’historique ;
-7. il crée ou met à jour une merge request uniquement si le profil l’autorise ;
-8. l’application conserve l’empreinte publiée, l’identifiant du commit, l’éventuelle merge request et le résultat dans le journal d’audit.
+1. l’utilisateur prépare une sélection depuis un plan et l’exécute localement ;
+2. l’application vérifie que les versions retenues ont toutes réussi avec
+   l’empreinte exacte du bundle ;
+3. elle fige `publication-selection.json` et prévisualise l’export complet ;
+4. l’utilisateur sélectionne une cible GitLab ou GitHub administrée pour
+   l’environnement de développement ;
+5. l’application vérifie la cible, les droits, la branche distante et le chemin
+   autorisé ;
+6. elle calcule le diff entre le bundle vérifié et le contenu distant ;
+7. l’utilisateur confirme explicitement la publication ;
+8. l’adaptateur crée ou met à jour une branche sans réécriture forcée de
+   l’historique ;
+9. il crée ou met à jour une merge request ou pull request uniquement si le
+   profil l’autorise ;
+10. l’application conserve la sélection, l’exécution locale, l’empreinte
+    publiée, l’identifiant du commit, l’éventuelle demande de fusion et le
+    résultat dans le journal d’audit.
 
-L’adaptateur doit accepter les URL d’instances auto-hébergées, les autorités de certification d’entreprise configurées et les proxys administrés. Il doit refuser les redirections vers une autre origine, les certificats invalides non approuvés et toute cible sortant du projet configuré.
+Les adaptateurs doivent accepter les URL d’instances auto-hébergées lorsqu’elles
+sont prises en charge, les autorités de certification d’entreprise configurées
+et les proxys administrés. Ils doivent refuser les redirections vers une autre
+origine, les certificats invalides non approuvés et toute cible sortant du
+projet ou dépôt configuré.
 
 ### 10.11 Évolutivité après le MVP
 
@@ -1699,7 +2454,12 @@ Ces capacités ne doivent pas complexifier le déploiement minimal du MVP.
 
 ### 11.1 Objectif
 
-Le MVP doit démontrer qu’un utilisateur peut élaborer un plan de test, organiser ses cas de test en suites, les valider individuellement, les exporter et exécuter leurs scripts Playwright en CI sans dépendre d’un LLM pendant l’exécution nominale.
+Le MVP doit démontrer qu’un utilisateur peut élaborer un plan de test,
+organiser ses cas de test en suites, les valider individuellement, lancer depuis
+son poste la sélection résolue d’un plan, retenir les cas qui fonctionnent, puis
+publier exactement cette sélection vers un environnement de développement
+GitLab ou GitHub et l’exécuter en CI sans dépendre d’un LLM pendant l’exécution
+nominale.
 
 ### 11.2 Périmètre fonctionnel inclus
 
@@ -1731,13 +2491,16 @@ Le MVP est livré en deux tranches obligatoires. La première prouve la valeur f
 22. une démonstration E2E sur une application cible contrôlée ;
 23. des adaptateurs OpenAI, Ollama et Mistral configurables et vérifiables indépendamment ;
 24. une procédure de connexion complète, versionnée et validée pour chacun de ces trois fournisseurs ;
-25. des écrans distincts pour le projet, le plan et le cas, avec création hiérarchique guidée et sections séparées pour les étapes, données et résultats attendus.
+25. des écrans distincts pour le projet, le plan et le cas, avec création hiérarchique guidée et sections séparées pour les étapes, données et résultats attendus ;
+26. le lancement manuel depuis le poste de l’utilisateur de l’ensemble ou d’un
+    sous-ensemble résolu des cas d’un plan, avec résultats et traces locaux.
 
 #### Tranche B — Exécution autonome et CI
 
 1. un runner autonome capable de sélectionner un cas de test, une suite de tests ou des tags ;
 2. des rapports console, JSON et JUnit XML ;
-3. des captures et traces en cas d’échec ;
+3. des captures et, selon la politique choisie, des traces Playwright et HAR
+   pour un cas de test ou pour tous les cas sélectionnés depuis un plan ;
 4. un bundle versionnable dont l’empreinte approuvée est vérifiée ;
 5. une image OCI de conception et une image OCI de runner isolé ;
 6. un fichier Compose appliquant les séparations de volumes et de secrets ;
@@ -1749,7 +2512,14 @@ Le MVP est livré en deux tranches obligatoires. La première prouve la valeur f
 12. une démonstration CI sans secret sur une cible contrôlée ;
 13. la génération et la prévisualisation d’une documentation fonctionnelle lisible pour le plan de test et les suites exportées ;
 14. la génération de guides de déploiement cohérents avec les modèles GitLab CI et GitHub Actions exportés ;
-15. la configuration d’une cible GitLab d’entreprise et la publication manuelle d’un bundle sur une branche dédiée, avec création optionnelle d’une merge request.
+15. la configuration de cibles GitLab et GitHub pour l’environnement de
+    développement ;
+16. un mode de sélection par arbre et filtres, avec résolution explicite des
+    dépendances et exclusions ;
+17. le gel d’une sélection publiable liée à l’exécution locale réussie et à
+    l’empreinte exacte du bundle ;
+18. la publication manuelle de ce bundle sur une branche dédiée, avec création
+    optionnelle d’une merge request GitLab ou d’une pull request GitHub.
 
 ### 11.3 Usage du LLM dans le MVP
 
@@ -1842,6 +2612,24 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 |  |  |  |  | 70 | `ACC-070` |
 |  |  |  |  | 71 | `ACC-071` |
 |  |  |  |  | 72 | `ACC-072` |
+|  |  |  |  | 73 | `ACC-073` |
+|  |  |  |  | 74 | `ACC-074` |
+|  |  |  |  | 75 | `ACC-075` |
+|  |  |  |  | 76 | `ACC-076` |
+|  |  |  |  | 77 | `ACC-077` |
+|  |  |  |  | 78 | `ACC-078` |
+|  |  |  |  | 79 | `ACC-079` |
+|  |  |  |  | 80 | `ACC-080` |
+|  |  |  |  | 81 | `ACC-081` |
+|  |  |  |  | 82 | `ACC-082` |
+|  |  |  |  | 83 | `ACC-083` |
+|  |  |  |  | 84 | `ACC-084` |
+|  |  |  |  | 85 | `ACC-085` |
+|  |  |  |  | 86 | `ACC-086` |
+|  |  |  |  | 87 | `ACC-087` |
+|  |  |  |  | 88 | `ACC-088` |
+|  |  |  |  | 89 | `ACC-089` |
+|  |  |  |  | 90 | `ACC-090` |
 
 1. L’interface seule démarre avec une image OCI, un volume et une configuration documentée ; le MVP complet démarre avec le fichier Compose et son runner isolé.
 2. Un utilisateur crée un plan de test et une arborescence contenant au moins une suite de tests, une sous-suite et deux cas de test.
@@ -1874,7 +2662,7 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 29. Le résultat distingue clairement validation de conception et exécution automatisée.
 30. Les champs du formulaire affichent un libellé, une aide, un exemple et une règle de validation.
 31. Un utilisateur métier peut définir un cas de test sans écrire de YAML.
-32. Les modèles de cas de test, types de test, tags, phrases d’intention et environnements sont chargés depuis les fichiers de configuration administrables.
+32. Les profils d’approche de test, modèles de cas de test, types de test, tags, phrases d’intention et environnements sont chargés depuis les fichiers de configuration administrables.
 33. Une précondition saisie en texte est transformée en dépendances candidates puis confirmée avant génération du code.
 34. Les vérifications système échouées bloquent l’exécution et ne peuvent pas être contournées par le LLM.
 35. Les attributs `requirements` et `business_rules` sont conservés dans la définition et l’export du cas de test.
@@ -1891,8 +2679,8 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 46. Le MVP valide, versionne et exporte un profil de charge, mais refuse de le présenter comme exécuté sans adaptateur de charge vérifié.
 47. Un export manuel contient une documentation fonctionnelle Markdown correspondant au plan de test et aux seules versions approuvées des suites et cas de test sélectionnés, lisible sans consulter les scripts ou la conversation et dépourvue de secret.
 48. Le bundle contient deux guides de déploiement distincts, GitLab CI et GitHub Actions, dont les commandes, variables, secrets référencés, rapports et versions correspondent au manifeste et aux modèles de pipeline exportés.
-49. Un administrateur configure une instance GitLab d’entreprise, vérifie sa connectivité sans écriture et limite la cible à un projet, une stratégie de branche, un chemin et une référence de secret.
-50. Un utilisateur autorisé prévisualise puis confirme manuellement la publication du bundle exact vers GitLab ; un commit traçable ou une merge request est créé sans `force push`, tandis qu’une divergence distante ou une cible hors périmètre bloque l’écriture et produit un résultat explicite.
+49. Un administrateur configure une cible GitLab ou GitHub, vérifie sa connectivité sans écriture et la limite à un environnement de développement, un projet ou dépôt, une stratégie de branche, un chemin et une référence de secret.
+50. Un utilisateur autorisé prévisualise puis confirme manuellement la publication du bundle exact vers la cible Git ; un commit traçable et, selon le fournisseur, une merge request ou pull request est créé sans `force push`, tandis qu’une divergence distante ou une cible hors périmètre bloque l’écriture et produit un résultat explicite.
 51. En mode en ligne, deux utilisateurs possédant des appartenances différentes ne peuvent lister, consulter ou modifier que leurs projets autorisés ; la fourniture directe de l’identifiant d’un autre projet est refusée sans révéler son contenu.
 52. Le même test de contrat crée plusieurs projets et une arborescence dans les compositions `local` et `online` ; les résultats métier et formats obtenus sont équivalents, tandis que le mode en ligne refuse toute requête sans identité authentifiée.
 53. En mode local, un utilisateur crée deux projets, une arborescence et un historique de résultat dans SQLite ; après fermeture et nouvelle composition de l’application sur le même fichier, les identifiants, chemins, ordres et valeurs d’historique sont restaurés, et une nouvelle exécution des migrations ne modifie ni ne duplique les données.
@@ -1905,16 +2693,78 @@ Chaque critère possède un identifiant stable. Le tableau suivant établit le m
 60. Démarrée par le point d’entrée réel en mode local, l’application répond à une sonde de santé et sert une interface web qui permet de créer deux projets, un plan de test, une suite de tests et une arborescence de cas de test ; une nouvelle composition sur le même fichier SQLite affiche les mêmes données et identifiants.
 61. Le serveur local écoute par défaut uniquement sur l’adresse de boucle locale, accepte un fichier SQLite, une adresse et un port explicitement configurés, crée le répertoire de données nécessaire et refuse le mode `online` avec un diagnostic explicite tant que ses adaptateurs obligatoires ne sont pas disponibles.
 62. Depuis l’interface web, un utilisateur renomme, déplace, ordonne puis archive un nœud ; son identifiant reste stable, l’archivage de ses descendants est explicite et l’état complet est restauré après redémarrage.
-63. Sans écrire de YAML, un utilisateur définit quatre cas de test respectivement en pas-à-pas, Given/When/Then, tableau d’exemples et checklist ; chaque saisie valide produit une définition canonique consultable, tandis qu’une action sans résultat, un scénario BDD sans résultat, un tableau irrégulier ou une checklist vide est refusé explicitement.
+63. Sans écrire de YAML, un utilisateur définit un cas dans un workflow pas-à-pas, ajoute, duplique, supprime et réordonne ses cartes ; chaque carte conserve son action et sa validation structurées, tandis qu’un ancien format reste lisible mais exige une requalification avant confirmation.
 64. Une définition fonctionnelle conserve l’objectif, l’acteur, l’environnement, les préconditions, données, postconditions, exigences, règles métier et déclaration d’exécution ; une modification incrémente sa version et un redémarrage sur le même fichier SQLite restaure exactement le mode, la version et le contenu.
-65. Un projet peut afficher les mêmes cas de test dans l’arbre ou dans des vues calculées par tag, exigence, règle métier et mode de spécification, puis les rechercher par texte ; changer de vue ne modifie ni parent, ni ordre, ni identifiant.
+65. Un projet peut afficher les mêmes cas de test dans l’arbre ou dans des vues calculées par tag, exigence et règle métier, puis les rechercher par texte ; changer de vue ne modifie ni parent, ni ordre, ni identifiant.
 66. Un même tableau valide importé en CSV UTF-8 puis en XLSX produit les mêmes colonnes et lignes canoniques ; un fichier trop volumineux, vide, sans itération, avec en-tête vide ou dupliqué, archive invalide, extension inconnue ou formule Excel est refusé avant persistance.
 67. À partir de quatre lignes, la stratégie série produit quatre lots d’une itération dans l’ordre source, la stratégie parallèle produit des lots respectant la concurrence maximale et la stratégie aléatoire produit le nombre demandé d’itérations sans doublon ; une même graine reproduit le même ordre.
 68. Depuis l’interface web, un utilisateur associe un CSV ou XLSX à un cas de test, choisit série, parallèle ou aléatoire et consulte les colonnes, lignes et lots prévus ; une modification incrémente la version et un redémarrage SQLite restaure exactement les données, l’empreinte et la stratégie sans conserver ni exécuter le fichier actif.
 69. Depuis l’accueil, un utilisateur crée un projet, complète un plan de test dans un formulaire distinct puis atteint la page de ce plan ; le fil d’Ariane et les URL conservent les identifiants du projet et du plan après rechargement.
 70. Depuis un plan, un utilisateur crée une suite de tests et un dossier, puis crée un cas directement sous chacun d’eux ; la création d’un cas à la racine du plan ou sous un autre cas est refusée explicitement.
-71. L’éditeur d’un cas affiche dans cet ordre le contexte, les étapes de test, les données de test et les résultats attendus ; la section des données reste visible sans donnée et un mode pas-à-pas contenant un nombre différent d’étapes et de résultats est refusé.
+71. L’éditeur d’un cas affiche dans cet ordre le contexte, les pages et champs, les étapes, les données et la structure de génération ; la section des données reste visible sans donnée et une étape incomplète produit un diagnostic ciblé.
 72. L’utilisateur ouvre un cas depuis l’arbre, enregistre sa définition, revient au plan puis rouvre le même cas ; le projet, le plan, le parent, les sections et les valeurs enregistrées sont restaurés sans confusion avec une suite, un dossier ou un autre cas.
+73. Un administrateur ouvre la configuration des approches de test, crée un profil valide puis modifie ce profil ; le fichier YAML contient les versions `1` et `2`, les nouveaux plans proposent la dernière version active dans une liste sans champ libre et un plan déjà enregistré conserve l’identifiant et la version initialement sélectionnés.
+74. Depuis un cas, un utilisateur analyse une page HTML de la cible du projet et obtient les champs, boutons, liens et titres avec leurs références, rôles, libellés et localisateurs candidats ; une autre origine, une redirection externe, une ressource non HTML ou une page trop volumineuse est refusée.
+75. L’utilisateur enregistre un workflow contenant profils, références de fixtures et secrets, préparation, nettoyage, politiques, délai, pages et étapes ; un redémarrage SQLite restaure exactement la structure versionnée et son aperçu JSON.
+76. L’éditeur ajoute et réordonne des cartes action/validation alimentées par la palette de page ; une action nécessitant une cible, une valeur requise absente, un workflow sans assertion ou une confirmation avec hypothèse ouverte est refusé explicitement.
+77. L’accueil donne accès à un tutoriel détaillé couvrant la configuration, l’analyse de page, la syntaxe des références, la rédaction des étapes, la finalisation LLM et la vérification de la structure de génération ; les nouveaux champs possèdent une infobulle et un lien documentaire.
+78. Un administrateur crée un profil d’accès LLM contenant fournisseur, endpoint, modèle, limites et noms de variables d’environnement ; le YAML conserve ces références et versions sans jamais conserver une valeur de clé envoyée au formulaire.
+79. Un administrateur crée un profil de génération lié à une version exacte d’accès LLM et définit langage, framework, chemins relatifs, motifs, preuves, politique d’écriture, validations, instructions et limite de fichiers ; un chemin dangereux, une validation libre ou une référence inconnue est refusé.
+80. L’éditeur d’un cas permet de sélectionner les versions d’accès LLM et de génération ; le JSON, SQLite et un redémarrage restaurent les références, tandis qu’une liaison incohérente entre les deux profils est refusée.
+81. Pour l’exécution d’un cas de test, l’utilisateur active la capture
+    Playwright et HAR ; chaque tentative produit un `trace.zip` et un
+    `network.har.zip` consultables, rattachés à la version exacte du cas et
+    inventoriés avec leur empreinte, tandis que les secrets configurés sont
+    absents des fichiers persistés.
+82. Pour une sélection correspondant à une version d’un plan de test, le runner
+    applique la politique de capture à tous les cas descendants effectivement
+    sélectionnés et produit un index qui relie chaque résultat et tentative à
+    sa trace Playwright et HAR ou indique explicitement la cause de son absence,
+    sans présenter le plan comme une unité exécutable.
+83. Un export présente une arborescence stable séparant spécifications, code des
+    tests, séquences assainies de prompts de génération et données de test dans
+    le bundle en lecture seule, puis résultats et traces dans les artefacts
+    d’exécution ; deux exécutions ne s’écrasent pas et aucun artefact
+    d’exécution n’est écrit dans le bundle.
+84. Depuis la page d’un plan ou la CLI sur son poste, l’utilisateur lance
+    manuellement l’ensemble ou un sous-ensemble de ses cas avec le même bundle
+    et le même moteur de sélection que la CI ; les versions résolues, résultats,
+    codes de sortie et traces sont conservés sans présenter le plan comme une
+    unité exécutable.
+85. Le mode Sélection et publication permet d’inclure ou exclure suites et cas,
+    de filtrer l’arbre et de résoudre les dépendances ; il refuse de figer une
+    sélection contenant un cas qui n’est ni approuvé ni actif, qui est en
+    échec, non exécuté ou différent de la version vérifiée, puis produit
+    `publication-selection.json` avec l’empreinte du bundle et l’exécution
+    locale associée.
+86. L’utilisateur choisit une cible de développement GitLab ou GitHub,
+    prévisualise le dépôt, la branche, le chemin, les cas, fichiers et
+    différences, puis publie après confirmation exactement la sélection
+    vérifiée ; le commit et l’éventuelle merge request ou pull request sont
+    audités, tandis qu’une modification d’empreinte, une divergence ou une
+    cible hors périmètre bloque la publication.
+87. Sur les catalogues de projets, plans, approches, accès LLM et profils de
+    génération, le formulaire de création est replié sous la liste, s’ouvre par
+    un bouton `+`, reçoit le focus et se replie sans perdre sa saisie ; l’utilisateur
+    choisit l’un des sept thèmes depuis l’en-tête et retrouve ce choix après une
+    navigation ou un rechargement, tandis qu’une valeur locale inconnue revient
+    au thème Forêt ; le thème Défense affiche le bloc-marque ministériel et le
+    pictogramme Rafale depuis les ressources locales, avec les couleurs officielles
+    Bleu France et Rouge Marianne.
+88. Depuis le catalogue, un utilisateur autorisé modifie le projet concerné : nom,
+    description, sa cible web et sa politique de sécurité ; les valeurs sont
+    restaurées après redémarrage, une saisie invalide ne produit aucune mutation
+    partielle et la cible déjà enregistrée dans chaque plan reste inchangée.
+89. Dans le catalogue, chaque projet possède sa commande de modification. Après
+    ouverture d’un projet, les plans sont les racines d’une arborescence unique qui
+    affiche dans l’ordre plans, dossiers, suites et cas ; les quatre niveaux sont
+    modifiables sans passer par une page de plan séparée, les boutons `+` créent le
+    niveau enfant attendu et le retour d’un cas retrouve cette arborescence.
+90. Un profil de génération affiche et versionne les skills utilisés. Depuis un
+    cas confirmé, l’utilisateur ouvre un prompt final demandant explicitement la
+    production du code, retrouve les versions exactes du LLM, du profil et des
+    skills, puis accède séparément au téléchargement du code candidat ; le prompt
+    censure les valeurs des champs de mot de passe et porte une empreinte stable.
 
 ## 13. Stratégie de validation et de développement
 
@@ -1937,6 +2787,12 @@ Les cas de test automatisés doivent couvrir au minimum :
 - la hiérarchie et les déplacements ;
 - la matrice des parents autorisés, notamment les cas sous suite ou dossier et l’interdiction des cas à la racine du plan ;
 - le parcours des formulaires projet, plan et cas, leurs URL stables et leur fil d’Ariane ;
+- le dévoilement progressif des formulaires de création, le focus, le repli sans
+  perte et la présentation pleine largeur des catalogues ;
+- la liste fermée des thèmes, leur application globale, leur persistance locale
+  et le repli sûr sur le thème par défaut ; pour les thèmes institutionnels, les
+  ressources locales, leur provenance, leur intégrité visuelle et leur usage
+  autorisé sont également contrôlés ;
 - les sections séparées des étapes, données et résultats attendus et leur validation croisée ;
 - les sept types de test, leur héritage et les incompatibilités ;
 - la synthèse factuelle des descriptions ;
@@ -1945,7 +2801,8 @@ Les cas de test automatisés doivent couvrir au minimum :
 - les modèles de cas de test et leurs questions de clarification ;
 - le catalogue de phrases d’intention et sa configuration ;
 - la validation des fichiers de configuration administrables ;
-- les cibles GitLab d’entreprise, leurs restrictions de projet, branche, chemin, TLS et référence de secret ;
+- les cibles GitLab et GitHub de développement, leurs restrictions de dépôt,
+  branche, chemin, TLS et référence de secret ;
 - les préconditions textuelles, leur confirmation et la résolution codée des dépendances ;
 - le blocage des contrôles système échoués ;
 - les données de test, profils d’environnement et leurs références ;
@@ -1971,8 +2828,19 @@ Les cas de test automatisés doivent couvrir au minimum :
 - le contrat du bundle ;
 - la génération de la documentation fonctionnelle et son absence d’éléments non approuvés ou secrets ;
 - la cohérence des guides de déploiement GitLab CI et GitHub Actions avec le manifeste et les modèles exportés ;
-- la prévisualisation, la confirmation, l’audit et les conflits de publication manuelle vers GitLab ;
+- le lancement manuel depuis le poste d’une sélection complète ou partielle
+  issue d’un plan ;
+- la sélection par arbre et filtres, la résolution des dépendances et le refus
+  des versions non vérifiées ;
+- le lien immuable entre sélection, exécution locale, bundle et empreinte ;
+- la prévisualisation, la confirmation, l’audit et les conflits de publication
+  manuelle vers GitLab et GitHub ;
 - les codes de sortie et rapports du runner ;
+- les politiques de capture, traces Playwright et HAR d’un cas de test ;
+- la sélection par plan, l’index des traces par cas et tentative, ainsi que les
+  traces absentes ou incomplètes ;
+- la séparation entre code, séquences de génération, données, résultats et
+  traces dans les arborescences d’export ;
 - l’exécution E2E sur une cible de démonstration contrôlée ;
 - les modèles GitHub Actions et GitLab CI.
 - l’isolation des projets entre utilisateurs et le refus des identifiants non autorisés ;
@@ -1993,7 +2861,7 @@ Cette section complète les exigences `EF-*` et `ENF-*`. Les identifiants `GEN-*
 | Génération | `GEN-001` à `GEN-014` | modèle intermédiaire, traduction, code, personnalisation et empreintes | cadrées ; implémentation à suivre |
 | Charge | `LOAD-001` à `LOAD-011` | profils, paramètres, seuils, export et futur adaptateur de charge | définition/export MVP ; exécution post-MVP |
 | Documentation | `DOC-001` à `DOC-007` | vérité d’implémentation, scénarios, configuration, lancement, connexions LLM et validation HTML | cadrée ; à maintenir avec chaque tranche |
-| Acceptation | `ACC-001` à `ACC-072` | vérifications observables du MVP | à transformer en cas de test |
+| Acceptation | `ACC-001` à `ACC-090` | vérifications observables du MVP | à transformer en cas de test |
 
 Une exigence ne peut être marquée comme implémentée que lorsqu’un cas de test ou une démonstration vérifie son comportement. Les statuts de développement (`à faire`, `en cours`, `implémentée`, `vérifiée`) doivent être suivis dans l’outil de gestion du projet, sans modifier l’identifiant stable de la spécification.
 
@@ -2001,7 +2869,70 @@ Une exigence ne peut être marquée comme implémentée que lorsqu’un cas de t
 
 #### GEN-001 — Entrée de génération
 
-Le générateur reçoit uniquement une version structurée confirmée du cas de test, le modèle de cas de test appliqué, les configurations administratives validées et les versions de générateur déclarées. Il ne reçoit pas directement l’historique brut de conversation.
+Le générateur reçoit uniquement une version structurée confirmée du cas de test, le modèle de cas de test appliqué, la version du profil d’approche de test référencée par le plan, les autres configurations administratives validées et les versions de générateur déclarées. Il ne reçoit pas directement l’historique brut de conversation. Les niveaux, types, techniques, règles de risque, stratégie d’automatisation, exigences de preuve et instructions de génération du profil sont résolus explicitement et leur provenance est conservée.
+
+L’entrée case-level respecte le contrat suivant ; les identifiants, versions,
+chemins, types, tags et configurations effectives sont ajoutés par
+l’orchestrateur avant la construction du modèle intermédiaire :
+
+```json
+{
+  "schema_version": 1,
+  "start_url": "https://recette.example.net/login",
+  "environment_profile": "recette-eu",
+  "actor_profile": "client-authentifie",
+  "functional_intent": "authentication-login-success@1",
+  "fixture_refs": ["client-standard"],
+  "secret_refs": ["client-password"],
+  "setup": ["Le compte client actif existe"],
+  "cleanup": ["Fermer la session"],
+  "evidence_policy": "on_failure",
+  "llm_policy": "design_only",
+  "llm_access_profile": "openai-recette@1",
+  "code_generation_profile": "python-playwright@1",
+  "timeout_seconds": 30,
+  "assumptions": [],
+  "confirmed": true,
+  "pages": [
+    {
+      "url": "https://recette.example.net/login",
+      "title": "Connexion",
+      "fingerprint": "sha256...",
+      "elements": [
+        {
+          "reference": "page:login#email",
+          "kind": "input",
+          "role": "textbox",
+          "label": "Adresse électronique",
+          "input_type": "email",
+          "locator": {"strategy": "label", "value": "Adresse électronique"},
+          "options": []
+        }
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "id": "step-1",
+      "name": "Saisir l’adresse",
+      "page_url": "https://recette.example.net/login",
+      "precondition": "La page de connexion est visible",
+      "action": "fill",
+      "target": "page:login#email",
+      "value": "{{data.email}}",
+      "assertion": "value",
+      "assertion_target": "page:login#email",
+      "expected": "{{data.email}}",
+      "evidence": false
+    }
+  ]
+}
+```
+
+Le schéma JSON formel doit être versionné avec le générateur. Une propriété
+inconnue, un type invalide, une cible obligatoire absente, une URL hors origine,
+une référence de secret mal formée ou une version de schéma non prise en charge
+est refusée explicitement.
 
 #### GEN-002 — Modèle intermédiaire normalisé
 
@@ -2018,6 +2949,80 @@ Avant d’émettre du code, le système transforme la définition métier en un 
 - la politique d’usage du LLM d’exécution.
 
 Le modèle intermédiaire est validé par schéma. Une définition incomplète ou ambiguë reste en conception et ne produit pas d’artefact approuvable.
+
+#### GEN-002.1 — Finalisation structurée par le LLM
+
+Avant la génération de code, et uniquement lorsque la politique l’autorise, le
+LLM de conception reçoit :
+
+- la structure `generation_workflow` courante ;
+- le contexte effectif du cas et du profil d’approche ;
+- les pages analysées et leurs éléments ;
+- le vocabulaire d’actions et d’assertions supportées ;
+- les règles de données, de secrets, de destinations et de localisateurs ;
+- le schéma de sortie attendu.
+
+Il doit retourner une proposition structurée contenant les questions
+bloquantes, les modifications proposées et leur justification courte. Le
+système calcule le diff, distingue visuellement proposition et valeur confirmée
+et exige une décision utilisateur pour chaque changement. Après acceptation, le
+schéma est reconstruit depuis les valeurs structurées puis soumis aux contrôles
+déterministes.
+
+L’implémentation conserve séparément le dialogue, les propositions, leur
+empreinte de base et l’état `pending`, `accepted` ou `rejected` de chaque
+opération. Le client envoie la liste exacte des opérations acceptées ; toutes
+les autres sont enregistrées comme refusées. Une proposition déjà décidée ne
+peut pas être rejouée.
+
+L’implémentation conserve séparément le dialogue, les propositions, leur
+empreinte de base et l’état `pending`, `accepted` ou `rejected` de chaque
+opération. Le client envoie la liste exacte des opérations acceptées ; toutes
+les autres sont enregistrées comme refusées. Une proposition déjà décidée ne
+peut pas être rejouée.
+
+Le LLM ne reçoit pas de valeur secrète, ne navigue pas pendant cette étape, ne
+marque pas le workflow comme confirmé, ne déclare pas un contrôle système
+réussi et ne produit pas directement un artefact approuvé. Une sortie non
+conforme au schéma ne modifie pas la définition.
+
+#### GEN-002.2 — Résolution de la configuration effective
+
+Avant tout appel LLM, l’orchestrateur résout la référence
+`llm_access_profile` vers une version immuable du catalogue. Il charge la
+valeur secrète uniquement depuis la variable d’environnement référencée et ne
+la place ni dans le prompt, ni dans les journaux, ni dans un manifeste.
+L’absence de variable, un profil désactivé ou une version inconnue produit un
+blocage explicite avant l’appel réseau.
+
+Avant de produire les fichiers, l’orchestrateur résout
+`code_generation_profile`, contrôle qu’il référence le même accès LLM et
+construit une configuration effective immuable. Cette configuration borne les
+chemins, le nombre de fichiers, les technologies, la politique de preuve et les
+contrôles autorisés. Le modèle ne peut pas modifier ces valeurs ; toute
+proposition hors profil est rejetée avant écriture.
+
+#### GEN-002.3 — Prompt final et skills de génération
+
+Chaque profil de génération référence une liste ordonnée et non vide de skills
+versionnés. La configuration affiche leur référence, leur rôle et leur source ;
+une référence absente, dupliquée ou inconnue est refusée. Le prompt final
+assemble exclusivement :
+
+- l’identité et la version du cas confirmé ;
+- le workflow canonique et les catalogues HTML analysés ;
+- les versions exactes de l’accès LLM et du profil de génération ;
+- la configuration effective bornant technologie, chemins, fichiers, preuves et
+  validations ;
+- les références, sources et règles des skills déclarés ;
+- un contrat JSON fermé contenant les fichiers candidats, hypothèses et alertes.
+
+Le prompt demande explicitement la production du code, possède une version et
+une empreinte SHA-256. Les valeurs ciblant un champ de mot de passe sont
+censurées avant sa construction et aucune valeur de clé API n’entre dans
+l’artefact. Depuis un cas confirmé, l’utilisateur peut ouvrir ce prompt dans une
+vue séparée et télécharger séparément le code candidat ; aucun des deux n’est
+affiché directement dans le formulaire de saisie.
 
 #### GEN-003 — Pipeline déterministe
 
@@ -2084,17 +3089,23 @@ La modification d’un composant identifie les artefacts candidats et versions a
 
 #### GEN-009 — Structure du code généré
 
-Le bundle Playwright Python doit séparer au minimum :
+Le code Playwright Python doit respecter les catégories du contrat de bundle
+défini en `10.7` et séparer au minimum :
 
 ```text
-tests/       # scénarios et assertions
-pages/       # Page Objects réellement réutilisés
-fixtures/    # préparation et nettoyage
-config/      # paramètres sans secrets
-artifacts/   # sortie d’exécution, jamais source de génération
+tests/
+├── cases/       # scénarios et assertions
+├── pages/       # Page Objects réellement réutilisés
+└── fixtures/    # préparation et nettoyage
+test-data/       # jeux de données non secrets
+generation/      # séquences et métadonnées de génération assainies
+config/          # paramètres sans secrets
 ```
 
-Chaque fichier généré doit indiquer l’identifiant du cas de test et la version de génération, sans inclure le prompt complet ni de secret.
+Le répertoire `artifacts/` est extérieur au bundle et n’est jamais une source
+de génération. Chaque fichier de code généré doit indiquer l’identifiant du cas
+de test et la version de génération, sans inclure le prompt complet ni de
+secret. La séquence assainie est conservée séparément dans `generation/`.
 
 #### GEN-010 — Personnalisation et zones protégées
 
@@ -2287,8 +3298,16 @@ Cette spécification repose sur les besoins explicitement exprimés :
 - mettre à jour automatiquement une description synthétique et factuelle ;
 - générer du code réutilisable, maintenable et personnalisable ;
 - générer une documentation fonctionnelle lisible et des guides de déploiement GitLab CI et GitHub Actions avec chaque export ;
-- publier manuellement un plan de test, ses suites et leurs scripts vers une cible GitLab d’entreprise administrée ;
+- lancer manuellement depuis le poste de l’utilisateur les cas sélectionnés à
+  partir d’un plan afin de vérifier leur bon fonctionnement avant publication ;
+- sélectionner les suites et cas vérifiés, figer leur version et leur empreinte,
+  puis publier exactement ce bundle vers une cible de développement GitLab ou
+  GitHub administrée ;
 - exécuter ces scripts indépendamment de la conception ;
+- enregistrer et organiser les traces Playwright et HAR d’un cas de test ou de
+  l’ensemble des cas sélectionnés depuis un plan de test ;
+- séparer lisiblement le code, les séquences de prompts de génération, les
+  données, les résultats et les traces dans les fichiers exportés ;
 - réserver le LLM d’exécution à des cas exceptionnels ;
 - configurer séparément les LLM de conception et d’exécution ;
 - faciliter le déploiement et l’intégration à GitHub Actions et GitLab CI.

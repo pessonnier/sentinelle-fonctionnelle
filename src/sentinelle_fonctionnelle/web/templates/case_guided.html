@@ -1,0 +1,766 @@
+{% extends "base.html" %}
+{% from "help.html" import field_label, form_help, journey_progress %}
+{% macro authoring_contract(mode_value) %}
+  {% set contract = authoring_skills[mode_value] %}
+  <details class="authoring-contract">
+    <summary>Voir le prompt et le skill utilisés</summary>
+    <dl>
+      <div><dt>Skill actif</dt><dd><code>{{ contract.skill }}</code></dd></div>
+      <div><dt>Données analysées</dt><dd><code>{{ contract.source }}</code></dd></div>
+    </dl>
+    <strong>Prompt de cadrage</strong>
+    <pre>{{ authoring_assist_prompts[mode_value] }}</pre>
+    <strong>Règles du skill</strong>
+    <ul>{% for instruction in contract.instructions %}<li>{{ instruction }}</li>{% endfor %}</ul>
+    <p class="section-note">Le dialogue ajoute le brouillon courant, les champs HTML analysés et le contrat JSON fermé avant l’appel au LLM.</p>
+  </details>
+{% endmacro %}
+{% block title %}{{ case.name }} · Sentinelle Fonctionnelle{% endblock %}
+{% block content %}
+  <nav class="breadcrumb" aria-label="Fil d’Ariane">
+    <a href="/">Projets</a><span>/</span>
+    <a href="/projects/{{ project.id }}">{{ project.name }}</a><span>/</span>
+    <a href="/projects/{{ project.id }}#plan-{{ plan.id }}">{{ plan.name }}</a><span>/</span>
+    {% for container in container_path %}
+      <a href="/projects/{{ project.id }}#node-{{ container.id }}">{{ container.name }}</a><span>/</span>
+    {% endfor %}
+    <span aria-current="page">{{ case.name }}</span>
+  </nav>
+
+  <header class="page-heading case-heading">
+    <div>
+      <p class="eyebrow">Cas de test · {{ parent.kind.label if parent else "Parent manquant" }}</p>
+      <h1>{{ case.name }}</h1>
+      <p class="lead">{{ path|join(" / ") }}</p>
+    </div>
+    <div class="case-status">
+      <span class="status-label">{{ "Défini" if case.specification else "À définir" }}</span>
+      {% if case.specification %}<strong>Version {{ case.specification.version }}</strong>{% endif %}
+    </div>
+  </header>
+
+  {{ journey_progress(
+    "validation",
+    "/projects/" ~ project.id,
+    "/projects/" ~ project.id ~ "/test-plans/" ~ plan.id,
+    "/projects/" ~ project.id ~ "/test-plans/" ~ plan.id ~ "/cases/" ~ case.id
+  ) }}
+
+  <nav class="section-tabs" aria-label="Sections du cas de test">
+    <a href="#context">Contexte</a>
+    <a href="#assistant">Assistant</a>
+    <a href="#pages">Pages et champs</a>
+    <a href="#steps">Étapes</a>
+    <a href="#data">Données</a>
+    <a href="#generation">Génération</a>
+  </nav>
+
+  {% set specification = case.specification %}
+  <form id="guided-case-form" class="case-form" action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/specification" method="post" aria-label="Définir le cas de test">
+    {{ form_help("Définir le cas de test", "Compose une définition pas-à-pas structurée, contrôlable par le LLM de conception puis transmissible au générateur.", "test-case") }}
+    <input type="hidden" name="style" value="steps">
+    <input type="hidden" id="workflow-json" name="workflow_json">
+
+    <section id="context" class="editor-section">
+      <header>
+        <span class="section-number">1</span>
+        <div><h2>Contexte et exécution</h2><p>Définissez l’intention, les profils et les limites avant les étapes.</p></div>
+      </header>
+      <div class="form-grid">
+        <label class="wide">
+          {{ field_label("Objectif du cas", "Objectif du cas", "Comportement métier précis que ce cas doit démontrer. Il guide la revue du LLM et la lisibilité du code.", "Vérifier qu’un client actif peut ouvrir une session", "test-case") }}
+          <textarea name="objective" rows="2" required>{{ editor_draft.objective }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Acteur métier", "Acteur métier", "Rôle lisible qui réalise le parcours. Il apparaît dans la documentation du test.", "Client authentifié", "test-case") }}
+          <input name="actor_name" required value="{{ editor_draft.actor }}" placeholder="Client authentifié">
+        </label>
+        <label>
+          {{ field_label("Profil d’acteur", "Profil d’acteur", "Identifiant non secret de la fixture d’authentification. Le runner résout ce profil sans placer de mot de passe dans le code.", "client-authentifie", "test-case") }}
+          <input id="actor-profile" required value="{{ workflow.actor_profile }}" placeholder="client-authentifie">
+        </label>
+        <label>
+          {{ field_label("Profil d’environnement", "Profil d’environnement", "Identifiant versionné qui résout l’URL, les origines autorisées, le navigateur, la locale et les références de secrets.", "recette-eu", "test-case") }}
+          <input id="environment-profile" name="environment" required value="{{ workflow.environment_profile }}" placeholder="recette-eu">
+        </label>
+        <label>
+          {{ field_label("Page de départ", "Page de départ", "URL HTTP(S) appartenant à la cible web du projet. Elle sert de première destination et de base à l’analyse HTML.", project.web_target, "page-analysis") }}
+          <input id="start-url" type="url" required value="{{ workflow.start_url }}" placeholder="{{ project.web_target }}">
+        </label>
+        <label>
+          {{ field_label("Délai maximal", "Délai maximal du cas", "Durée maximale en secondes avant arrêt contrôlé du cas. Cette limite est transmise au runner.", "30", "generation-structure") }}
+          <input id="timeout-seconds" type="number" min="1" max="3600" required value="{{ workflow.timeout_seconds }}">
+        </label>
+        <label>
+          {{ field_label("Politique de preuve", "Politique de preuve", "Détermine quand le runner conserve une capture ou une trace. Les preuves ne remplacent jamais une assertion.", "Capture en cas d’échec", "generation-structure") }}
+          <select id="evidence-policy" required>
+            <option value="none" {% if workflow.evidence_policy == "none" %}selected{% endif %}>Aucune preuve automatique</option>
+            <option value="on_failure" {% if workflow.evidence_policy == "on_failure" %}selected{% endif %}>Capture en cas d’échec</option>
+            <option value="each_step" {% if workflow.evidence_policy == "each_step" %}selected{% endif %}>Preuve à chaque étape</option>
+          </select>
+        </label>
+        <label>
+          {{ field_label("Politique LLM", "Politique LLM", "Le LLM de conception peut clarifier et proposer la structure. Une assistance d’exécution reste interdite sauf autorisation adaptative explicite.", "Conception uniquement", "llm-finalization") }}
+          <select id="llm-policy" required>
+            <option value="disabled" {% if workflow.llm_policy == "disabled" %}selected{% endif %}>Aucun LLM</option>
+            <option value="design_only" {% if workflow.llm_policy == "design_only" %}selected{% endif %}>Conception uniquement</option>
+            <option value="adaptive_approved" {% if workflow.llm_policy == "adaptive_approved" %}selected{% endif %}>Étape adaptative approuvée</option>
+          </select>
+        </label>
+        <label>
+          {{ field_label("Accès LLM", "Profil d’accès LLM", "Version exacte du fournisseur, de l’endpoint et du modèle. Le profil ne contient que des références de variables d’environnement, jamais leur valeur.", "openai-recette@1", "llm-generation") }}
+          <select id="llm-access-profile">
+            <option value="">À configurer</option>
+            {% for profile in llm_access_profiles %}
+              <option value="{{ profile.reference }}" {% if workflow.llm_access_profile == profile.reference %}selected{% endif %}>
+                {{ profile.name }} · {{ profile.reference }}{% if not profile.enabled %} · désactivé{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <small><a href="/configuration/llm-access">Configurer les accès</a></small>
+        </label>
+        <label>
+          {{ field_label("Génération de code", "Profil de génération de code", "Version exacte des règles de langage, framework, fichiers, preuves et validations appliquées au candidat.", "python-playwright@1", "llm-generation") }}
+          <select id="code-generation-profile">
+            <option value="">À configurer</option>
+            {% for profile in code_generation_profiles %}
+              <option value="{{ profile.reference }}" data-llm-profile="{{ profile.llm_profile }}" {% if workflow.code_generation_profile == profile.reference %}selected{% endif %}>
+                {{ profile.name }} · {{ profile.reference }}{% if not profile.enabled %} · désactivé{% endif %}
+              </option>
+            {% endfor %}
+          </select>
+          <small><a href="/configuration/code-generation">Configurer la génération</a></small>
+        </label>
+        <div class="wide precondition-authoring">
+          <label>
+            {{ field_label("Préconditions et préparation", "Préconditions et préparation", "Une condition métier par ligne. Elle reste une intention tant que sa traduction exécutable n’a pas été relue et confirmée dessous.", "Le compte client actif existe", "test-case") }}
+            <textarea name="preconditions" id="setup-lines" rows="3">{{ editor_draft.preconditions|join("\n") }}</textarea>
+          </label>
+          <div class="precondition-review-panel" aria-labelledby="precondition-review-title">
+            <header>
+              <div>
+                <strong id="precondition-review-title">Traduction des préconditions</strong>
+                <p>Classez chaque condition en contrôle, fixture, dépendance ou opération technique. Une proposition du LLM reste non confirmée jusqu’à votre validation.</p>
+              </div>
+              <button type="button" id="sync-precondition-dependencies" class="secondary-button">Préparer les traductions</button>
+            </header>
+            <div id="precondition-dependency-list" class="precondition-dependency-list"></div>
+            <p id="precondition-dependency-status" class="section-note" role="status" aria-live="polite"></p>
+          </div>
+        </div>
+        <label>
+          {{ field_label("Exigences", "Exigences", "Références ou formulations courtes couvertes. Elles assurent la traçabilité mais ne deviennent du code que si une validation les rend observables.", "REQ-AUTH-01", "test-case") }}
+          <textarea name="requirements" id="requirements-lines" rows="3">{{ editor_draft.requirements|join("\n") }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Règles métier", "Règles métier", "Contraintes que les étapes et validations doivent couvrir explicitement.", "Un compte bloqué ne peut pas se connecter", "test-case") }}
+          <textarea name="business_rules" id="business-rules-lines" rows="3">{{ editor_draft.business_rules|join("\n") }}</textarea>
+        </label>
+        <label class="wide">
+          {{ field_label("Nettoyage et postconditions", "Nettoyage et postconditions", "État final et opérations de remise en état, une par ligne. Le générateur les place après le parcours lorsque nécessaire.", "Fermer la session créée", "test-case") }}
+          <textarea name="postconditions" id="cleanup-lines" rows="3">{{ editor_draft.postconditions|join("\n") }}</textarea>
+        </label>
+        <label class="wide">
+          {{ field_label("Description synthétique", "Description synthétique", "Résumé factuel reconstruit uniquement depuis les données acceptées. Une proposition LLM refusée ne peut pas y apparaître.", "Vérifier qu’un client actif peut ouvrir une session. Acteur : Client actif.", "llm-finalization") }}
+          <textarea name="summary" id="case-summary" rows="3">{{ editor_draft.summary }}</textarea>
+        </label>
+      </div>
+    </section>
+
+    <section id="assistant" class="editor-section design-assistant-section">
+      <header>
+        <span class="section-number">2</span>
+        <div>
+          <h2>Assistant de conception</h2>
+          <p>Choisissez une intention : l’assistant repère ensuite les informations manquantes et explique comment les champs HTML peuvent compléter le parcours.</p>
+        </div>
+      </header>
+      <div class="design-assistant-grid">
+        <div class="assistant-controls">
+          <label>
+            {{ field_label("Intention fonctionnelle", "Intention fonctionnelle", "Phrase métier versionnée qui détermine les informations nécessaires et les questions utiles. Elle guide la rédaction sans modifier automatiquement le cas.", "Se connecter avec succès", "design-guidance") }}
+            <select id="functional-intent" required>
+              <option value="">Choisir une intention</option>
+              {% for intent in functional_intents %}
+                <option value="{{ intent.reference }}" {% if workflow.functional_intent == intent.reference %}selected{% endif %}>
+                  {{ intent.label }} · {{ intent.reference }}
+                </option>
+              {% endfor %}
+            </select>
+          </label>
+          <p class="section-note">
+            Le diagnostic repose sur la structure courante. Il ne confirme rien et
+            n’enregistre aucune modification.
+          </p>
+          <button type="button" id="refresh-design-guidance">
+            Analyser les informations manquantes
+          </button>
+          <div id="design-guidance-status" class="assistant-progress" role="status" aria-live="polite">
+            <strong>Pourquoi ces questions sont utiles</strong>
+            <span>Sélectionnez une intention pour obtenir des questions adaptées au comportement métier.</span>
+          </div>
+          <p>
+            <a class="text-link" href="/tutorials/test-case#assistant">
+              Voir le tutoriel de l’assistant
+            </a>
+          </p>
+        </div>
+        <div class="assistant-results">
+          <section aria-labelledby="missing-information-title">
+            <div class="assistant-result-heading">
+              <div>
+                <p class="eyebrow">À préciser</p>
+                <h3 id="missing-information-title">Informations manquantes</h3>
+              </div>
+              <span id="missing-information-count" class="count-badge">0</span>
+            </div>
+            <div id="missing-information-list" class="guidance-list">
+              <p class="empty-palette">Le diagnostic affichera ici chaque question, son utilité et le champ à compléter.</p>
+            </div>
+          </section>
+          <section aria-labelledby="html-capabilities-title">
+            <div class="assistant-result-heading">
+              <div>
+                <p class="eyebrow">Pages analysées</p>
+                <h3 id="html-capabilities-title">Ce que les champs HTML permettent de faire</h3>
+              </div>
+              <span id="html-capabilities-count" class="count-badge">0</span>
+            </div>
+            <div id="html-capabilities-list" class="guidance-list">
+              <p class="empty-palette">Analysez une page pour voir les actions, validations et exemples de valeurs compatibles avec chaque élément.</p>
+            </div>
+          </section>
+        </div>
+      </div>
+      <section class="design-dialogue-panel" aria-labelledby="design-dialogue-title">
+        <div class="assistant-result-heading">
+          <div>
+            <p class="eyebrow">Finalisation assistée</p>
+            <h3 id="design-dialogue-title">Dialogue avec le LLM</h3>
+          </div>
+          <span class="controlled-badge">Décision humaine</span>
+        </div>
+        <p class="section-note">
+          Le LLM pose des questions et prépare des modifications structurées.
+          Rien n’est appliqué avant votre acceptation explicite, proposition par proposition.
+        </p>
+        <div id="design-dialogue-history" class="dialogue-history" aria-live="polite">
+          {% if design_dialogue.messages %}
+            {% for message in design_dialogue.messages %}
+              <article class="dialogue-message {{ message.role }}">
+                <strong>{{ "Vous" if message.role == "user" else "Assistant" }}</strong>
+                <p>{{ message.content }}</p>
+              </article>
+            {% endfor %}
+          {% else %}
+            <p class="empty-palette">Décrivez le comportement à préciser ou demandez au LLM de relire le brouillon.</p>
+          {% endif %}
+        </div>
+        <div class="dialogue-starters" aria-label="Demandes de développement proposées">
+          <button type="button" class="secondary-button" data-design-prompt="Développe ce brouillon en cas de test fonctionnel complet. Pose les questions bloquantes et propose l’objectif, l’acteur, les préconditions, les étapes ordonnées et au moins une validation observable sans inventer de fait métier.">
+            Développer le cas complet
+          </button>
+          <button type="button" class="secondary-button" data-design-prompt="Relis les champs HTML analysés et propose des étapes utilisant uniquement leurs références compatibles. Signale toute cible ou donnée qui manque.">
+            Exploiter les champs HTML
+          </button>
+          <button type="button" class="secondary-button" data-design-prompt="Renforce les validations de ce cas. Propose uniquement des résultats observables et refuse toute validation reposant sur une hypothèse.">
+            Renforcer les validations
+          </button>
+        </div>
+        <label>
+          {{ field_label("Message au LLM", "Message au LLM", "Donnez un fait métier, répondez à une question ou demandez une relecture. Le contexte transmis est limité au brouillon, à l’intention, aux informations manquantes et aux capacités des champs HTML.", "Le client doit être actif et voir son espace personnel.", "llm-finalization") }}
+          <textarea id="design-message" rows="3" maxlength="4000" placeholder="Précisez un fait métier ou demandez une relecture…"></textarea>
+        </label>
+        <div class="inline-actions">
+          <button type="button" id="send-design-message">Envoyer et préparer des propositions</button>
+          <span id="design-dialogue-status" class="section-note" role="status" aria-live="polite"></span>
+        </div>
+        <div id="design-proposals" class="design-proposals">
+          {% for proposal in design_dialogue.proposals %}
+            <article class="design-proposal">
+              <strong>{{ "Proposition à décider" if proposal.status.value == "pending" else "Proposition décidée" }}</strong>
+              {% for operation in proposal.operations %}
+                <p>{{ operation.label }} — {{ operation.status.value }}</p>
+              {% endfor %}
+            </article>
+          {% endfor %}
+        </div>
+      </section>
+    </section>
+
+    <section id="pages" class="editor-section page-analysis-section">
+      <header>
+        <span class="section-number">3</span>
+        <div><h2>Pages et champs utilisables</h2><p>Analysez une page pour alimenter les cibles proposées dans les étapes.</p></div>
+      </header>
+      <div class="page-analysis-grid">
+        <div>
+          <label>
+            {{ field_label("Page à analyser", "Page à analyser", "URL de la page HTML. Elle doit rester sur la même origine que la cible du projet. L’analyse n’envoie aucun secret et ne se connecte pas à votre place.", project.web_target, "page-analysis") }}
+            <input id="page-analysis-url" type="url" value="{{ workflow.start_url }}" placeholder="{{ project.web_target }}">
+          </label>
+          <div class="inline-actions">
+            <button type="button" id="analyze-page">Analyser la page</button>
+            <span id="page-analysis-status" class="section-note" role="status" aria-live="polite"></span>
+          </div>
+          <div class="syntax-note">
+            <strong>Syntaxe des cibles</strong>
+            <p>Une référence comme <code>page:connexion#email</code> désigne un élément analysé. Elle sera transformée en localisateur Playwright stable à partir du libellé, du rôle ou du contrat de test.</p>
+          </div>
+        </div>
+        <aside class="field-palette" aria-labelledby="field-palette-title">
+          <div class="field-palette-heading">
+            <div><p class="eyebrow">Palette</p><h3 id="field-palette-title">Champs utilisables de la page</h3></div>
+            <span id="field-count" class="count-badge">0</span>
+          </div>
+          <div id="page-field-list" class="page-field-list">
+            <p class="empty-palette">Analysez une page pour afficher ses champs, boutons, liens et éléments vérifiables.</p>
+          </div>
+        </aside>
+      </div>
+      <datalist id="page-element-options"></datalist>
+    </section>
+
+    <section id="steps" class="editor-section workflow-steps-section">
+      <header>
+        <span class="section-number">4</span>
+        <div><h2>Étapes du test</h2><p>Choisissez la représentation la plus naturelle ; le générateur utilisera toujours la structure canonique.</p></div>
+      </header>
+      <fieldset class="authoring-mode-chooser">
+        <legend>Mode de saisie des étapes</legend>
+        {% for mode in workflow_authoring_modes %}
+          <label class="authoring-mode-option">
+            <input type="radio" name="authoring_mode" value="{{ mode.value }}" {% if workflow.authoring_mode == mode.value %}checked{% endif %}>
+            <span>
+              {{ field_label(mode.label, mode.label, "Choisissez cette représentation pour la saisie. Le petit LLM utilise le skill associé, puis propose des opérations vers les mêmes étapes canoniques sans générer directement le code.", "Mode de saisie", "workflow-step") }}
+              <small>{% if mode.value == "form" %}Une action et un contrôle guidés dans chaque carte.{% elif mode.value == "step_text" %}Un court récit pour chaque étape, analysé séparément.{% else %}Un récit unique décrivant le parcours complet.{% endif %}</small>
+            </span>
+          </label>
+        {% endfor %}
+      </fieldset>
+
+      <div class="authoring-panel" data-authoring-panel="form">
+        <div class="authoring-panel-heading">
+          <div><strong>Action puis contrôle</strong><p>Complétez les champs dans l’ordre. Ajoutez ensuite une action ou un contrôle supplémentaire.</p></div>
+          <button type="button" id="add-step" class="secondary-button">＋ Ajouter une action</button>
+        </div>
+        <div id="workflow-steps" class="workflow-step-list"></div>
+        <button type="button" class="secondary-button authoring-assist" data-assist-mode="form" data-assist-prompt="{{ authoring_assist_prompts.form }}">Faire relire les formulaires par le petit LLM</button>
+        {{ authoring_contract("form") }}
+      </div>
+
+      <div class="authoring-panel" data-authoring-panel="step_text" hidden>
+        <div class="authoring-panel-heading">
+          <div><strong>Un texte par étape</strong><p>Décrivez ce qui est vrai avant l’étape, l’action réalisée et ce qui doit être contrôlé.</p></div>
+          <button type="button" id="add-step-narrative" class="secondary-button">＋ Ajouter un texte d’étape</button>
+        </div>
+        <div id="step-narrative-list" class="narrative-list"></div>
+        <button type="button" class="secondary-button authoring-assist" data-assist-mode="step_text" data-assist-prompt="{{ authoring_assist_prompts.step_text }}">Structurer ces textes avec le petit LLM</button>
+        {{ authoring_contract("step_text") }}
+      </div>
+
+      <div class="authoring-panel" data-authoring-panel="scenario_text" hidden>
+        <label>
+          {{ field_label("Description complète du parcours", "Description complète du parcours", "Décrivez dans l’ordre le contexte, les données, toutes les actions et tous les contrôles. Le petit LLM proposera ensuite des étapes structurées à accepter.", "Le client ouvre la page…", "workflow-step") }}
+          <textarea id="scenario-narrative" rows="12" maxlength="40000" placeholder="Décrivez le parcours complet, les données utilisées et les résultats observables…">{{ workflow.scenario_narrative }}</textarea>
+        </label>
+        <button type="button" class="secondary-button authoring-assist" data-assist-mode="scenario_text" data-assist-prompt="{{ authoring_assist_prompts.scenario_text }}">Découper ce scénario avec le petit LLM</button>
+        {{ authoring_contract("scenario_text") }}
+      </div>
+      {% if specification and not specification.workflow %}
+        <aside class="legacy-requalification" role="note">
+          <strong>Ancienne définition à requalifier</strong>
+          <p>Les actions et résultats sont conservés ci-dessous jusqu’à leur enregistrement dans les nouvelles cartes.</p>
+          <ol>
+            {% for clause in specification.clauses %}
+              <li>
+                <span>{{ clause.text }}</span>
+                {% if clause.expected_result %}<small>{{ clause.expected_result }}</small>{% endif %}
+              </li>
+            {% endfor %}
+          </ol>
+        </aside>
+      {% endif %}
+      <div class="syntax-note token-guide">
+        <strong>Valeurs dynamiques</strong>
+        <p>Utilisez <code>{% raw %}{{data.colonne}}{% endraw %}</code> pour une colonne CSV/XLSX, <code>{% raw %}{{fixture.reference}}{% endraw %}</code> pour une fixture non secrète et <code>{% raw %}{{secret.reference}}{% endraw %}</code> pour une valeur injectée uniquement à l’exécution.</p>
+      </div>
+    </section>
+
+    <section id="data" class="editor-section">
+      <header>
+        <span class="section-number">5</span>
+        <div><h2>Données, secrets et hypothèses</h2><p>Référencez les ressources nécessaires sans saisir leur valeur sensible.</p></div>
+      </header>
+      <div class="form-grid">
+        <div class="wide list-editor" aria-labelledby="test-data-list-title">
+          <div class="list-editor-heading">
+            <div>
+              <strong id="test-data-list-title">Données de test référencées</strong>
+              <small>Ajoutez une référence non secrète à la fois. Utilisez ensuite ses colonnes avec <code>{{ "{{data.colonne}}" }}</code>.</small>
+            </div>
+            <button type="button" id="add-fixture-ref" class="secondary-button">＋ Ajouter une donnée</button>
+          </div>
+          <div id="fixture-ref-list" class="field-row-list"></div>
+          <input type="hidden" name="data_sets" id="fixture-refs" value="{{ editor_draft.data_sets|join('\n') }}">
+        </div>
+        <label>
+          {{ field_label("Références de secrets", "Références de secrets", "Identifiants de secrets disponibles dans l’environnement d’exécution, jamais leur valeur. Référencez-les avec {{secret.reference}}.", "client-password", "generation-structure") }}
+          <textarea id="secret-refs" rows="4">{{ workflow.secret_refs|join("\n") }}</textarea>
+        </label>
+        <label class="wide">
+          {{ field_label("Hypothèses ou ambiguïtés", "Hypothèses ou ambiguïtés", "Questions encore ouvertes, une par ligne. Le LLM de conception doit les traiter ; leur présence interdit de confirmer le workflow.", "Le libellé du bouton doit être confirmé", "llm-finalization") }}
+          <textarea id="assumptions" rows="3">{{ workflow.assumptions|join("\n") }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Déclaration CI", "Déclaration CI", "Sélections autorisées, une par ligne : manual, on_commit, on_merge_request, nightly ou release. Elles alimentent le manifeste et la documentation CI.", "manual", "ci") }}
+          <textarea name="execution_declaration" rows="3">{{ specification.execution_declaration|join("\n") if specification else (case.execution_declaration|join("\n") or "manual") }}</textarea>
+        </label>
+        <label class="confirmation-field">
+          {{ field_label("Définition confirmée", "Définition confirmée", "Cochez uniquement lorsque les actions, validations, profils et données sont compris. Toute hypothèse ouverte doit être résolue.", "Confirmée après revue LLM", "llm-finalization") }}
+          <span class="checkbox-line">
+            <input id="workflow-confirmed" type="checkbox" {% if workflow.confirmed %}checked{% endif %}>
+            <span>Les informations structurées sont prêtes pour la génération.</span>
+          </span>
+        </label>
+      </div>
+
+      {% if case.data_binding %}
+        <div class="binding-summary">
+          <strong>{{ case.data_binding.data_set.filename }}</strong>
+          {% set batch_count = case.data_binding.plan.batches|length %}
+          <span>{{ case.data_binding.data_set.rows|length }} cas · {{ case.data_binding.mode.label }} · {{ batch_count }} {{ "lot" if batch_count == 1 else "lots" }} · Version {{ case.data_binding.version }}</span>
+        </div>
+        <div class="data-preview" tabindex="0" aria-label="Aperçu des données de test">
+          <table>
+            <thead><tr><th>Cas</th>{% for header in case.data_binding.data_set.headers %}<th>{{ header }}</th>{% endfor %}</tr></thead>
+            <tbody>
+              {% for execution_case in case.data_binding.plan.cases[:5] %}
+                <tr><th>{{ execution_case.source_index }}</th>{% for _, value in execution_case.values %}<td>{{ value }}</td>{% endfor %}</tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p class="section-note">Aucun fichier tabulaire associé. Les références de profils peuvent néanmoins être utilisées.</p>
+      {% endif %}
+    </section>
+
+    <section id="generation" class="editor-section generation-preview-section">
+      <header>
+        <span class="section-number">6</span>
+        <div><h2>Structure envoyée au générateur</h2><p>Cette structure est la source de vérité affichable à tout moment, jamais la conversation brute.</p></div>
+      </header>
+      <div class="generation-preview-toolbar">
+        <span id="workflow-readiness" class="readiness-badge">Brouillon</span>
+        <button type="button" id="check-system-readiness" class="secondary-button">Vérifier la préparation</button>
+        <button type="button" id="copy-workflow" class="secondary-button">Copier la structure</button>
+        {% if workflow.confirmed %}
+          <a class="secondary-button" target="_blank" rel="noopener" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/code-generation-request">Ouvrir le prompt de génération · LLM configuré</a>
+          <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/generated-code">Télécharger le code généré · candidat déterministe</a>
+        {% else %}
+          <span class="section-note">Le téléchargement du code sera disponible après confirmation.</span>
+        {% endif %}
+        <a class="text-link" href="/tutorials/test-case#structure">Comprendre chaque propriété</a>
+      </div>
+      {% if selected_generation_skills %}
+        <details class="authoring-contract generation-skill-trace">
+          <summary>Voir les skills du prompt de génération</summary>
+          <p class="section-note">Le prompt applique ces contrats dans l’ordre ; leur référence et leur source rendent la génération reproductible.</p>
+          {% for skill in selected_generation_skills %}
+            <article>
+              <strong>{{ skill.name }}</strong>
+              <p><code>{{ skill.reference }}</code> · <code>{{ skill.source }}</code></p>
+              <ul>{% for instruction in skill.instructions %}<li>{{ instruction }}</li>{% endfor %}</ul>
+            </article>
+          {% endfor %}
+        </details>
+      {% endif %}
+      <div id="system-readiness-results" class="system-readiness-results" aria-live="polite">
+        <p class="section-note">Le contrôle vérifie la destination, les préconditions, les données, les références de secrets et Playwright. Le LLM ne peut pas modifier ces résultats.</p>
+      </div>
+      <pre id="workflow-preview" class="workflow-preview" tabindex="0"></pre>
+    </section>
+
+    <div class="form-actions">
+      <a class="secondary-button" href="/projects/{{ project.id }}#plan-{{ plan.id }}">Retour à l’arborescence</a>
+      <button type="submit">Enregistrer la définition structurée</button>
+    </div>
+  </form>
+
+  <section id="candidates" class="editor-section candidate-lifecycle-section">
+    <header>
+      <span class="section-number">7</span>
+      <div>
+        <h2>Candidats, validation et décision</h2>
+        <p>Chaque génération est conservée. Une réussite valide l’empreinte exécutée, mais ne l’approuve jamais automatiquement.</p>
+      </div>
+    </header>
+    {% if workflow.confirmed %}
+      <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates" method="post" class="candidate-generate-form">
+        <button type="submit">Générer et enregistrer un candidat</button>
+        <span class="section-note">Le manifeste, les fichiers et leur empreinte seront historisés.</span>
+      </form>
+    {% else %}
+      <p class="section-note">Confirmez et enregistrez la définition structurée avant de créer un candidat.</p>
+    {% endif %}
+
+    {% if candidate_history %}
+      <div class="candidate-history">
+        {% for entry in candidate_history %}
+          {% set candidate = entry.candidate %}
+          {% set comparison = entry.comparison %}
+          <article class="candidate-card" aria-labelledby="candidate-{{ candidate.id }}-title">
+            <header>
+              <div>
+                <h3 id="candidate-{{ candidate.id }}-title">Candidat #{{ candidate.sequence }}</h3>
+                <p>
+                  {% if candidate.manifest.get("customization") %}Personnalisation humaine protégée{% else %}{{ candidate.origin.label }}{% endif %}
+                  · définition v{{ candidate.specification_version }} · {{ candidate.created_at.strftime("%d/%m/%Y %H:%M") }}
+                </p>
+              </div>
+              <span class="readiness-badge candidate-status candidate-status-{{ candidate.status.value }}">{{ candidate.status.label }}</span>
+            </header>
+            <dl class="candidate-metadata">
+              <div><dt>Empreinte du bundle</dt><dd><code>{{ candidate.candidate_sha256 }}</code></dd></div>
+              <div><dt>Fichiers</dt><dd>{{ candidate.files|length }}</dd></div>
+              {% if candidate.prompt_sha256 %}<div><dt>Prompt</dt><dd><code>{{ candidate.prompt_sha256 }}</code></dd></div>{% endif %}
+            </dl>
+            <p class="candidate-diff">
+              {% if comparison.previous_id %}
+                {% if comparison.unchanged %}Aucun fichier modifié depuis le candidat précédent.
+                {% else %}Différence : {{ comparison.added|length }} ajouté(s), {{ comparison.changed|length }} modifié(s), {{ comparison.removed|length }} supprimé(s).{% endif %}
+              {% else %}Première génération conservée pour ce cas.{% endif %}
+            </p>
+            {% if candidate.manifest.get("customization_conflicts") %}
+              <div class="form-error-summary" role="alert">
+                <strong>Conflits de personnalisation</strong>
+                <ul>
+                  {% for conflict in candidate.manifest.get("customization_conflicts") %}<li>{{ conflict }}</li>{% endfor %}
+                </ul>
+                <p>Ce candidat ne peut pas être exécuté avant résolution des conflits.</p>
+              </div>
+            {% elif candidate.manifest.get("customization_reapplication", {}).get("applied") %}
+              <p class="section-note">
+                <strong>Personnalisations réappliquées :</strong>
+                {{ candidate.manifest.get("customization_reapplication", {}).get("applied")|join(", ") }}
+              </p>
+            {% endif %}
+            {% if candidate.decision_reason %}<p class="section-note"><strong>Décision :</strong> {{ candidate.decision_reason }}</p>{% endif %}
+            {% if candidate.executions %}
+              <ul class="candidate-executions">
+                {% for execution in candidate.executions|reverse %}
+                  <li>
+                    <strong>{{ "Réussite" if execution.passed else "Échec" }}</strong>
+                    · {{ "%.3f"|format(execution.duration_seconds) }} s
+                    · empreinte <code>{{ execution.test_sha256[:12] }}</code>
+                    · preuves <code>{{ execution.report.artifact_directory }}</code>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <div class="candidate-actions">
+              <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/download">Télécharger</a>
+              {% if candidate.status.value == "approved" %}
+                <a class="secondary-button" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/ci-bundle">Exporter le bundle CI</a>
+              {% endif %}
+              {% if candidate.status.value in ["pending", "validated", "approved"] %}
+                <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/execute" method="post">
+                  <label><span class="sr-only">Navigateur</span><select name="browser" aria-label="Navigateur de validation"><option value="chromium">Chromium</option><option value="firefox">Firefox</option><option value="webkit">WebKit</option></select></label>
+                  <button type="submit" class="secondary-button">Lancer ce candidat</button>
+                </form>
+              {% endif %}
+            </div>
+            {% if candidate.status.value in ["pending", "validated", "approved"] and (candidate.manifest.get("customization_contracts") or candidate.manifest.get("customization")) %}
+              <details class="candidate-customization">
+                <summary>Personnaliser les zones protégées</summary>
+                <p class="section-note">Téléchargez le fichier, modifiez uniquement les blocs compris entre les marqueurs <code>sentinelle:custom</code>, puis réimportez-le. Toute autre modification sera refusée.</p>
+                <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/customize" method="post" enctype="multipart/form-data">
+                  <label>Fichier Python personnalisé <input type="file" name="source_file" accept=".py,text/x-python" required></label>
+                  <button type="submit" class="secondary-button">Créer le candidat personnalisé</button>
+                </form>
+              </details>
+            {% endif %}
+            {% if candidate.manifest.get("customization") and not candidate.manifest.get("customization_conflicts") %}
+              <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates" method="post" class="candidate-generate-form">
+                <input type="hidden" name="customization_source" value="{{ candidate.id }}">
+                <button type="submit" class="secondary-button">Régénérer en conservant ces personnalisations</button>
+              </form>
+            {% endif %}
+            {% if candidate.status.value == "validated" %}
+              <div class="candidate-decisions">
+                <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/decision" method="post">
+                  <input type="hidden" name="decision" value="approve">
+                  <label>Note d’approbation <input name="reason" placeholder="Revue fonctionnelle effectuée"></label>
+                  <button type="submit">Approuver l’empreinte exécutée</button>
+                </form>
+                <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/decision" method="post">
+                  <input type="hidden" name="decision" value="reject">
+                  <label>Motif du rejet <input name="reason" required placeholder="Correction attendue"></label>
+                  <button type="submit" class="danger-button">Rejeter</button>
+                </form>
+              </div>
+            {% elif candidate.status.value == "pending" %}
+              <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/candidates/{{ candidate.id }}/decision" method="post" class="candidate-reject-form">
+                <input type="hidden" name="decision" value="reject">
+                <label>Motif du rejet <input name="reason" required placeholder="Correction attendue"></label>
+                <button type="submit" class="danger-button">Rejeter sans exécuter</button>
+              </form>
+            {% endif %}
+            <details><summary>Voir le manifeste</summary><pre tabindex="0">{{ candidate.manifest|tojson(indent=2) }}</pre></details>
+          </article>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state"><p>Aucun candidat enregistré. La première génération apparaîtra ici avec son empreinte.</p></div>
+    {% endif %}
+  </section>
+
+  <section class="editor-section data-upload">
+    <header>
+      <span class="section-number">+</span>
+      <div>{{ form_help("Fichier de données", "Analyse un CSV ou un XLSX sans exécuter de formule et prépare les variations de ce cas.", "test-data") }}</div>
+    </header>
+    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/data-binding" method="post" enctype="multipart/form-data" aria-label="Associer un fichier de données">
+      <div class="form-grid">
+        <label class="wide">
+          {{ field_label("Fichier", "Fichier de données", "Fichier CSV UTF-8 ou XLSX contenant une ligne par variation. Les formules ne sont jamais exécutées.", "commandes.csv", "test-data") }}
+          <input name="data_file" type="file" accept=".csv,.xlsx" required>
+        </label>
+        <label>
+          {{ field_label("Itération", "Mode d’itération", "Détermine l’ordre de préparation des lignes. Cette option concerne le runner, pas le corps du test.", "Séquentiel", "test-data") }}
+          <select name="mode">{% for mode in data_iteration_modes %}<option value="{{ mode.value }}">{{ mode.label }}</option>{% endfor %}</select>
+        </label>
+        <label>
+          {{ field_label("Concurrence maximale", "Concurrence maximale", "Nombre maximal de variations préparées simultanément, entre 1 et 20.", "4", "test-data") }}
+          <input name="max_parallelism" type="number" min="1" max="20" value="1">
+        </label>
+        <label>
+          {{ field_label("Graine aléatoire", "Graine aléatoire", "Entier permettant de reproduire la même sélection en mode aléatoire.", "42", "test-data") }}
+          <input name="random_seed" type="number" value="0">
+        </label>
+        <label>
+          {{ field_label("Nombre de cas", "Nombre de cas", "Limite le nombre de lignes utilisées. Vide utilise toutes les lignes.", "10", "test-data") }}
+          <input name="sample_count" type="number" min="1" placeholder="toutes les lignes">
+        </label>
+      </div>
+      <button type="submit">Analyser et associer</button>
+    </form>
+  </section>
+
+  <template id="workflow-step-template">
+    <article class="workflow-step-card">
+      <header class="workflow-step-header">
+        <div class="step-order"><span aria-hidden="true">⋮⋮</span><strong>Étape <span data-step-number></span></strong></div>
+        <div class="step-card-actions">
+          <button type="button" class="icon-button" data-move="up" title="Monter l’étape" aria-label="Monter l’étape">↑</button>
+          <button type="button" class="icon-button" data-move="down" title="Descendre l’étape" aria-label="Descendre l’étape">↓</button>
+          <button type="button" class="icon-button" data-duplicate title="Dupliquer l’étape" aria-label="Dupliquer l’étape">⧉</button>
+          <button type="button" class="icon-button danger" data-remove title="Supprimer l’étape" aria-label="Supprimer l’étape">×</button>
+        </div>
+      </header>
+      <div class="step-context-grid">
+        <label>
+          {{ field_label("Nom de l’étape", "Nom de l’étape", "Libellé court décrivant l’intention. Il devient un commentaire ou un libellé de rapport.", "Saisir l’adresse électronique", "workflow-step") }}
+          <input data-field="name" required placeholder="Saisir l’adresse électronique">
+        </label>
+        <label>
+          {{ field_label("Page courante", "Page courante", "URL sur laquelle l’action est attendue. Elle rattache les champs analysés et contrôle l’origine.", "https://recette.example.net/login", "workflow-step") }}
+          <input data-field="page_url" type="url" placeholder="https://…">
+        </label>
+        <label class="wide">
+          {{ field_label("Prérequis de l’étape", "Prérequis de l’étape", "État observable qui doit être vrai juste avant cette action. Laissez vide si le résultat précédent suffit.", "La page de connexion est visible", "workflow-step") }}
+          <input data-field="precondition" placeholder="La page de connexion est visible">
+        </label>
+      </div>
+      <div class="step-operation">
+        <div class="step-operation-title"><span>A</span><strong>Action</strong></div>
+        <div class="step-operation-grid">
+          <label>
+            {{ field_label("Type d’action", "Type d’action", "Verbe contrôlé transformé par le générateur en API Playwright. Une action inconnue doit être reformulée.", "Saisir", "workflow-step") }}
+            <select data-field="action">{% for action in workflow_actions %}<option value="{{ action.value }}">{{ action.label }}</option>{% endfor %}</select>
+          </label>
+          <label>
+            {{ field_label("Cible de l’action", "Cible de l’action", "Sélectionnez une référence proposée après analyse, par exemple page:connexion#email. Une description libre reste un brouillon à résoudre.", "page:connexion#email", "page-analysis") }}
+            <input data-field="target" list="page-element-options" placeholder="page:connexion#email">
+          </label>
+          <label>
+            {{ field_label("Valeur ou paramètre", "Valeur ou paramètre", "Valeur littérale ou jeton structuré : {{data.email}}, {{fixture.client_id}} ou {{secret.client_password}}.", "{{data.email}}", "generation-structure") }}
+            <input data-field="value" placeholder="{{ '{{data.email}}' }}">
+          </label>
+        </div>
+      </div>
+      <div class="step-operation validation-operation">
+        <div class="step-operation-title"><span>V</span><strong>Validation</strong></div>
+        <div class="step-operation-grid">
+          <label>
+            {{ field_label("Type de validation", "Type de validation", "Assertion observable réessayée par Playwright. Chaque cas doit en contenir au moins une.", "Est visible", "workflow-step") }}
+            <select data-field="assertion">{% for assertion in workflow_assertions %}<option value="{{ assertion.value }}">{{ assertion.label }}</option>{% endfor %}</select>
+          </label>
+          <label>
+            {{ field_label("Cible de la validation", "Cible de la validation", "Élément observé. Utilisez une référence de la palette ; pour une validation d’URL, ce champ peut rester vide.", "page:connexion#message-bienvenue", "page-analysis") }}
+            <input data-field="assertion_target" list="page-element-options" placeholder="page:connexion#message-bienvenue">
+          </label>
+          <label>
+            {{ field_label("Résultat attendu", "Résultat attendu", "Texte, valeur, URL ou nombre attendu selon la validation. Les jetons de données sont acceptés.", "Bienvenue", "workflow-step") }}
+            <input data-field="expected" placeholder="Bienvenue">
+          </label>
+          <label class="step-evidence-field">
+            {{ field_label("Preuve de l’étape", "Preuve de l’étape", "Force une capture pour cette étape en complément de la politique générale.", "Capture après connexion", "generation-structure") }}
+            <span class="checkbox-line"><input data-field="evidence" type="checkbox"><span>Conserver une preuve</span></span>
+          </label>
+        </div>
+        <button type="button" class="text-button add-following-control" data-add-validation>＋ Ajouter un contrôle à la suite</button>
+      </div>
+    </article>
+  </template>
+
+  <template id="step-narrative-template">
+    <article class="narrative-card">
+      <header><strong>Étape <span data-narrative-number></span></strong><button type="button" class="icon-button danger" data-remove-narrative aria-label="Supprimer ce texte">×</button></header>
+      <label>
+        {{ field_label("Texte de l’étape", "Texte de l’étape", "Décrivez le prérequis local, l’action, la donnée et le résultat observable de cette seule étape.", "La page de connexion est visible ; le client saisit son adresse…", "workflow-step") }}
+        <textarea data-step-narrative rows="4" maxlength="4000" placeholder="Avant l’étape… Action… Contrôle attendu…"></textarea>
+      </label>
+    </article>
+  </template>
+
+  <template id="fixture-ref-template">
+    <div class="field-row">
+      <label>
+        {{ field_label("Référence de donnée", "Référence de donnée", "Identifiant non secret d’un jeu de données ou d’une fixture. Ajoutez une ligne par référence, puis utilisez ses colonnes dans les actions avec {{data.colonne}}.", "client-standard", "generation-structure") }}
+        <input data-fixture-ref placeholder="client-standard" pattern="[A-Za-z0-9][A-Za-z0-9_.-]*">
+      </label>
+      <button type="button" class="icon-button danger" data-remove-fixture aria-label="Supprimer cette donnée">×</button>
+    </div>
+  </template>
+
+  <template id="precondition-dependency-template">
+    <article class="precondition-dependency-card">
+      <label class="wide">
+        {{ field_label("Précondition source", "Précondition métier source", "Texte métier d’origine. Modifiez-le dans la zone Préconditions, puis resynchronisez les traductions.", "Un responsable RH actif existe", "test-case") }}
+        <input data-precondition-source readonly>
+      </label>
+      <label>
+        {{ field_label("Type de traduction", "Type de traduction", "Nature exécutable de la condition. Le choix détermine si le générateur produit une vérification, charge une donnée ou prépare l’environnement.", "Fixture ou jeu de données", "generation-structure") }}
+        <select data-precondition-kind>{% for kind in precondition_dependency_kinds %}<option value="{{ kind.value }}">{{ kind.label }}</option>{% endfor %}</select>
+      </label>
+      <label>
+        {{ field_label("Référence", "Référence technique", "Identifiant non secret obligatoire pour une fixture ou une dépendance technique. Une fixture doit aussi figurer dans Données de test.", "manager-rh", "generation-structure") }}
+        <input data-precondition-reference pattern="[A-Za-z0-9][A-Za-z0-9_.-]*" placeholder="manager-rh">
+      </label>
+      <label class="wide">
+        {{ field_label("Traduction", "Traduction exécutable", "Formulation précise de ce que le code ou la fixture devra vérifier, préparer ou nettoyer. Ne recopiez pas de secret.", "Charger le compte responsable RH actif", "generation-structure") }}
+        <input data-precondition-description required>
+      </label>
+      <label class="wide precondition-confirmation">
+        {{ field_label("Confirmation", "Confirmation de la traduction", "Cette validation humaine autorise la traduction à entrer dans le workflow générable. Toute modification décoche automatiquement la confirmation.", "Traduction relue", "llm-finalization") }}
+        <span class="checkbox-line"><input type="checkbox" data-precondition-confirmed><span>J’ai relu et je confirme cette traduction.</span></span>
+      </label>
+    </article>
+  </template>
+
+  <script id="workflow-initial" type="application/json">{{ workflow|tojson }}</script>
+  <script id="design-dialogue-initial" type="application/json">{{ design_dialogue_data|tojson }}</script>
+  <script src="/static/case-editor.js?v=20260801-010a" defer data-analysis-url="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/page-analysis" data-readiness-url="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/readiness" data-guidance-url="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/design-guidance" data-dialogue-url="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/design-dialogue/messages" data-decision-url="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ case.id }}/design-dialogue/proposals"></script>
+{% endblock %}

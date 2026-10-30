@@ -521,7 +521,7 @@
   <header class="topbar">
     <div class="topbar-inner">
       <div class="brand">Sentinelle Fonctionnelle</div>
-      <div class="version">Tutoriel local · 0.1.0.dev0 · vérifié le 26 juillet 2026</div>
+      <div class="version">Tutoriel local · 0.1.0.dev0 · vérifié le 30 juillet 2026</div>
     </div>
   </header>
 
@@ -533,17 +533,17 @@
         Ce tutoriel installe et lance l’interface web locale, crée plusieurs
         projets et plans de test, puis montre comment organiser les suites et
         dossiers et rédiger chaque cas en pas-à-pas, Given/When/Then, tableau d’exemples
-        ou checklist. Il associe ensuite des saisies CSV ou Excel et prépare
-        leur itération en série, en parallèle ou aléatoirement. L’ensemble est
-        persisté dans SQLite.
+        ou checklist. Il associe ensuite des saisies CSV ou Excel, prépare leur
+        itération et montre comment cataloguer une page JavaScript après
+        authentification avec Playwright. L’ensemble est persisté dans SQLite.
       </p>
       <div class="hero-meta" aria-label="Résumé du statut">
         <span class="badge implemented">Python 3.12+</span>
         <span class="badge implemented">FastAPI locale</span>
         <span class="badge implemented">SQLite v5</span>
-        <span class="badge implemented">4 modes de spécification</span>
+        <span class="badge implemented">Workflow guidé unifié</span>
         <span class="badge implemented">CSV et XLSX</span>
-        <span class="badge">19 critères vérifiés sur 72</span>
+        <span class="badge">30 critères vérifiés sur 80</span>
       </div>
     </header>
 
@@ -585,7 +585,7 @@
             </div>
             <div class="status-card">
               <strong>Disponible</strong>
-              Persistance SQLite locale, migration version&nbsp;5, transactions,
+              Persistance SQLite locale, migration version&nbsp;7, transactions,
               sonde de santé et documentation OpenAPI.
             </div>
             <div class="status-card">
@@ -604,9 +604,14 @@
               série, parallèle borné ou aléatoire reproductible.
             </div>
             <div class="status-card">
+              <strong>Disponible</strong>
+              Diagnostic par intention, dialogue LLM structuré, acceptation
+              sélective des propositions et description factuelle persistée.
+            </div>
+            <div class="status-card">
               <strong>Pas encore disponible</strong>
-              Déploiement web partagé, dialogue LLM, génération Playwright,
-              runner isolé, PostgreSQL et déploiement conteneurisé.
+              Déploiement web partagé, runner OCI isolé, PostgreSQL,
+              personnalisation multi-framework et déploiement conteneurisé.
             </div>
           </div>
         </section>
@@ -646,9 +651,11 @@
           <p class="eyebrow">Étape 2</p>
           <h2>Comprendre la configuration actuelle</h2>
           <p>
-            Le serveur lit quatre variables d’environnement, que les options
-            de <code>serve</code> peuvent remplacer. Aucun fichier YAML n’est
-            encore lu : un tel fichier serait ignoré.
+            Le serveur lit cinq variables d’environnement. Les quatre
+            paramètres de serveur peuvent être remplacés par les options de
+            <code>serve</code>. Le catalogue des approches de test est un
+            fichier YAML initialisé avec les profils livrés par l’application,
+            puis administrable depuis l’interface.
           </p>
           <div class="table-wrap">
             <table>
@@ -671,6 +678,12 @@
                   <td><code>SENTINELLE_FONCTIONNELLE_DATABASE</code> / <code>--database</code></td>
                   <td>Persistance locale</td>
                   <td><code>data/sentinelle_fonctionnelle.db</code>, relatif à la racine de lancement.</td>
+                  <td>Non</td>
+                </tr>
+                <tr>
+                  <td><code>SENTINELLE_FONCTIONNELLE_TEST_APPROACHES</code></td>
+                  <td>Catalogue des approches</td>
+                  <td><code>test-approaches.yaml</code> dans le répertoire de la base par défaut.</td>
                   <td>Non</td>
                 </tr>
                 <tr>
@@ -718,7 +731,7 @@
             Résultat attendu : Uvicorn annonce
             <code>http://127.0.0.1:8000</code>. Cette adresse affiche la liste
             des projets ; <code>/health</code> répond
-            <code>{"status":"ok","mode":"local","schema_version":5}</code>.
+            <code>{"status":"ok","mode":"local","schema_version":8}</code>.
           </p>
 
           <h3>Arrêter et nettoyer</h3>
@@ -746,7 +759,8 @@
                 <li>lancer le serveur avec la commande de l’étape 3 ;</li>
                 <li>ouvrir <code>http://127.0.0.1:8000</code> ;</li>
                 <li>renseigner nom, description, cible web et politique, puis choisir <strong>Créer le projet</strong> ;</li>
-                <li>revenir à <strong>Projets</strong> et répéter l’opération ;</li>
+                <li>revenir au <strong>Catalogue</strong>, ouvrir <strong>Modifier le projet</strong> à côté de la première carte et vérifier que l’édition reste dans ce catalogue ;</li>
+                <li>répéter l’opération de création pour obtenir un second projet ;</li>
                 <li>arrêter puis relancer le serveur avec le même fichier SQLite.</li>
               </ol>
               <p class="result">Les deux cartes de projet réapparaissent avec les mêmes données.</p>
@@ -759,11 +773,12 @@
               data-status="implemented">
               <span class="number">Scénario 02</span>
               <h3>Construire et réorganiser une arborescence</h3>
-              <p><strong>Objectif :</strong> créer un plan, une suite, un dossier et un cas de test, puis exercer les opérations persistantes.</p>
+              <p><strong>Objectif :</strong> éditer les quatre niveaux Plan → Dossier → Suite → Cas dans une même arborescence, puis exercer les opérations persistantes.</p>
               <ol>
-                <li>ouvrir un projet, compléter le formulaire du plan « Parcours critiques », puis ouvrir ce plan ;</li>
-                <li>ajouter une suite à la racine, puis un dossier en choisissant la suite comme parent ;</li>
-                <li>ajouter un cas de test sous le dossier ; la racine du plan n’est pas proposée comme parent d’un cas ;</li>
+                <li>ouvrir un projet et créer le plan « Parcours critiques » : il apparaît comme racine <strong>P</strong> sans changer de page ;</li>
+                <li>utiliser le <code>+</code> du plan pour ajouter un dossier <strong>D</strong>, puis celui du dossier pour ajouter une suite <strong>S</strong> ;</li>
+                <li>utiliser le <code>+</code> de la suite pour ajouter un cas <strong>C</strong>, puis ouvrir ce cas ;</li>
+                <li>depuis le cas, choisir <strong>Retour à l’arborescence</strong> et vérifier que le plan concerné est retrouvé ;</li>
                 <li>renommer le cas, choisir un nouveau parent et une position, puis cliquer <strong>Déplacer</strong> ;</li>
                 <li>archiver un conteneur, puis afficher les archivés.</li>
               </ol>
@@ -1019,6 +1034,43 @@ database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
               </p>
               <p class="specs">Traçabilité : critères vérifiés ACC-002, ACC-003, ACC-051 à ACC-054 et ACC-060 à ACC-068</p>
             </article>
+
+            <article
+              class="scenario"
+              data-spec="EF-010 GEN-001 ACC-074"
+              data-status="implemented">
+              <span class="number">Scénario 10</span>
+              <h3>Cataloguer une page JavaScript après connexion</h3>
+              <p>
+                <strong>Objectif :</strong> utiliser un compte synthétique XLSX
+                pour atteindre la saisie manager, attendre ses champs dynamiques
+                et produire un catalogue sans conserver les valeurs saisies.
+              </p>
+              <p>Dans un premier terminal :</p>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli serve --host 127.0.0.1 --port 8775</code></pre>
+              <p>Dans un second terminal :</p>
+              <pre><code>.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli analyze-rendered-page `
+  --plan .\config\examples\hr-demo-rendered-page-plan.json `
+  --base-url http://127.0.0.1:8775 `
+  --output .\outputs\hr-demo\catalog-saisie-manager.json
+
+.\.venv\Scripts\python.exe -m sentinelle_fonctionnelle.cli apply-page-catalog `
+  --catalog .\outputs\hr-demo\catalog-saisie-manager.json `
+  --workflow .\config\examples\hr-demo-workflow.json `
+  --output .\outputs\hr-demo\hr-demo-workflow.rendered.json</code></pre>
+              <p class="result">
+                Le catalogue doit compter 25 éléments et signaler 5 références
+                dans <code>discovery.rendered_only_references</code>. La seconde
+                commande conserve les 16 références utilisées par le workflow et
+                ajoute les éléments nouvellement observés.
+              </p>
+              <p>
+                Le plan est limité à la boucle locale, vingt actions et cent vingt
+                secondes. Il n’accepte ni script libre ni commande shell. Les
+                valeurs de la ligne XLSX ne sont jamais écrites dans l’artefact.
+              </p>
+              <p class="specs">Traçabilité : EF-010 · GEN-001 · ACC-074</p>
+            </article>
           </div>
         </section>
 
@@ -1089,7 +1141,7 @@ database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
           <p class="eyebrow">Périmètre honnête</p>
           <h2>Ce que ce tutoriel ne lance pas encore</h2>
           <ul>
-            <li>un fournisseur LLM de conception ou d’exécution ;</li>
+            <li>un appel réel à un fournisseur LLM dans ce tutoriel ; l’interface et l’adaptateur de conception nécessitent un profil et un accès réseau configurés ;</li>
             <li>la génération de code Playwright ;</li>
             <li>le runner navigateur isolé ;</li>
             <li>le lancement effectif des lots série, parallèles ou aléatoires préparés par l’import ;</li>
@@ -1099,9 +1151,9 @@ database="./data/tutorial-$(date +%Y%m%d-%H%M%S).db"
             <li>Docker, Podman et les modèles CI.</li>
           </ul>
           <p>
-            Ces éléments existent dans les spécifications mais restent
-            planifiés. Ils seront ajoutés à ce guide uniquement après une preuve
-            RED/GREEN et un point d’entrée réel vérifié.
+            Ces limites ne sont pas revendiquées comme vérifiées par le tutoriel.
+            Elles seront retirées uniquement après une preuve RED/GREEN et un
+            point d’entrée réel vérifié.
           </p>
         </section>
 

@@ -8,6 +8,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import StrEnum
 
+from .workflow import GenerationWorkflowInput, WorkflowAssertion
+
 
 class SpecificationError(ValueError):
     """La saisie fonctionnelle ne peut pas produire un modèle valide."""
@@ -73,6 +75,8 @@ class FunctionalTestSpecification:
     clauses: tuple[SpecificationClause, ...]
     example_headers: tuple[str, ...] = ()
     example_rows: tuple[tuple[str, ...], ...] = ()
+    workflow: GenerationWorkflowInput | None = None
+    summary: str = ""
 
     @classmethod
     def create(
@@ -90,10 +94,35 @@ class FunctionalTestSpecification:
         requirements: tuple[str, ...] = (),
         business_rules: tuple[str, ...] = (),
         execution_declaration: tuple[str, ...] = (),
+        workflow: GenerationWorkflowInput | None = None,
+        summary: str = "",
     ) -> FunctionalTestSpecification:
         normalized_style = SpecificationStyle(style)
-        normalized_source = _required(source_text, "Le contenu de la spécification")
-        clauses, headers, rows = _parse(normalized_style, normalized_source)
+        if workflow is None:
+            normalized_source = _required(
+                source_text,
+                "Le contenu de la spécification",
+            )
+            clauses, headers, rows = _parse(normalized_style, normalized_source)
+        else:
+            normalized_style = SpecificationStyle.STEPS
+            normalized_source = "\n".join(
+                f"{step.action_text} => {step.assertion_text}"
+                for step in workflow.steps
+            )
+            clauses = tuple(
+                SpecificationClause(
+                    keyword="ACTION",
+                    text=step.action_text,
+                    expected_result=(
+                        step.assertion_text
+                        if step.assertion is not WorkflowAssertion.NONE
+                        else None
+                    ),
+                )
+                for step in workflow.steps
+            )
+            headers, rows = (), ()
         declarations = _values(execution_declaration)
         allowed_declarations = {
             "on_commit",
@@ -126,6 +155,8 @@ class FunctionalTestSpecification:
             clauses=clauses,
             example_headers=headers,
             example_rows=rows,
+            workflow=workflow,
+            summary=summary.strip(),
         )
 
     @property
@@ -136,6 +167,7 @@ class FunctionalTestSpecification:
             self.actor,
             self.source_text,
             self.environment,
+            self.summary,
             *self.preconditions,
             *self.data_sets,
             *self.postconditions,

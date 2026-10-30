@@ -71,7 +71,7 @@ class LocalTutorialDocumentationTests(unittest.TestCase):
         self.assertIn("modele-donnees-tests.xlsx", content)
         self.assertIn("Parallèle", content)
         self.assertIn("Aléatoire", content)
-        self.assertIn('"schema_version":5', content)
+        self.assertIn('"schema_version":8', content)
         self.assertIn("ACC-069", content)
         self.assertIn("ACC-070", content)
         self.assertIn("ACC-071", content)

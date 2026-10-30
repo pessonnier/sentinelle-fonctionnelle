@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "help.html" import create_toggle, field_label, form_help, journey_progress %}
 {% block title %}{{ project.name }} · Sentinelle Fonctionnelle{% endblock %}
 {% block content %}
   <nav class="breadcrumb" aria-label="Fil d’Ariane">
@@ -17,69 +18,117 @@
     </dl>
   </header>
 
-  <div class="workspace-layout">
-    <section class="workspace-main" aria-labelledby="plans-title">
+  {{ journey_progress("plan", "/projects/" ~ project.id) }}
+
+  <div class="entity-catalogue">
+    <section class="tree-workspace unified-project-tree" aria-labelledby="plans-title">
       <div class="section-heading">
         <div>
-          <p class="eyebrow">Niveau 2</p>
-          <h2 id="plans-title">Plans de test</h2>
+          <p class="eyebrow">Arborescence éditable</p>
+          <h2 id="plans-title">Plans, dossiers, suites et cas</h2>
         </div>
-        <span class="count-badge">{{ plans|length }}</span>
+        <div class="organization-actions">
+          <span class="count-badge">{{ plans|length }}</span>
+          <a class="text-link" href="?show_archived={{ 'false' if show_archived else 'true' }}">
+            {{ "Masquer les archives" if show_archived else "Afficher les archives" }}
+          </a>
+        </div>
       </div>
 
       {% if plans %}
-        <div class="plan-list">
+        <div class="unified-tree-list">
           {% for item in plans %}
-            <a class="plan-row" href="/projects/{{ project.id }}/test-plans/{{ item.plan.id }}">
-              <span class="plan-index">{{ loop.index }}</span>
-              <span class="plan-summary">
-                <strong>{{ item.plan.name }}</strong>
-                <small>{{ item.plan.objective }}</small>
-              </span>
-              <span class="plan-stats">
-                {{ item.suite_count }} suite{{ "s" if item.suite_count != 1 else "" }}
-                · {{ item.case_count }} cas
-              </span>
-              <span class="row-arrow" aria-hidden="true">→</span>
-            </a>
+            {% include "_plan_tree.html" %}
           {% endfor %}
         </div>
       {% else %}
         <div class="empty-state">
           <strong>Aucun plan de test</strong>
-          <span>Définissez le périmètre et les critères du premier plan.</span>
+          <span>Ajoutez le premier plan ; la création du premier cas préparera automatiquement son rangement.</span>
         </div>
       {% endif %}
     </section>
 
-    <aside class="form-panel">
-      <p class="eyebrow">Nouveau plan</p>
-      <h2>Cadre de test</h2>
-      <form action="/projects/{{ project.id }}/test-plans" method="post">
+    <div class="entity-create-control">
+      {{ create_toggle("new-test-plan", "Ajouter un plan de test") }}
+      <section id="new-test-plan" class="form-panel entity-create-panel" hidden>
+        <p class="eyebrow">Nouveau plan</p>
+        {{ form_help(
+            "Créer un plan de test",
+            "Définit le cadre fonctionnel, les critères et les valeurs par défaut du futur jeu de tests.",
+            "test-plan"
+        ) }}
+        <form action="/projects/{{ project.id }}/test-plans" method="post" aria-label="Créer un plan de test">
         <label>
-          Nom du plan
+          {{ field_label(
+            "Nom du plan",
+            "Nom du plan",
+            "Nom lisible et stable utilisé dans l’arborescence, la documentation et les exports.",
+            "Validation de la commande",
+            "test-plan"
+          ) }}
           <input name="name" required maxlength="120" placeholder="Validation de la commande">
           <small>Nom visible dans l’arborescence et les exports.</small>
         </label>
         <label>
-          Objectif
+          {{ field_label(
+            "Objectif",
+            "Objectif du plan",
+            "Résultat métier global que l’exécution du plan doit permettre de valider.",
+            "Valider le parcours de commande",
+            "test-plan"
+          ) }}
           <textarea name="objective" rows="2" required placeholder="Valider le parcours de commande"></textarea>
         </label>
         <label>
-          Périmètre
+          {{ field_label(
+            "Périmètre",
+            "Périmètre du plan",
+            "Fonctions incluses dans le plan et exclusions explicites.",
+            "Inclus : panier et paiement ; exclus : remboursement",
+            "test-plan"
+          ) }}
           <textarea name="scope" rows="3" required placeholder="Inclus : panier et paiement&#10;Exclus : remboursement"></textarea>
         </label>
         <label>
-          Approche
-          <textarea name="approach" rows="2" required placeholder="Tests d’acceptation orientés risques"></textarea>
+          {{ field_label(
+            "Profil d’approche de test",
+            "Profil d’approche de test",
+            "Configuration versionnée qui fixe les niveaux, types, techniques de conception, priorités et règles de génération.",
+            "Tests fonctionnels orientés risques",
+            "test-plan"
+          ) }}
+          <select name="test_approach" required>
+            {% for approach in test_approaches %}
+              <option value="{{ approach.id }}@{{ approach.version }}">
+                {{ approach.name }} · v{{ approach.version }}
+              </option>
+            {% endfor %}
+          </select>
+          <small>
+            Le profil est défini en YAML et administrable dans
+            <a href="/configuration/test-approaches">Configuration</a>.
+          </small>
         </label>
         <label>
-          Cible ou environnement
+          {{ field_label(
+            "Cible ou environnement",
+            "Cible du plan",
+            "URL ou nom précis de l’environnement sur lequel ce plan doit être exécuté.",
+            "https://recette.example.net",
+            "test-plan"
+          ) }}
           <input name="target" required value="{{ project.web_target }}">
         </label>
         <div class="two-columns">
           <label>
-            Type par défaut
+            {{ field_label(
+              "Type par défaut",
+              "Type de test par défaut",
+              "Catégorie proposée lors de la création des suites et cas de ce plan.",
+              "acceptance",
+              "test-plan"
+            ) }}
             <select name="test_type">
               <option value="acceptance">Acceptation</option>
               <option value="smoke">Smoke</option>
@@ -91,23 +140,48 @@
             </select>
           </label>
           <label>
-            Tags
+            {{ field_label(
+              "Tags",
+              "Tags du plan",
+              "Mots-clés séparés par des virgules, utilisés pour retrouver et regrouper les tests.",
+              "commande, critique",
+              "test-plan"
+            ) }}
             <input name="tags" placeholder="commande, critique">
           </label>
         </div>
         <details class="form-details">
           <summary>Critères, risques et organisation</summary>
           <div class="form-stack">
-            <label>Risques<textarea name="risks" rows="2" placeholder="Paiement débité sans commande"></textarea></label>
-            <label>Critères d’entrée<textarea name="entry_criteria" rows="2" placeholder="Environnement de recette disponible"></textarea></label>
-            <label>Critères de sortie<textarea name="exit_criteria" rows="2" placeholder="Tous les cas critiques réussissent"></textarea></label>
-            <label>Ressources<input name="resources" placeholder="QA, Product Owner"></label>
-            <label>Contraintes<input name="constraints" placeholder="Données anonymisées"></label>
-            <label>Ordonnancement<input name="schedule" placeholder="Avant chaque livraison"></label>
+            <label>
+              {{ field_label("Risques", "Risques couverts", "Événements métier ou techniques que le plan doit prévenir ou détecter, un par ligne.", "Paiement débité sans commande", "test-plan") }}
+              <textarea name="risks" rows="2" placeholder="Paiement débité sans commande"></textarea>
+            </label>
+            <label>
+              {{ field_label("Critères d’entrée", "Critères d’entrée", "Conditions obligatoires avant de commencer l’exécution, une par ligne.", "Environnement de recette disponible", "test-plan") }}
+              <textarea name="entry_criteria" rows="2" placeholder="Environnement de recette disponible"></textarea>
+            </label>
+            <label>
+              {{ field_label("Critères de sortie", "Critères de sortie", "Conditions permettant de considérer le plan terminé, une par ligne.", "Tous les cas critiques réussissent", "test-plan") }}
+              <textarea name="exit_criteria" rows="2" placeholder="Tous les cas critiques réussissent"></textarea>
+            </label>
+            <label>
+              {{ field_label("Ressources", "Ressources", "Rôles, équipes ou moyens nécessaires à la préparation et à l’exécution.", "QA, Product Owner", "test-plan") }}
+              <input name="resources" placeholder="QA, Product Owner">
+            </label>
+            <label>
+              {{ field_label("Contraintes", "Contraintes", "Limites réglementaires, techniques, calendaires ou liées aux données.", "Données anonymisées", "test-plan") }}
+              <input name="constraints" placeholder="Données anonymisées">
+            </label>
+            <label>
+              {{ field_label("Ordonnancement", "Ordonnancement", "Moment ou fréquence d’exécution attendue du plan.", "Avant chaque livraison", "test-plan") }}
+              <input name="schedule" placeholder="Avant chaque livraison">
+            </label>
           </div>
         </details>
-        <button type="submit">Créer le plan et organiser les cas</button>
-      </form>
-    </aside>
+          <button type="submit">Créer le plan et ajouter un cas</button>
+        </form>
+      </section>
+    </div>
   </div>
 {% endblock %}

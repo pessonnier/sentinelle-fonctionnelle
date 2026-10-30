@@ -1,0 +1,236 @@
+{% from "help.html" import field_label, form_help %}
+{% set plan = item.plan %}
+<article id="plan-{{ plan.id }}" class="plan-tree-card">
+  <div class="tree-row plan-root" style="--depth: 0">
+    <div class="tree-line">
+      <span class="kind-icon plan-kind-icon" aria-hidden="true">P</span>
+      <a class="node-name" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}">{{ plan.name }}</a>
+      <span class="node-kind">Plan de test</span>
+      <span class="plan-stats">
+        {{ item.suite_count }} suite{{ "s" if item.suite_count != 1 else "" }} ·
+        {{ item.case_count }} cas
+      </span>
+      <details class="node-create">
+        <summary
+          class="node-action-button"
+          aria-label="Ajouter un dossier dans {{ plan.name }}"
+          title="Ajouter un dossier"
+        >＋</summary>
+        <div class="node-create-panel">
+          <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes" method="post" aria-label="Créer un dossier dans {{ plan.name }}">
+            {{ form_help("Créer un dossier", "Ajoute le niveau Dossier directement sous ce plan de test.", "organization") }}
+            <input type="hidden" name="kind" value="folder">
+            <label>
+              {{ field_label("Nom du dossier", "Nom du dossier", "Libellé fonctionnel utilisé pour classer les suites de tests.", "Commande", "organization") }}
+              <input name="name" required placeholder="Commande">
+            </label>
+            <label>
+              {{ field_label("Tags", "Tags du dossier", "Mots-clés séparés par des virgules pour retrouver ce dossier.", "parcours, critique", "organization") }}
+              <input name="tags" placeholder="parcours, critique">
+            </label>
+            <button type="submit">Créer le dossier</button>
+          </form>
+        </div>
+      </details>
+    </div>
+    <p class="node-description">{{ plan.objective }} · {{ item.test_approach.name }} v{{ item.test_approach.version }}</p>
+  </div>
+
+  <details class="plan-settings-inline">
+    <summary class="secondary-button">Modifier le plan</summary>
+    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/details" method="post" aria-label="Modifier le plan {{ plan.name }}">
+      {{ form_help("Modifier le plan de test", "Met à jour le niveau Plan sans quitter l’arborescence du projet.", "test-plan") }}
+      <div class="two-columns">
+        <label>
+          {{ field_label("Nom", "Nom du plan", "Nom utilisé dans l’arborescence, la documentation et les exports.", "Validation de la commande", "test-plan") }}
+          <input name="name" value="{{ plan.name }}" required>
+        </label>
+        <label>
+          {{ field_label("Cible", "Cible du plan", "URL ou nom précis de l’environnement d’exécution.", "https://recette.example.net", "test-plan") }}
+          <input name="target" value="{{ plan.target }}" required>
+        </label>
+      </div>
+      <label>
+        {{ field_label("Objectif", "Objectif du plan", "Résultat métier global que le plan doit permettre de valider.", "Valider le parcours de commande", "test-plan") }}
+        <textarea name="objective" rows="2" required>{{ plan.objective }}</textarea>
+      </label>
+      <label>
+        {{ field_label("Périmètre", "Périmètre du plan", "Fonctions incluses et exclusions explicites.", "Inclus : panier ; exclus : remboursement", "test-plan") }}
+        <textarea name="scope" rows="3" required>{{ plan.scope }}</textarea>
+      </label>
+      <label>
+        {{ field_label("Profil d’approche de test", "Profil d’approche de test", "Configuration versionnée des niveaux, types, techniques, priorités et règles de génération.", "Tests fonctionnels orientés risques", "test-plan") }}
+        <select name="test_approach" required>
+          {% for approach in item.test_approaches %}
+            <option value="{{ approach.id }}@{{ approach.version }}" {% if approach.id == plan.test_approach_id and approach.version == plan.test_approach_version %}selected{% endif %}>
+              {{ approach.name }} · v{{ approach.version }}
+            </option>
+          {% endfor %}
+        </select>
+      </label>
+      <div class="two-columns">
+        <label>
+          {{ field_label("Risques", "Risques couverts", "Événements à prévenir ou détecter, un par ligne.", "Paiement débité sans commande", "test-plan") }}
+          <textarea name="risks" rows="2">{{ plan.risks|join("\n") }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Type par défaut", "Type de test par défaut", "Catégorie proposée aux nouvelles suites et aux nouveaux cas.", "acceptance", "test-plan") }}
+          <input name="test_type" value="{{ plan.test_type }}">
+        </label>
+      </div>
+      <div class="two-columns">
+        <label>
+          {{ field_label("Critères d’entrée", "Critères d’entrée", "Conditions obligatoires avant l’exécution, une par ligne.", "Recette disponible", "test-plan") }}
+          <textarea name="entry_criteria" rows="2">{{ plan.entry_criteria|join("\n") }}</textarea>
+        </label>
+        <label>
+          {{ field_label("Critères de sortie", "Critères de sortie", "Conditions permettant de considérer le plan terminé, une par ligne.", "Tous les cas critiques réussissent", "test-plan") }}
+          <textarea name="exit_criteria" rows="2">{{ plan.exit_criteria|join("\n") }}</textarea>
+        </label>
+      </div>
+      <div class="three-columns">
+        <label>
+          {{ field_label("Ressources", "Ressources", "Rôles, équipes ou moyens requis.", "QA, Product Owner", "test-plan") }}
+          <input name="resources" value="{{ plan.resources }}">
+        </label>
+        <label>
+          {{ field_label("Contraintes", "Contraintes", "Limites réglementaires, techniques ou liées aux données.", "Données anonymisées", "test-plan") }}
+          <input name="constraints" value="{{ plan.constraints }}">
+        </label>
+        <label>
+          {{ field_label("Ordonnancement", "Ordonnancement", "Moment ou fréquence d’exécution du plan.", "Avant chaque livraison", "test-plan") }}
+          <input name="schedule" value="{{ plan.schedule }}">
+        </label>
+      </div>
+      <label>
+        {{ field_label("Tags", "Tags du plan", "Mots-clés séparés par des virgules pour la recherche et le regroupement.", "commande, critique", "test-plan") }}
+        <input name="tags" value="{{ plan.tags|join(', ') }}">
+      </label>
+      <button type="submit">Enregistrer le plan</button>
+    </form>
+  </details>
+
+  {% if item.rows %}
+    <div class="tree plan-children" role="tree" aria-label="Contenu du plan {{ plan.name }}">
+      {% for row in item.rows %}
+        <article id="node-{{ row.node.id }}" class="tree-row {{ 'archived' if row.node.archived else '' }}" style="--depth: {{ row.depth + 1 }}">
+          <div class="tree-line">
+            <span class="kind-icon" aria-hidden="true">
+              {{ "S" if row.node.kind.value == "suite" else ("D" if row.node.kind.value == "folder" else "C") }}
+            </span>
+            {% if row.node.kind.value == "test" %}
+              <a class="node-name" href="/projects/{{ project.id }}/test-plans/{{ plan.id }}/cases/{{ row.node.id }}">{{ row.node.name }}</a>
+            {% else %}
+              <strong class="node-name">{{ row.node.name }}</strong>
+            {% endif %}
+            <span class="node-kind">{{ row.node.kind.label }}</span>
+            {% if row.node.archived %}<span class="archive-badge">Archivé</span>{% endif %}
+            {% if not row.node.archived %}
+              {% if row.node.kind.value == "folder" %}
+                <details class="node-create">
+                  <summary class="node-action-button" aria-label="Ajouter une suite de tests dans {{ row.node.name }}" title="Ajouter une suite de tests">＋</summary>
+                  <div class="node-create-panel">
+                    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes" method="post" aria-label="Créer une suite dans {{ row.node.name }}">
+                      {{ form_help("Créer une suite de tests", "Ajoute le niveau Suite sous le dossier sélectionné.", "organization") }}
+                      <input type="hidden" name="kind" value="suite">
+                      <input type="hidden" name="parent_id" value="{{ row.node.id }}">
+                      <label>
+                        {{ field_label("Nom de la suite", "Nom de la suite", "Libellé fonctionnel regroupant des cas exécutés ensemble.", "Paiement", "organization") }}
+                        <input name="name" required placeholder="Paiement">
+                      </label>
+                      <label>
+                        {{ field_label("Objectif d’exécution", "Objectif d’exécution", "Intention commune à tous les cas de cette suite.", "Valider les moyens de paiement acceptés", "organization") }}
+                        <textarea name="objective" rows="2" required></textarea>
+                      </label>
+                      <label>
+                        {{ field_label("Type par défaut", "Type de test par défaut", "Type proposé aux futurs cas de cette suite.", "acceptance", "organization") }}
+                        <input name="test_type" value="{{ plan.test_type }}">
+                      </label>
+                      <label>
+                        {{ field_label("Tags", "Tags de la suite", "Mots-clés séparés par des virgules.", "paiement, nominal", "organization") }}
+                        <input name="tags">
+                      </label>
+                      <label>
+                        {{ field_label("Préconditions communes", "Préconditions communes", "Conditions partagées par les cas de la suite, une par ligne.", "Client authentifié", "organization") }}
+                        <textarea name="preconditions" rows="2"></textarea>
+                      </label>
+                      <label>
+                        {{ field_label("Postconditions communes", "Postconditions communes", "État attendu après les cas de la suite, une valeur par ligne.", "Données nettoyées", "organization") }}
+                        <textarea name="postconditions" rows="2"></textarea>
+                      </label>
+                      <label>
+                        {{ field_label("Déclaration CI par défaut", "Déclaration CI par défaut", "Indications d’exécution héritées par les cas.", "manual, on_merge_request", "ci") }}
+                        <input name="execution_declaration">
+                      </label>
+                      <button type="submit">Créer la suite</button>
+                    </form>
+                  </div>
+                </details>
+              {% elif row.node.kind.value == "suite" %}
+                <details class="node-create">
+                  <summary class="node-action-button" aria-label="Ajouter un cas de test dans {{ row.node.name }}" title="Ajouter un cas de test">＋</summary>
+                  <div class="node-create-panel">
+                    <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes" method="post" aria-label="Créer un cas dans {{ row.node.name }}">
+                      {{ form_help("Créer un cas de test", "Ajoute le niveau Cas sous la suite sélectionnée puis ouvre son éditeur détaillé.", "test-case") }}
+                      <input type="hidden" name="kind" value="test">
+                      <input type="hidden" name="parent_id" value="{{ row.node.id }}">
+                      <label>
+                        {{ field_label("Nom du cas", "Nom du cas", "Décrit brièvement le comportement ou la règle vérifiée.", "Paiement accepté", "test-case") }}
+                        <input name="name" required placeholder="Paiement accepté">
+                      </label>
+                      <label>
+                        {{ field_label("Tags", "Tags du cas", "Mots-clés séparés par des virgules.", "nominal, paiement", "test-case") }}
+                        <input name="tags">
+                      </label>
+                      <button type="submit">Créer et définir le cas</button>
+                    </form>
+                  </div>
+                </details>
+              {% endif %}
+              <details class="row-menu">
+                <summary aria-label="Actions pour {{ row.node.name }}">•••</summary>
+                <div class="row-menu-panel">
+                  <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/rename" method="post" aria-label="Renommer {{ row.node.name }}">
+                    {{ form_help("Renommer l’élément", "Modifie son libellé sans changer sa position ni son contenu.", "node-actions") }}
+                    <label>
+                      {{ field_label("Renommer", "Nouveau nom", "Nouveau libellé lisible du dossier, de la suite ou du cas.", "Paiement par carte", "node-actions") }}
+                      <input name="name" value="{{ row.node.name }}" required>
+                    </label>
+                    <button type="submit" class="small-button">Appliquer</button>
+                  </form>
+                  <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/move" method="post" aria-label="Déplacer {{ row.node.name }}">
+                    {{ form_help("Déplacer l’élément", "Change son parent et éventuellement son ordre dans le plan.", "node-actions") }}
+                    <label>
+                      {{ field_label("Nouveau parent", "Nouveau parent", "Dossier ou suite compatible qui contiendra désormais l’élément.", "Parcours de commande", "node-actions") }}
+                      <select name="new_parent_id">
+                        {% if row.node.kind.value != "test" %}<option value="">Racine du plan</option>{% endif %}
+                        {% for container in item.containers %}
+                          {% if container.id != row.node.id %}<option value="{{ container.id }}">{{ container.name }}</option>{% endif %}
+                        {% endfor %}
+                      </select>
+                    </label>
+                    <label>
+                      {{ field_label("Position", "Position", "Index à partir de zéro parmi les éléments voisins. Vide place l’élément à la fin.", "0", "node-actions") }}
+                      <input name="position" type="number" min="0" placeholder="fin">
+                    </label>
+                    <button type="submit" class="small-button">Déplacer</button>
+                  </form>
+                  <form action="/projects/{{ project.id }}/test-plans/{{ plan.id }}/nodes/{{ row.node.id }}/archive" method="post" aria-label="Archiver {{ row.node.name }}">
+                    {{ form_help("Archiver l’élément", "Masque cet élément et tous ses descendants sans supprimer leurs données.", "node-actions") }}
+                    <button type="submit" class="small-button danger">Archiver avec ses descendants</button>
+                  </form>
+                </div>
+              </details>
+            {% endif %}
+          </div>
+          {% if row.node.kind.value == "suite" and row.node.objective %}<p class="node-description">{{ row.node.objective }}</p>{% endif %}
+        </article>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state compact plan-empty">
+      <strong>Plan sans dossier</strong>
+      <span>Utilisez le bouton + de la ligne du plan pour commencer l’arborescence.</span>
+    </div>
+  {% endif %}
+</article>

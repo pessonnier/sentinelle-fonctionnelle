@@ -1,0 +1,44 @@
+{% extends "orders_demo_base.html" %}
+{% block title %}Récapitulatif · Comptoir des commandes{% endblock %}
+{% block content %}
+  <header class="demo-title">
+    <p>Écran 3 · lecture et traitement</p>
+    <h1>Vérifier le récapitulatif</h1>
+    <span>Remise, livraison, TVA et total sont calculés côté serveur.</span>
+  </header>
+  <section class="summary-grid">
+    <article class="demo-panel">
+      <h2>Client</h2>
+      <dl class="read-list">
+        <div><dt>Nom</dt><dd>{{ draft.customer_name }}</dd></div>
+        <div><dt>E-mail</dt><dd>{{ draft.email }}</dd></div>
+        <div><dt>Type</dt><dd>{{ draft.customer_type }}</dd></div>
+        <div><dt>Priorité</dt><dd>{{ draft.priority }}</dd></div>
+        <div><dt>Livraison souhaitée</dt><dd>{{ draft.requested_date }}</dd></div>
+      </dl>
+    </article>
+    <article class="demo-panel total-panel">
+      <h2>Calcul</h2>
+      <dl class="read-list">
+        <div><dt>Sous-total</dt><dd>{{ calculation.subtotal }}</dd></div>
+        <div><dt>Remise</dt><dd>- {{ calculation.discount }}</dd></div>
+        <div><dt>Livraison</dt><dd>{{ calculation.shipping }}</dd></div>
+        <div><dt>TVA 20 %</dt><dd>{{ calculation.tax }}</dd></div>
+        <div class="grand-total"><dt>Total TTC</dt><dd id="order-total">{{ calculation.total }}</dd></div>
+      </dl>
+    </article>
+  </section>
+  <section class="demo-panel">
+    <h2>Articles retenus</h2>
+    <div class="table-wrap"><table><thead><tr><th>Référence</th><th>Article</th><th>Quantité</th><th>Prix unitaire</th><th>Total</th></tr></thead><tbody>
+      {% for line in calculation.lines %}<tr><td><code>{{ line.code }}</code></td><td>{{ line.name }}</td><td>{{ line.quantity }}</td><td>{{ line.unit_price }}</td><td>{{ line.line_total }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    <form class="confirmation-form" action="/demo/commandes/recapitulatif/{{ draft_id }}" method="post" {% if parser_preview %}onsubmit="return false"{% endif %}>
+      <label>Mode de paiement
+        <select name="payment_method" required><option value="invoice">Facture</option><option value="card">Carte</option><option value="transfer">Virement</option></select>
+      </label>
+      <label class="inline"><input name="terms" type="checkbox" value="accepted" required> Je confirme les informations et les montants.</label>
+      <button type="submit" {% if parser_preview %}disabled{% endif %}>Confirmer la commande</button>
+    </form>
+  </section>
+{% endblock %}
