@@ -39,6 +39,8 @@ La spécification fonctionnelle, le MVP et l’architecture logicielle sont déc
   29119, glossaire ISTQB et correspondance terminologique du projet ;
 - [`docs/tutorial-local.html`](docs/tutorial-local.html), tutoriel HTML autonome
   du mode local actuellement disponible ;
+- [`docs/tutorial-premier-test-gitlab.md`](docs/tutorial-premier-test-gitlab.md),
+  premier cas guidé, génération, approbation et exécution dans GitLab CI/CD ;
 - [`docs/llm/ollama.md`](docs/llm/ollama.md), installation, configuration,
   test réel et diagnostic du profil Qwen3.6 local ;
 - [`docs/hr-demo.md`](docs/hr-demo.md), cible RH de démonstration, classeurs
