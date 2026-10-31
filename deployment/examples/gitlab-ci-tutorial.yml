@@ -1,0 +1,61 @@
+# Exemple autonome du tutoriel docs/tutorial-premier-test-gitlab.md.
+# À copier à la racine du dépôt GitLab sous le nom .gitlab-ci.yml.
+# Le dépôt doit contenir les sources de Sentinelle et sentinelle-bundle/.
+image: python:3.12-slim-bookworm
+
+stages:
+  - test
+
+variables:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  TARGET_BASE_URL: "http://127.0.0.1:8000"
+  SENTINELLE_FONCTIONNELLE_DECLARATION: "manual"
+  PYTEST_ADDOPTS: "--tracing=retain-on-failure --screenshot=only-on-failure"
+
+sentinelle-premier-test:
+  stage: test
+  timeout: 20m
+  before_script:
+    - python -m pip install -c requirements/constraints-py312.txt -e ".[test]"
+    - python -m playwright install --with-deps chromium
+  script:
+    - mkdir -p artifacts
+    - test -f sentinelle-bundle/sentinelle-manifest.json
+    - python -m sentinelle_fonctionnelle.cli serve --host 127.0.0.1 --port 8000 --database /tmp/sentinelle-tutorial.db > artifacts/target.log 2>&1 &
+    - TARGET_PID=$!
+    - trap 'kill "$TARGET_PID" 2>/dev/null || true' EXIT
+    - |
+      python - <<'PY'
+      import os
+      import time
+      import urllib.error
+      import urllib.request
+
+      url = os.environ["TARGET_BASE_URL"] + "/demo/commandes/client"
+      for attempt in range(30):
+          try:
+              with urllib.request.urlopen(url, timeout=2) as response:
+                  if response.status == 200:
+                      print("Cible de démonstration disponible :", url)
+                      break
+          except (urllib.error.URLError, TimeoutError):
+              pass
+          time.sleep(1)
+      else:
+          raise SystemExit("Cible indisponible ; consulter artifacts/target.log")
+      PY
+    - sentinelle-run --bundle ./sentinelle-bundle --artifacts ./artifacts --base-url "$TARGET_BASE_URL" --allow-origin "$TARGET_BASE_URL" --declaration "$SENTINELLE_FONCTIONNELLE_DECLARATION"
+  artifacts:
+    when: always
+    expire_in: 7 days
+    reports:
+      junit: artifacts/junit.xml
+    paths:
+      - artifacts/
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      variables:
+        SENTINELLE_FONCTIONNELLE_DECLARATION: "on_merge_request"
+    - if: '$CI_PIPELINE_SOURCE == "web"'
+      variables:
+        SENTINELLE_FONCTIONNELLE_DECLARATION: "manual"
